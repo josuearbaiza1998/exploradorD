@@ -6,6 +6,7 @@ import { getLayerChunk } from '@/systems/propPlacement'
 import { propKey } from '@/systems/interaction/interactables'
 import { useGameStore } from '@/store/gameStore'
 import { useVisibleChunks } from '@/hooks/useVisibleChunks'
+import { isChunkReady, useChunkVersion } from '@/systems/chunkStreamer'
 import { MATERIALS } from '@/materials/toonMaterials'
 import { applyWindSway } from '@/materials/windSway'
 import {
@@ -62,8 +63,11 @@ function layerMatrices(
 
 /** Vegetación y rocas instanciadas por capas, distribuidas por chunk. */
 export function Vegetation() {
-  const chunks = useVisibleChunks()
+  const allChunks = useVisibleChunks()
+  const chunkVersion = useChunkVersion()
   const harvested = useGameStore((s) => s.harvested)
+  // Solo los chunks ya generados (el streamer ya calculó su vegetación).
+  const chunks = useMemo(() => allChunks.filter((c) => isChunkReady(c.key)), [allChunks, chunkVersion])
   const layers = useMemo(
     () => PROP_LAYERS.map((layer) => ({ layer, matrices: layerMatrices(layer, chunks, harvested) })),
     [chunks, harvested],

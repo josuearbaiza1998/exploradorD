@@ -6,8 +6,9 @@ import { createInventorySlice, type InventorySlice } from './slices/inventorySli
 import { createRobotSlice, type RobotSlice } from './slices/robotSlice'
 import { createWorldSlice, type WorldSlice } from './slices/worldSlice'
 import { createWeatherSlice, type WeatherSlice } from './slices/weatherSlice'
+import { createStructuresSlice, type StructuresSlice } from './slices/structuresSlice'
 
-export type GameState = ClockSlice & RobotSlice & InventorySlice & WorldSlice & WeatherSlice
+export type GameState = ClockSlice & RobotSlice & InventorySlice & WorldSlice & WeatherSlice & StructuresSlice
 
 /**
  * Tienda global del juego (Zustand), dividida en slices:
@@ -15,6 +16,7 @@ export type GameState = ClockSlice & RobotSlice & InventorySlice & WorldSlice & 
  *  - robot: batería, sensores, modo (activo/emergencia/regreso/recarga).
  *  - inventory: inventario y cajas caídas con sus coordenadas.
  *  - weather: estado del clima y cuándo cambia.
+ *  - structures: paneles solares, bancos de baterías y refugios construidos.
  *  - world: recursos recolectados (y cuándo rebrotan) y puntos de chatarra.
  *
  * Rendimiento: los sistemas por frame usan getState()/setState() (sin
@@ -31,6 +33,7 @@ export const useGameStore = create<GameState>()(
       ...createInventorySlice(...a),
       ...createWorldSlice(...a),
       ...createWeatherSlice(...a),
+      ...createStructuresSlice(...a),
     }),
     {
       name: 'exploradord-save',
@@ -51,6 +54,8 @@ export const useGameStore = create<GameState>()(
         previousWeather: s.previousWeather,
         weatherSince: s.weatherSince,
         weatherUntil: s.weatherUntil,
+        structures: s.structures,
+        bankCharge: s.bankCharge,
       }),
       // Si se cerró la partida en mitad de una emergencia, al volver se arranca
       // en la nave con la batería mínima para no quedar bloqueado.

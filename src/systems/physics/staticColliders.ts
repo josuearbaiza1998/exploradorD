@@ -2,6 +2,7 @@ import { CHUNK_SIZE, CRASH_SITE } from '@/config/world'
 import { COLLIDABLE_LAYERS, getLayerChunk } from '@/systems/propPlacement'
 import { propKey } from '@/systems/interaction/interactables'
 import { getGame } from '@/store/gameStore'
+import { STRUCTURES } from '@/config/structures'
 
 /** Círculo en XZ con altura sobre el suelo `h` (para la cámara). */
 export type CircleCollider = { x: number; z: number; r: number; h: number; key?: string }
@@ -24,6 +25,11 @@ function chunkColliders(cx: number, cz: number): CircleCollider[] {
   }
   chunkCache.set(key, list)
   return list
+}
+
+/** Libera los colisionadores de chunks lejanos. */
+export function pruneColliderCache(keepChunkKeys: Set<string>) {
+  for (const key of chunkCache.keys()) if (!keepChunkKeys.has(key)) chunkCache.delete(key)
 }
 
 /** La nave: círculos a lo largo del casco y las alas (placeholder aproximado). */
@@ -63,5 +69,14 @@ export function queryColliders(x: number, z: number, radius: number): CircleColl
     }
   }
   for (const c of SHIP_COLLIDERS) result.push(c)
+  // Estructuras construidas por el jugador (pocas: se recorren todas).
+  for (const st of getGame().structures) {
+    if (Math.abs(st.x - x) > pad + 4 || Math.abs(st.z - z) > pad + 4) continue
+    const cos = Math.cos(st.rot)
+    const sin = Math.sin(st.rot)
+    for (const [lx, lz, r, h] of STRUCTURES[st.type].colliders) {
+      result.push({ x: st.x + lx * cos + lz * sin, z: st.z - lx * sin + lz * cos, r, h })
+    }
+  }
   return result
 }

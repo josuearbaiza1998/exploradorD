@@ -24,7 +24,14 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   stone: { id: 'stone', name: 'Piedra', icon: '🪨', stack: 50, kind: 'resource' },
   scrapMetal: { id: 'scrapMetal', name: 'Chatarra', icon: '🔩', stack: 30, kind: 'resource' },
   techParts: { id: 'techParts', name: 'Componentes', icon: '💾', stack: 20, kind: 'resource' },
-  cell: { id: 'cell', name: 'Celda de energía', icon: '🔋', stack: 5, kind: 'resource' },
+  cell: {
+    id: 'cell',
+    name: 'Celda de energía',
+    icon: '🔋',
+    stack: 5,
+    kind: 'consumable',
+    description: 'Recarga de emergencia: +25 % de batería.',
+  },
   cloth: {
     id: 'cloth',
     name: 'Paño de fibra',

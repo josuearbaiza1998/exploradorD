@@ -6,6 +6,8 @@ import { DroppedBoxes } from '@/components/props/DroppedBoxes'
 import { RobotSystems } from '@/components/systems/RobotSystems'
 import { InteractionHighlight } from '@/components/props/InteractionHighlight'
 import { SalvageNodes } from '@/components/props/SalvageNodes'
+import { Structures } from '@/components/structures/Structures'
+import { BuildGhost } from '@/components/structures/BuildGhost'
 import { CrashedShip } from '@/components/props/CrashedShip'
 import { Oasis } from '@/components/props/Oasis'
 import { Vegetation } from '@/components/props/Vegetation'
@@ -33,6 +35,8 @@ export function World() {
       <DroppedBoxes />
       <SalvageNodes />
       <InteractionHighlight />
+      <Structures />
+      <BuildGhost />
       <Oasis />
       <Vegetation />
       <Robot />

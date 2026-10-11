@@ -13,6 +13,11 @@ npm run build    # typecheck + build de producción en /dist (lo que usa Vercel)
 
 Vercel detecta Vite automáticamente: build `npm run build`, salida `dist`.
 
+## Modos de mundo
+
+- Por defecto: isla cerrada (para pruebas).
+- `?mundo=infinito` en la URL: terreno infinito por chunks (también desde el panel de pruebas).
+
 ## Controles
 
 - Móvil: joystick flotante en la mitad izquierda, arrastrar en la derecha para girar la cámara, botón de salto.
@@ -26,8 +31,9 @@ src/
   assets/models.ts           Registro de .glb: cambia null por la ruta y listo
   config/                    world.ts (POIs, colinas, chunks, isla) · palette.ts · items.ts
                              harvest.ts (qué se recolecta y con qué) · recipes.ts · weather.ts
+                             structures.ts (construcciones)
                              robot.ts (ajustes de batería) · propLayers.ts
-  store/                     Zustand: gameStore + slices (clock, robot, inventory, world, weather)
+  store/                     Zustand: gameStore + slices (clock, robot, inventory, world, weather, structures)
   components/
     common/                  ModelSlot e InstancedProp (placeholder hoy, useGLTF mañana)
     environment/             DayNightCycle, Lighting, SkyDome
@@ -37,6 +43,7 @@ src/
     scene/                   GameCanvas, World
     systems/                 RobotSystems (batería, sensores, modo reposo)
     weather/                 DustParticles, RainParticles
+    structures/              Structures, BuildGhost, modelos temporales
     ui/                      controls/ (joystick, LookPad, botones), overlays de sensores/energía,
                              DebugPanel (temporal), RotateDeviceHint
   hooks/useVisibleChunks.ts  Qué chunks deben existir alrededor del foco
@@ -53,4 +60,4 @@ src/
 - **Fase 3 (hecha):** store de Zustand (guardado en el navegador): batería, sensores, inventario, caja caída, modo reposo y recarga en la nave.
 - **Fase 4 (hecha):** interacción y crafteo escalonado: manos → hacha futurista → martillo de impacto, chatarra finita de la nave, rebrote de recursos, mochila con fabricación.
 - **Fase 5 (hecha):** clima con gameplay: despejado/ventoso/tormenta de arena/lluvia torrencial con transiciones; niebla, cielo, polvo y lluvia; sensores, batería, velocidad y viento en contra; la nave como refugio; limpiador sónico.
-- **Fase 6:** energía y refugios (paneles solares, construcción), y terreno infinito por chunks.
+- **Fase 6 (hecha):** construcción (panel solar, banco de baterías, refugio) con vista previa, red de energía, refugios contra clima y frío, celdas de energía, chunks generados por partes y terreno infinito (`?mundo=infinito`).

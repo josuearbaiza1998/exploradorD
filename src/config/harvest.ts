@@ -5,7 +5,7 @@ import type { ItemId, ToolId } from './items'
  * Progresión escalonada: manos → hacha → martillo. El metal NO sale de las
  * rocas: solo de la nave (scavenging).
  */
-export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel'
+export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel' | 'structure'
 
 export type HarvestDef = {
   label: string
@@ -85,5 +85,14 @@ export const HARVEST: Record<HarvestKind, HarvestDef> = {
     ],
     regrowHours: null,
     uses: 4,
+  },
+  // Estructuras propias: desmontarlas devuelve la mitad de los materiales.
+  structure: {
+    label: 'Estructura',
+    verb: 'Desmontar',
+    icon: '🔧',
+    hits: 3,
+    yields: [],
+    regrowHours: null,
   },
 }

@@ -19,3 +19,11 @@ export function getLayerChunk(layer: PropLayer, cx: number, cz: number): Matrix4
 }
 
 export const COLLIDABLE_LAYERS = PROP_LAYERS.filter((l) => l.colliderRadius !== undefined)
+
+/** Libera la caché de los chunks lejanos (terreno infinito: la memoria no crece sin límite). */
+export function pruneLayerCache(keepChunkKeys: Set<string>) {
+  for (const key of cache.keys()) {
+    const chunk = key.slice(key.indexOf('|') + 1)
+    if (!keepChunkKeys.has(chunk)) cache.delete(key)
+  }
+}

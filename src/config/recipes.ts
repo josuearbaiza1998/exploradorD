@@ -32,6 +32,7 @@ export const RECIPES: Recipe[] = [
     cost: { scrapMetal: 2, techParts: 2, fiber: 2 },
     station: 'ship',
   },
+  { id: 'cell', output: 'cell', amount: 1, cost: { scrapMetal: 2, techParts: 1 }, station: 'ship' },
 ]
 
 /** Distancia a la plataforma de la nave para usar el banco de trabajo. */

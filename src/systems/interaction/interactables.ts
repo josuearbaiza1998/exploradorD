@@ -3,6 +3,8 @@ import { PROP_LAYERS } from '@/config/propLayers'
 import type { InteractionTarget } from '@/store/slices/worldSlice'
 import { getLayerChunk } from '@/systems/propPlacement'
 import { getHeight } from '@/utils/terrain/heightfield'
+import { STRUCTURES } from '@/config/structures'
+import type { PlacedStructure } from '@/store/slices/structuresSlice'
 
 /** Alcance de interacción (m) medido desde el borde del objeto. */
 export const INTERACT_RANGE = 1.6
@@ -30,6 +32,7 @@ export function findTarget(
   pz: number,
   heading: number,
   harvested: Record<string, number>,
+  structures: PlacedStructure[] = [],
 ): InteractionTarget | null {
   const fx = Math.sin(heading)
   const fz = Math.cos(heading)
@@ -69,6 +72,11 @@ export function findTarget(
         }
       }
     }
+  }
+
+  // Estructuras propias (se pueden desmontar).
+  for (const st of structures) {
+    consider(`struct|${st.id}`, 'structure', st.x, getHeight(st.x, st.z), st.z, STRUCTURES[st.type].footprint * 0.6)
   }
 
   for (const n of SALVAGE_WORLD) {

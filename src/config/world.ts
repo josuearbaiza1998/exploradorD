@@ -20,8 +20,12 @@ export const CHUNK_VIEW_RADIUS = 5
  * Para terreno infinito en el futuro basta con poner `enabled: false`
  * y el ChunkManager seguirá generando chunks alrededor del jugador.
  */
+/** `?mundo=infinito` en la URL desactiva la isla y prueba el terreno infinito. */
+const INFINITE_WORLD =
+  typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mundo') === 'infinito'
+
 export const ISLAND = {
-  enabled: true,
+  enabled: !INFINITE_WORLD,
   radius: 210,
   shoreWidth: 45,
   seaLevel: -1.5,

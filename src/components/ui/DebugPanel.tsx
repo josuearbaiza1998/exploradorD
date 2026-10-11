@@ -5,6 +5,7 @@ import { getGame, useGameStore } from '@/store/gameStore'
 import { dayNumber, hourOfDay } from '@/store/slices/clockSlice'
 import { ambientTemperature } from '@/systems/worldClock'
 import { WEATHER, type WeatherId } from '@/config/weather'
+import { ISLAND } from '@/config/world'
 
 const SPEEDS = [1, 10, 60]
 
@@ -88,6 +89,27 @@ export function DebugPanel() {
             </button>
             <button onClick={() => g.addSensorDirt(0.35)}>Ensuciar</button>
             <button onClick={() => g.cleanSensors()}>Limpiar</button>
+            <button
+              onClick={() => {
+                g.addItem('wood', 10)
+                g.addItem('stone', 6)
+                g.addItem('fiber', 6)
+                g.addItem('scrapMetal', 8)
+                g.addItem('techParts', 6)
+              }}
+            >
+              + Construcción
+            </button>
+            <button
+              onClick={() => {
+                const url = new URL(window.location.href)
+                if (ISLAND.enabled) url.searchParams.set('mundo', 'infinito')
+                else url.searchParams.delete('mundo')
+                window.location.href = url.toString()
+              }}
+            >
+              {ISLAND.enabled ? 'Mundo infinito' : 'Volver a la isla'}
+            </button>
             <button
               onClick={() => {
                 if (!window.confirm('¿Borrar la partida guardada?')) return

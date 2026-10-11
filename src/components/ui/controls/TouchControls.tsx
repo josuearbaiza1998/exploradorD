@@ -1,5 +1,6 @@
 import { useKeyboardInput } from '@/hooks/useKeyboardInput'
 import { ActionButtons } from './ActionButtons'
+import { BuildControls } from './BuildControls'
 import { LookPad } from './LookPad'
 import { VirtualJoystick } from './VirtualJoystick'
 
@@ -11,6 +12,7 @@ export function TouchControls() {
       <LookPad />
       <VirtualJoystick />
       <ActionButtons />
+      <BuildControls />
     </div>
   )
 }

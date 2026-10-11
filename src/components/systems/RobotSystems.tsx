@@ -10,6 +10,7 @@ import { environment } from '@/systems/environmentState'
 import { findTarget } from '@/systems/interaction/interactables'
 import { player, teleportPlayer } from '@/systems/player'
 import { isSheltered } from '@/systems/shelter'
+import { energyStatus, updateEnergyGrid } from '@/systems/energyGrid'
 import { weatherState } from '@/systems/weatherState'
 import { wind } from '@/systems/wind'
 import { ambientTemperature } from '@/systems/worldClock'
@@ -49,6 +50,16 @@ export function RobotSystems() {
     const hour = hourOfDay(game.totalHours)
     game.tickModeTime(dt)
 
+    // Paneles solares y bancos de baterías construidos: los bancos se llenan
+    // aunque el robot esté lejos; solo se carga al robot si está activo.
+    const gridGain = updateEnergyGrid(
+      player.position.x,
+      player.position.z,
+      gameHours,
+      environment.palette.daylight * weatherState.solar,
+      game.mode === 'active',
+    )
+
     switch (game.mode) {
       case 'active': {
         // --- Batería crítica => emergencia (antes de sumar la carga solar del frame) ---
@@ -72,6 +83,7 @@ export function RobotSystems() {
         if (!sheltered) drain *= weatherState.drain
         const solar = ROBOT.solarCharge * environment.palette.daylight * weatherState.solar
         let delta = (solar - drain) * gameHours
+        delta += gridGain
         // Coste del salto: al despegar del suelo hacia arriba.
         if (lastGrounded.current && !player.grounded && player.velocity.y > 0) delta -= ROBOT.drain.jump
         lastGrounded.current = player.grounded
@@ -126,8 +138,8 @@ export function RobotSystems() {
 
     // --- Objetivo de recolección (lo que el robot tiene delante) ---
     game.setTarget(
-      game.mode === 'active' && !nearest
-        ? findTarget(player.position.x, player.position.z, player.heading, game.harvested)
+      game.mode === 'active' && !nearest && !game.build
+        ? findTarget(player.position.x, player.position.z, player.heading, game.harvested, game.structures)
         : null,
     )
 
@@ -146,7 +158,7 @@ export function RobotSystems() {
     robotBatteryMaterial.emissive.copy(c)
     const t = state.clock.elapsedTime
     robotBatteryMaterial.emissiveIntensity =
-      game.mode === 'recharging'
+      game.mode === 'recharging' || energyStatus.charging
         ? 0.6 + Math.sin(t * 4) * 0.4
         : b * 100 < ROBOT.batteryLow
           ? 0.4 + (Math.sin(t * 10) > 0 ? 0.8 : 0)

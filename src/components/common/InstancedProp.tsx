@@ -73,12 +73,14 @@ function InstancedPart({ part, matrices, castShadow }: { part: PropPart; matrice
     mesh.computeBoundingSphere()
   }, [matrices])
   if (matrices.length === 0) return null
+  // Capacidad redondeada por bloques: al cargar chunks nuevos el número de
+  // instancias cambia a menudo y así no se recrea el buffer en cada cambio.
+  const capacity = Math.ceil(matrices.length / 512) * 512
   return (
     <instancedMesh
-      // La key fuerza recrear el buffer si crece el número de instancias.
-      key={matrices.length}
+      key={capacity}
       ref={ref}
-      args={[part.geometry, part.material, matrices.length]}
+      args={[part.geometry, part.material, capacity]}
       castShadow={castShadow}
       receiveShadow
     />

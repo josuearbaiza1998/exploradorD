@@ -36,3 +36,6 @@ export const ROBOT = {
   /** Distancia para poder recoger la caja de inventario. */
   pickupRadius: 2.6,
 }
+
+/** Batería (%) que devuelve una celda de energía al usarla. */
+export const CELL_CHARGE = 25

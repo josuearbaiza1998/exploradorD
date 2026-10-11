@@ -36,6 +36,15 @@ export function performInteraction(): boolean {
   const hits = game.addHit(target.key)
   if (hits < def.hits) return true
 
+  // --- Estructura propia: desmontar y recuperar la mitad ---
+  if (target.kind === 'structure') {
+    const refund = game.dismantleStructure(target.key.replace('struct|', ''))
+    const text = (Object.entries(refund) as [keyof typeof ITEMS, number][]).map(([id, n]) => `+${n} ${ITEMS[id].icon}`).join('  ')
+    game.notify(text ? `Desmontado ${text}` : 'Desmontado', 'info')
+    game.resetHits(target.key)
+    return true
+  }
+
   // --- Completado: entregar recursos ---
   const gained: string[] = []
   let overflow = false
