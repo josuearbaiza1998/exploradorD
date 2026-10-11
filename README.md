@@ -61,3 +61,4 @@ src/
 - **Fase 4 (hecha):** interacción y crafteo escalonado: manos → hacha futurista → martillo de impacto, chatarra finita de la nave, rebrote de recursos, mochila con fabricación.
 - **Fase 5 (hecha):** clima con gameplay: despejado/ventoso/tormenta de arena/lluvia torrencial con transiciones; niebla, cielo, polvo y lluvia; sensores, batería, velocidad y viento en contra; la nave como refugio; limpiador sónico.
 - **Fase 6 (hecha):** construcción (panel solar, banco de baterías, refugio) con vista previa, red de energía, refugios contra clima y frío, celdas de energía, chunks generados por partes y terreno infinito (`?mundo=infinito`).
+- **Pulido visual (hecho):** robot animado (RobotExpressive, CC0) con mochila-caja, panel solar y gafas; caza estrellado procedural con humo denso; arbustos y árboles secos de ramas, rocas y mesas de arenisca en capas; contornos de cómic (inverted hull), polvo rasante y cielo más cálido. Créditos en `public/models/CREDITS.md`.

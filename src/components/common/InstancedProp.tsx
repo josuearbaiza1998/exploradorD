@@ -3,7 +3,8 @@ import { useGLTF } from '@react-three/drei'
 import { Matrix4, Mesh, type BufferGeometry, type InstancedMesh, type Material } from 'three'
 import { modelPath, type ModelId } from '@/assets/models'
 
-export type PropPart = { geometry: BufferGeometry; material: Material }
+/** `castShadow: false` en una parte concreta (p. ej. el contorno) anula el valor del prop. */
+export type PropPart = { geometry: BufferGeometry; material: Material; castShadow?: boolean }
 
 type Props = {
   id: ModelId
@@ -81,8 +82,8 @@ function InstancedPart({ part, matrices, castShadow }: { part: PropPart; matrice
       key={capacity}
       ref={ref}
       args={[part.geometry, part.material, capacity]}
-      castShadow={castShadow}
-      receiveShadow
+      castShadow={castShadow && part.castShadow !== false}
+      receiveShadow={part.castShadow !== false}
     />
   )
 }

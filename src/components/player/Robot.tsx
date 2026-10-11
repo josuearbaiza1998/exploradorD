@@ -12,8 +12,7 @@ import { player } from '@/systems/player'
 import { environment } from '@/systems/environmentState'
 import { weatherState } from '@/systems/weatherState'
 import { wind } from '@/systems/wind'
-import { HeldTool } from './HeldTool'
-import { RobotModel } from './RobotModel'
+import { ROBOT_RIGGED, RobotModel } from './RobotModel'
 
 const RUN_SPEED = 6.5
 /** Velocidad del piloto automático en modo emergencia (renqueante). */
@@ -94,7 +93,7 @@ export function Robot() {
       root.current.rotation.y = player.heading
     }
     // Animación procedural del placeholder: inclinación y balanceo al andar.
-    if (body.current) {
+    if (body.current && !ROBOT_RIGGED) {
       const t = state.clock.elapsedTime
       const run = Math.min(player.speed / RUN_SPEED, 1)
       // Emergencia/recarga: el robot se encorva ("modo reposo").
@@ -122,7 +121,6 @@ export function Robot() {
     <group ref={root} name="robot">
       <group ref={body}>
         <RobotModel />
-        <HeldTool />
       </group>
     </group>
   )

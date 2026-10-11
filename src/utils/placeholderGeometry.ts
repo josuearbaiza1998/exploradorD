@@ -1,12 +1,12 @@
 import {
   BoxGeometry,
   CylinderGeometry,
-  DodecahedronGeometry,
   IcosahedronGeometry,
   Matrix4,
   type BufferGeometry,
 } from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { deadBushGeometry, deadTreeGeometry, mesaGeometry, slabRockGeometry } from './desertGeometry'
 
 /**
  * Geometrías lowpoly temporales. Todas con el pivote en la base (y = 0)
@@ -45,12 +45,6 @@ export const palmCrownGeometry = (() => {
   return crown.translate(0.65, 7.4, 0)
 })()
 
-export const shrubGeometry = (() => {
-  const g = nonIndexed(new IcosahedronGeometry(0.7, 0))
-  g.scale(1.2, 0.7, 1.2)
-  return g.translate(0, 0.35, 0)
-})()
-
 export const cactusGeometry = (() => {
   const body = baseAligned(new CylinderGeometry(0.32, 0.38, 2.6, 6), 2.6)
   const armA = baseAligned(new CylinderGeometry(0.18, 0.2, 1.0, 5), 1.0).translate(0.55, 1.2, 0)
@@ -60,14 +54,22 @@ export const cactusGeometry = (() => {
   return mergeGeometries([body, armA, armB, joinA, joinB].map(nonIndexed))
 })()
 
-export const rockGeometry = (() => {
-  const g = nonIndexed(new DodecahedronGeometry(1, 0))
-  g.scale(1.3, 0.8, 1.0)
-  return g.translate(0, 0.45, 0)
+/** Roca de arenisca en capas (dos tonos alternos). Huella ~2 × 1.6 m, alto ~1.3 m. */
+export const rockGeometry = slabRockGeometry(5, 3, 2.1, 1.3)
+
+/** Mesa de arenisca: hito grande, no recolectable. */
+export const mesaRockGeometry = mesaGeometry()
+
+/** Arbusto seco de varas (recolectable a mano). */
+export const shrubGeometry = deadBushGeometry()
+
+/** Matojo verde y redondo del oasis. */
+export const oasisShrubGeometry = (() => {
+  const g = nonIndexed(new IcosahedronGeometry(0.7, 0))
+  g.scale(1.2, 0.7, 1.2)
+  return g.translate(0, 0.35, 0)
 })()
 
-export const smallTreeGeometry = {
-  trunk: baseAligned(new CylinderGeometry(0.12, 0.16, 1.4, 5), 1.4),
-  // Copa achatada tipo acacia (árbol pequeño que el robot puede romper a mano).
-  crown: nonIndexed(new IcosahedronGeometry(1, 0)).scale(1.3, 0.55, 1.3).translate(0, 1.75, 0),
-}
+/** Árbol seco pequeño: el robot lo puede romper sin herramientas. */
+const deadTree = deadTreeGeometry()
+export const smallTreeGeometry = { trunk: deadTree.trunk, crown: deadTree.branches }

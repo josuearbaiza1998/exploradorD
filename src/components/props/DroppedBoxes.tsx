@@ -3,7 +3,9 @@ import { useFrame } from '@react-three/fiber'
 import type { Mesh } from 'three'
 import { ModelSlot } from '@/components/common/ModelSlot'
 import { PALETTE } from '@/config/palette'
-import { MATERIALS, createToonMaterial } from '@/materials/toonMaterials'
+import { createToonMaterial } from '@/materials/toonMaterials'
+import { Outlined } from '@/components/common/Outlined'
+import { Backpack } from '@/components/player/Backpack'
 import { useGameStore } from '@/store/gameStore'
 import type { DroppedBox } from '@/store/slices/inventorySlice'
 
@@ -48,24 +50,18 @@ function InventoryBox({ box }: { box: DroppedBox }) {
       <ModelSlot
         id="inventoryBox"
         placeholder={
-          <group>
-            <mesh material={MATERIALS.shipHull} position-y={0.35} castShadow receiveShadow>
-              <boxGeometry args={[0.9, 0.7, 0.65]} />
-            </mesh>
-            <mesh material={MATERIALS.shipAccent} position-y={0.35}>
-              <boxGeometry args={[0.94, 0.14, 0.69]} />
-            </mesh>
-            {/* Antena de la baliza */}
-            <mesh material={MATERIALS.shipDark} position={[0.3, 0.95, 0.2]}>
-              <boxGeometry args={[0.04, 0.5, 0.04]} />
-            </mesh>
+          // La misma mochila que lleva el robot: el jugador la reconoce al buscarla.
+          <group position={[0, 0.29, 0.19]} scale={0.8}>
+            <Outlined thickness={0.03}>
+              <Backpack battery={false} />
+            </Outlined>
           </group>
         }
       />
-      <mesh ref={beacon} material={beaconMat} position={[0.3, 1.22, 0.2]}>
+      <mesh ref={beacon} material={beaconMat} position={[-0.18, 1.0, -0.1]}>
         <icosahedronGeometry args={[0.09, 0]} />
       </mesh>
-      <mesh ref={beam} material={beamMat} position={[0.3, 12, 0.2]} renderOrder={2}>
+      <mesh ref={beam} material={beamMat} position={[-0.18, 12, -0.1]} renderOrder={2}>
         <cylinderGeometry args={[0.12, 0.12, 22, 6, 1, true]} />
       </mesh>
     </group>

@@ -51,7 +51,12 @@ export const MATERIALS = {
   shrubDry: createToonMaterial({ color: PALETTE.shrubDry, flatShading: true, bands: 2 }),
   shrubGreen: createToonMaterial({ color: PALETTE.shrubGreen, flatShading: true, bands: 2 }),
   cactus: createToonMaterial({ color: PALETTE.cactus, flatShading: true }),
-  rock: createToonMaterial({ color: PALETTE.rockRed, flatShading: true }),
+  rock: createToonMaterial({ color: PALETTE.sandstoneLight, flatShading: true }),
+  rockBand: createToonMaterial({ color: PALETTE.sandstone, flatShading: true }),
+  mesa: createToonMaterial({ color: PALETTE.sandstone, flatShading: true }),
+  mesaBand: createToonMaterial({ color: PALETTE.sandstoneDark, flatShading: true }),
+  deadWood: createToonMaterial({ color: PALETTE.deadWood, flatShading: true, bands: 2 }),
+  deadWoodLight: createToonMaterial({ color: PALETTE.deadWoodLight, flatShading: true, bands: 2 }),
   robot: createToonMaterial({ color: PALETTE.robot }),
   robotAccent: createToonMaterial({ color: PALETTE.robotAccent, emissive: PALETTE.robotAccent, emissiveIntensity: 0.6 }),
 }

@@ -8,7 +8,7 @@ import { oasisProximity, type ScatterRule } from '@/utils/scatter'
  * React): las usan tanto el render (<Vegetation/>) como la física
  * (colisiones), así lo que se ve y lo que bloquea son siempre lo mismo.
  */
-export type PropLayerId = 'palms' | 'oasisShrubs' | 'dryShrubs' | 'smallTrees' | 'cacti' | 'rocks'
+export type PropLayerId = 'palms' | 'oasisShrubs' | 'dryShrubs' | 'smallTrees' | 'cacti' | 'rocks' | 'mesas'
 
 export type PropLayer = {
   id: PropLayerId
@@ -62,7 +62,7 @@ export const PROP_LAYERS: PropLayer[] = [
       probability: (x, z) => 0.22 * (1 - oasisProximity(x, z, 2.5)),
       maxSlope: 0.45,
       maxHeight: 14,
-      scale: [0.5, 1.0],
+      scale: [0.9, 1.6],
     },
   },
   {
@@ -110,5 +110,21 @@ export const PROP_LAYERS: PropLayer[] = [
     },
     colliderRadius: 1.05,
     colliderHeight: 1.25,
+  },
+  {
+    // Mesas de arenisca en capas: siluetas grandes que rompen el horizonte.
+    // No se pueden minar; sirven de referencia visual y de cobijo del viento.
+    id: 'mesas',
+    model: 'mesa',
+    rule: {
+      seed: 7,
+      cellsPerSide: 2,
+      probability: (x, z) => 0.16 * (1 - oasisProximity(x, z, 3)),
+      maxSlope: 0.35,
+      scale: [0.7, 1.4],
+      tilt: 0.04,
+    },
+    colliderRadius: 4.2,
+    colliderHeight: 7,
   },
 ]

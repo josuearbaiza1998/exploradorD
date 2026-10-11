@@ -27,4 +27,18 @@ export const PALETTE = {
 
   robot: '#e8eef4',
   robotAccent: '#3ad0ff',
+  /** Robot del .glb: metal gastado por la arena. */
+  robotMetal: '#b9b4a8',
+  robotJoint: '#6b6d70',
+  robotDark: '#2c2b2d',
+  backpack: '#6f5a3c',
+  solarCell: '#1d3b7a',
+
+  deadWood: '#7a5a3e',
+  deadWoodLight: '#a58360',
+  sandstone: '#d08a4f',
+  sandstoneLight: '#e7a96a',
+  sandstoneDark: '#9c5733',
+  smokeDark: '#2e241f',
+  outline: '#2a1a12',
 } as const

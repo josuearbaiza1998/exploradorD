@@ -9,9 +9,10 @@ if (import.meta.env.DEV) {
     import('./store/gameStore'),
     import('./systems/player'),
     import('./systems/interaction/interactables'),
-  ]).then(([store, p, inter]) => {
+    import('./systems/cameraRig'),
+  ]).then(([store, p, inter, cam]) => {
     Object.assign(window, {
-      __game: { getGame: store.getGame, player: p.player, teleport: p.teleportPlayer, salvage: inter.SALVAGE_WORLD },
+      __game: { getGame: store.getGame, player: p.player, teleport: p.teleportPlayer, salvage: inter.SALVAGE_WORLD, camera: cam.cameraRig },
     })
   })
 }

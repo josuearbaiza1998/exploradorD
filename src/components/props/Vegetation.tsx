@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { Matrix4, MeshToonMaterial } from 'three'
+import type { BufferGeometry, Matrix4, MeshToonMaterial } from 'three'
 import { InstancedProp, type PropPart } from '@/components/common/InstancedProp'
 import { PROP_LAYERS, type PropLayer, type PropLayerId } from '@/config/propLayers'
 import { getLayerChunk } from '@/systems/propPlacement'
@@ -9,10 +9,13 @@ import { useVisibleChunks } from '@/hooks/useVisibleChunks'
 import { isChunkReady, useChunkVersion } from '@/systems/chunkStreamer'
 import { MATERIALS } from '@/materials/toonMaterials'
 import { applyWindSway } from '@/materials/windSway'
+import { ensureOutlineNormals, outlineMaterial } from '@/materials/outline'
 import {
   cactusGeometry,
   palmCrownGeometry,
   palmTrunkGeometry,
+  mesaRockGeometry,
+  oasisShrubGeometry,
   rockGeometry,
   shrubGeometry,
   smallTreeGeometry,
@@ -23,25 +26,38 @@ import {
 const toonClone = (m: MeshToonMaterial) => Object.assign(m.clone(), { flatShading: true })
 const swayLeaf = applyWindSway(toonClone(MATERIALS.palmLeaf), 0.06)
 const swayTrunk = applyWindSway(toonClone(MATERIALS.palmTrunk), 0.06)
-const swayShrubDry = applyWindSway(toonClone(MATERIALS.shrubDry), 0.5)
+const swayShrubDry = applyWindSway(toonClone(MATERIALS.deadWoodLight), 0.35)
 const swayShrubGreen = applyWindSway(toonClone(MATERIALS.shrubGreen), 0.18)
 // Tronco y copa de un mismo árbol comparten flexión: si no, la copa se separa con viento fuerte.
-const swayTreeTrunk = applyWindSway(toonClone(MATERIALS.palmTrunk), 0.09)
-const swayTreeCrown = applyWindSway(toonClone(MATERIALS.shrubDry), 0.09)
+const swayTreeTrunk = applyWindSway(toonClone(MATERIALS.deadWood), 0.09)
+const swayTreeCrown = applyWindSway(toonClone(MATERIALS.deadWood), 0.09)
+
+/** Contorno de cómic para props instanciados grandes (rocas, mesas). */
+const outlined = (geometries: BufferGeometry[], thickness: number): PropPart[] =>
+  geometries.map((g) => ({ geometry: ensureOutlineNormals(g), material: outlineMaterial(thickness), castShadow: false }))
 
 const PARTS: Record<PropLayerId, PropPart[]> = {
   palms: [
     { geometry: palmTrunkGeometry, material: swayTrunk },
     { geometry: palmCrownGeometry, material: swayLeaf },
   ],
-  oasisShrubs: [{ geometry: shrubGeometry, material: swayShrubGreen }],
+  oasisShrubs: [{ geometry: oasisShrubGeometry, material: swayShrubGreen }],
   dryShrubs: [{ geometry: shrubGeometry, material: swayShrubDry }],
   smallTrees: [
     { geometry: smallTreeGeometry.trunk, material: swayTreeTrunk },
     { geometry: smallTreeGeometry.crown, material: swayTreeCrown },
   ],
-  cacti: [{ geometry: cactusGeometry, material: MATERIALS.cactus }],
-  rocks: [{ geometry: rockGeometry, material: MATERIALS.rock }],
+  cacti: [{ geometry: cactusGeometry, material: MATERIALS.cactus }, ...outlined([cactusGeometry], 0.035)],
+  rocks: [
+    { geometry: rockGeometry[0], material: MATERIALS.rock },
+    { geometry: rockGeometry[1], material: MATERIALS.rockBand },
+    ...outlined(rockGeometry, 0.05),
+  ],
+  mesas: [
+    { geometry: mesaRockGeometry[0], material: MATERIALS.mesa },
+    { geometry: mesaRockGeometry[1], material: MATERIALS.mesaBand },
+    ...outlined(mesaRockGeometry, 0.08),
+  ],
 }
 
 function layerMatrices(

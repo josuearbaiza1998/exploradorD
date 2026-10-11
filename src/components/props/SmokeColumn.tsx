@@ -6,9 +6,9 @@ import { createToonMaterial } from '@/materials/toonMaterials'
 import { environment } from '@/systems/environmentState'
 import { wind } from '@/systems/wind'
 
-const PUFFS = 36
+const PUFFS = 56
 const MAX_HEIGHT = 85
-const RISE_SPEED = 0.045 // ciclos por segundo
+const RISE_SPEED = 0.04 // ciclos por segundo
 
 /**
  * Columna de humo de la nave: el FARO principal del mundo.
@@ -19,17 +19,24 @@ const RISE_SPEED = 0.045 // ciclos por segundo
 export function SmokeColumn({ position }: { position: [number, number, number] }) {
   const ref = useRef<InstancedMesh>(null)
   const dummy = useMemo(() => new Object3D(), [])
-  const geometry = useMemo(() => new IcosahedronGeometry(1, 0), [])
+  const geometry = useMemo(() => new IcosahedronGeometry(1, 1), [])
   const material = useMemo(
-    () => createToonMaterial({ color: '#ffffff', flatShading: true, fog: false, transparent: true, opacity: 0.95 }),
+    () => createToonMaterial({ color: '#ffffff', flatShading: true, fog: false, bands: 2 }),
     [],
   )
   const seeds = useMemo(
-    () => Array.from({ length: PUFFS }, (_, i) => ({ phase: i / PUFFS, jx: Math.sin(i * 12.9898) * 0.5, jz: Math.cos(i * 78.233) * 0.5 })),
+    () =>
+      Array.from({ length: PUFFS }, (_, i) => ({
+        phase: i / PUFFS,
+        jx: Math.sin(i * 12.9898) * 0.7,
+        jz: Math.cos(i * 78.233) * 0.7,
+        size: 0.75 + ((i * 0.618) % 1) * 0.5,
+      })),
     [],
   )
-  const dark = useMemo(() => new Color(PALETTE.smoke), [])
-  const light = useMemo(() => new Color('#c9c4c0'), [])
+  // Humo denso de combustible: casi negro abajo, pardo grisáceo arriba (como el concept).
+  const dark = useMemo(() => new Color(PALETTE.smokeDark), [])
+  const light = useMemo(() => new Color('#8a7d72'), [])
   const tmp = useMemo(() => new Color(), [])
 
   useLayoutEffect(() => {
@@ -49,14 +56,20 @@ export function SmokeColumn({ position }: { position: [number, number, number] }
       const life = (t * RISE_SPEED + s.phase) % 1
       const y = life * MAX_HEIGHT
       const drift = life * life * 40 * (0.4 + wind.strength)
-      dummy.position.set(s.jx * (1 + life * 6) + wind.dirX * drift, y, s.jz * (1 + life * 6) + wind.dirZ * drift)
-      const grow = 1.6 + life * 9
+      // Ondulación lenta: el humo "hierve" en lugar de subir en línea recta.
+      const billow = Math.sin(t * 0.7 + i * 1.7) * (0.5 + life * 3)
+      dummy.position.set(
+        s.jx * (1 + life * 7) + wind.dirX * drift + billow,
+        y,
+        s.jz * (1 + life * 7) + wind.dirZ * drift + Math.cos(t * 0.6 + i) * life * 2,
+      )
+      const grow = (1.8 + life * 12) * s.size
       const fade = life > 0.85 ? 1 - (life - 0.85) / 0.15 : Math.min(1, life * 8)
       dummy.scale.setScalar(grow * fade)
       dummy.rotation.set(life * 3 + i, life * 2, i)
       dummy.updateMatrix()
       mesh.setMatrixAt(i, dummy.matrix)
-      tmp.copy(dark).lerp(light, Math.min(1, life * 1.3 + nightLift * 0.3))
+      tmp.copy(dark).lerp(light, Math.min(1, life * 1.1 + nightLift * 0.35))
       mesh.setColorAt(i, tmp)
     }
     mesh.instanceMatrix.needsUpdate = true
@@ -69,7 +82,6 @@ export function SmokeColumn({ position }: { position: [number, number, number] }
       args={[geometry, material, PUFFS]}
       position={position}
       frustumCulled={false}
-      castShadow
     />
   )
 }

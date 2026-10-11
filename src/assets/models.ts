@@ -6,13 +6,14 @@
  * (ej. '/models/ship.glb'). No hay que tocar ningún componente.
  */
 export const MODEL_PATHS = {
-  robot: null,
+  robot: '/models/robot.glb',
   crashedShip: null,
   palmTree: null,
   shrub: null,
   smallTree: null,
   cactus: null,
   rock: null,
+  mesa: null,
   inventoryBox: null,
   solarPanel: null,
   batteryBank: null,
