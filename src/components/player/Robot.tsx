@@ -17,6 +17,8 @@ import { ROBOT_RIGGED, RobotModel } from './RobotModel'
 
 const RUN_SPEED = 6.5
 const BASE_JUMP = MOTOR_CONFIG.jumpSpeed
+/** Segundos con el stick al máximo para activar el sprint. */
+const SPRINT_HOLD = 3
 /** Velocidad del piloto automático en modo emergencia (renqueante). */
 const AUTOPILOT_SPEED = 2.4
 const ACCELERATION = 10
@@ -34,6 +36,7 @@ export function Robot() {
   const root = useRef<Group>(null)
   const body = useRef<Group>(null)
   const wish = useRef({ x: 0, z: 0 })
+  const sprintSince = useRef(-1)
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05)
@@ -55,8 +58,16 @@ export function Robot() {
       const headwind = len > 0 ? Math.max(0, -(dirX * wind.dirX + dirZ * wind.dirZ) / len) : 0
       const storm = Math.max(0, wind.strength - 0.6) * 2.5
       const fx = upgradeEffects(getGame().upgrades)
+      // Sprint: stick al máximo durante SPRINT_HOLD segundos; al soltarlo se corta.
+      const full = Math.hypot(move.x, move.y) >= 0.97
+      // Reloj real (no el dt recortado): 3 s son 3 s aunque el móvil vaya a pocos fps.
+      const now = performance.now() / 1000
+      if (!full) sprintSince.current = -1
+      else if (sprintSince.current < 0) sprintSince.current = now
+      player.sprintCharge = sprintSince.current < 0 ? 0 : Math.min(1, (now - sprintSince.current) / SPRINT_HOLD)
+      player.sprinting = player.sprintCharge >= 1
       MOTOR_CONFIG.jumpSpeed = BASE_JUMP * fx.jump
-      const speed = RUN_SPEED * fx.speed * (environment.sheltered ? 1 : weatherState.speed) * (1 - headwind * storm * 0.35)
+      const speed = RUN_SPEED * fx.speed * (player.sprinting ? fx.sprint : 1) * (environment.sheltered ? 1 : weatherState.speed) * (1 - headwind * storm * 0.35)
       targetX = dirX * speed
       targetZ = dirZ * speed
       // Las ráfagas fuertes empujan al robot (sensación de tormenta).
@@ -66,6 +77,9 @@ export function Robot() {
       }
       jump = consumeJump()
     } else {
+      player.sprintCharge = 0
+      player.sprinting = false
+      sprintSince.current = -1
       consumeJump() // descartar pulsaciones durante la emergencia
       if (mode === 'returning') {
         // Piloto automático: se dirige a la plataforma de recarga de la nave.

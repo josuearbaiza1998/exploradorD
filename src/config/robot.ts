@@ -16,6 +16,8 @@ export const ROBOT = {
     moving: 2.2,
     /** Coste fijo por salto (%). */
     jump: 0.15,
+    /** Extra mientras se esprinta (%/h). */
+    sprint: 1.8,
     /** Visión nocturna encendida (%/h). */
     nightVision: 0.5,
     /** Multiplicador cuando la temperatura baja de 0 °C (frío nocturno). */

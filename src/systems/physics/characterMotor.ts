@@ -26,7 +26,7 @@ export interface CharacterMotor {
 export const MOTOR_CONFIG = {
   radius: 0.45,
   gravity: 24,
-  jumpSpeed: 7.5,
+  jumpSpeed: 9.6,
   /** Pendiente máxima subible (1 = 45°). */
   maxSlope: 1.05,
   /** Profundidad de agua a partir de la cual el robot no entra (no es sumergible). */

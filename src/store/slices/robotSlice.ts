@@ -19,7 +19,8 @@ export type RobotSlice = {
   mode: RobotMode
   /** Segundos reales desde que empezó el modo actual (para las transiciones). */
   modeTime: number
-  recharge: { startHours: number; startBattery: number } | null
+  /** voluntary: el jugador eligió cargar en la nave (puede detenerlo). */
+  recharge: { startHours: number; startBattery: number; voluntary?: boolean } | null
   /** Última posición conocida (para guardar la partida). */
   lastPosition: [number, number, number] | null
 
@@ -29,7 +30,9 @@ export type RobotSlice = {
   cleanSensors: (amount?: number) => void
   setMode: (mode: RobotMode) => void
   tickModeTime: (realDelta: number) => void
-  startRecharge: () => void
+  startRecharge: (voluntary?: boolean) => void
+  /** Detiene una carga voluntaria y conserva lo cargado. */
+  stopRecharge: () => void
   finishRecharge: () => void
   savePosition: (p: [number, number, number]) => void
 }
@@ -48,13 +51,14 @@ export const createRobotSlice: StateCreator<GameState, [], [], RobotSlice> = (se
   cleanSensors: (amount = 1) => set((s) => ({ sensorDirt: clamp(s.sensorDirt - amount, 0, 1) })),
   setMode: (mode) => set({ mode, modeTime: 0 }),
   tickModeTime: (realDelta) => set((s) => ({ modeTime: s.modeTime + realDelta })),
-  startRecharge: () =>
+  startRecharge: (voluntary = false) =>
     set({
       mode: 'recharging',
       modeTime: 0,
-      recharge: { startHours: get().totalHours, startBattery: get().battery },
+      recharge: { startHours: get().totalHours, startBattery: get().battery, voluntary },
       timeBoost: ROBOT.rechargeTimeScale,
     }),
   finishRecharge: () => set({ mode: 'active', modeTime: 0, recharge: null, battery: ROBOT.batteryMax, timeBoost: 1 }),
+  stopRecharge: () => set({ mode: 'active', modeTime: 0, recharge: null, timeBoost: 1 }),
   savePosition: (lastPosition) => set({ lastPosition }),
 })

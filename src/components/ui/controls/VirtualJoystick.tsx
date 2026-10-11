@@ -1,4 +1,5 @@
-import { useRef, type PointerEvent } from 'react'
+import { useEffect, useRef, type PointerEvent } from 'react'
+import { player } from '@/systems/player'
 import { input } from '@/systems/input'
 
 const RADIUS = 56
@@ -14,6 +15,20 @@ export function VirtualJoystick() {
   const knob = useRef<HTMLDivElement>(null)
   const pointerId = useRef<number | null>(null)
   const origin = useRef({ x: 0, y: 0 })
+
+  // Anillo de sprint: se llena con el stick al máximo y brilla al activarse.
+  useEffect(() => {
+    let raf = 0
+    const loop = () => {
+      raf = requestAnimationFrame(loop)
+      const el = base.current
+      if (!el) return
+      el.style.setProperty('--sprint', String(player.sprintCharge))
+      el.classList.toggle('sprinting', player.sprinting)
+    }
+    loop()
+    return () => cancelAnimationFrame(raf)
+  }, [])
 
   const setVisual = (show: boolean, bx = 0, by = 0, kx = 0, ky = 0) => {
     if (!base.current || !knob.current) return
@@ -50,8 +65,10 @@ export function VirtualJoystick() {
     }
     const mag = Math.min(len / RADIUS, 1)
     const scaled = mag < DEADZONE ? 0 : (mag - DEADZONE) / (1 - DEADZONE)
-    const nx = len > 0 ? dx / Math.max(len, 1e-6) : 0
-    const ny = len > 0 ? dy / Math.max(len, 1e-6) : 0
+    // Dirección unitaria (dx/dy ya están recortados al radio: dividir por su propia longitud).
+    const clampedLen = Math.hypot(dx, dy)
+    const nx = clampedLen > 0 ? dx / clampedLen : 0
+    const ny = clampedLen > 0 ? dy / clampedLen : 0
     input.joystick.x = nx * scaled
     input.joystick.y = -ny * scaled // pantalla hacia arriba = adelante
     setVisual(true, origin.current.x, origin.current.y, dx, dy)

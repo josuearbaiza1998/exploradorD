@@ -82,6 +82,7 @@ export function RobotSystems() {
         const fx = upgradeEffects(game.upgrades)
         let drain = ROBOT.drain.idle + ROBOT.drain.moving * effort * fx.movingDrain
         if (game.nightVisionOn) drain += ROBOT.drain.nightVision
+        if (player.sprinting) drain += ROBOT.drain.sprint * fx.movingDrain
         if (ambientTemperature(hour) < 0 && !sheltered) drain *= ROBOT.drain.coldMultiplier
         if (!sheltered) drain *= weatherState.drain
         // Más capacidad = el mismo consumo baja menos el porcentaje.
@@ -121,7 +122,9 @@ export function RobotSystems() {
       case 'recharging': {
         const r = game.recharge
         if (!r) break
-        const progress = (game.totalHours - r.startHours) / ROBOT.rechargeHours
+        // La duración es proporcional a lo que falta (cargar desde 80 % es más rápido).
+        const hours = Math.max(0.25, (ROBOT.rechargeHours * (ROBOT.batteryMax - r.startBattery)) / ROBOT.batteryMax)
+        const progress = (game.totalHours - r.startHours) / hours
         game.setBattery(r.startBattery + (ROBOT.batteryMax - r.startBattery) * Math.min(progress, 1))
         if (progress >= 1) game.finishRecharge()
         break

@@ -24,6 +24,9 @@ export const player = {
   teleportId: 0,
   /** Momento (s, performance.now) del último golpe/acción, para la animación. */
   actionAt: -10,
+  /** Sprint: carga 0..1 mientras el stick está al máximo; a 1 se activa. */
+  sprintCharge: 0,
+  sprinting: false,
 }
 
 export function teleportPlayer(x: number, z: number, heading?: number) {

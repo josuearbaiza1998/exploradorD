@@ -31,8 +31,8 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
     name: 'Piernas',
     icon: '🦿',
     levels: [
-      { description: '+10 % velocidad, salto más alto, -15 % gasto al correr', cost: { wood: 5, fiber: 3 } },
-      { description: '+20 % velocidad, salto más alto, -30 % gasto al correr', cost: { wood: 4, stone: 3, scrapMetal: 2 } },
+      { description: '+10 % velocidad, sprint más rápido, salto más alto, -15 % gasto al correr', cost: { wood: 5, fiber: 3 } },
+      { description: '+20 % velocidad, sprint aún más rápido, salto más alto, -30 % gasto al correr', cost: { wood: 4, stone: 3, scrapMetal: 2 } },
     ],
   },
   solar: {
@@ -80,6 +80,8 @@ export function upgradeEffects(u: UpgradeLevels) {
     /** Divide todo el consumo (más capacidad con la misma carga en %). */
     capacity: 1 + 0.3 * lv('battery'),
     speed: 1 + 0.1 * lv('legs'),
+    /** Multiplicador de velocidad al esprintar (disponible desde el principio). */
+    sprint: 1.45 + 0.12 * lv('legs'),
     jump: 1 + 0.12 * lv('legs'),
     movingDrain: 1 - 0.15 * lv('legs'),
     solar: 1 + 0.5 * lv('solar'),

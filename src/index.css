@@ -549,3 +549,45 @@ html, body, #root, .app {
 .install-ok { font: inherit; font-weight: 600; color: #fff; border: none; border-radius: 10px; padding: 7px 16px; background: var(--hud-orange); }
 
 @keyframes charge-sweep { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+/* ---------- Sprint y recarga ---------- */
+.joystick-base::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: conic-gradient(var(--hud-orange) calc(var(--sprint, 0) * 360deg), transparent 0);
+  -webkit-mask: radial-gradient(circle, transparent 62%, #000 63%);
+  mask: radial-gradient(circle, transparent 62%, #000 63%);
+  opacity: calc(var(--sprint, 0) * 0.9);
+  pointer-events: none;
+}
+.joystick-base.sprinting::after { background: var(--hud-orange); opacity: 1; filter: drop-shadow(0 0 6px var(--hud-orange)); }
+.joystick-base.sprinting .joystick-knob { background: rgba(255, 170, 110, 0.9); }
+
+.recharge-btn {
+  align-self: center;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(58, 208, 255, 0.8);
+  background: rgba(20, 90, 130, 0.7);
+  box-shadow: 0 0 12px rgba(58, 208, 255, 0.5);
+  white-space: nowrap;
+}
+.recharge-label { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.recharge-stop {
+  pointer-events: auto;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 10px;
+  padding: 6px 14px;
+  background: rgba(12, 16, 38, 0.7);
+}
+.recharge-label { z-index: 4; }

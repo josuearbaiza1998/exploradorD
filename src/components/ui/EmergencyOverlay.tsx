@@ -1,5 +1,5 @@
 import { ROBOT } from '@/config/robot'
-import { useGameStore } from '@/store/gameStore'
+import { getGame, useGameStore } from '@/store/gameStore'
 
 /**
  * Efectos de pantalla del estado de energía:
@@ -9,6 +9,7 @@ import { useGameStore } from '@/store/gameStore'
 export function EmergencyOverlay() {
   const mode = useGameStore((s) => s.mode)
   const battery = useGameStore((s) => Math.round(s.battery))
+  const voluntary = useGameStore((s) => !!s.recharge?.voluntary)
 
   const low = mode === 'active' && battery < ROBOT.batteryLow
   return (
@@ -26,8 +27,15 @@ export function EmergencyOverlay() {
       )}
       {mode === 'recharging' && (
         <>
-          <div className="recharge-fade-in" />
-          <div className="recharge-label">Recargando · {battery}%</div>
+          {!voluntary && <div className="recharge-fade-in" />}
+          <div className="recharge-label">
+            Recargando · {battery}%
+            {voluntary && (
+              <button className="recharge-stop" onClick={() => getGame().stopRecharge()}>
+                Detener
+              </button>
+            )}
+          </div>
         </>
       )}
     </>
