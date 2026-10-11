@@ -81,6 +81,13 @@ export function performInteraction(): boolean {
   }
   if (overflow) game.notify('Inventario lleno para ese recurso', 'warn')
 
+  // --- Hallazgos del clima: desaparecen al recogerlos ---
+  if (target.key.startsWith('find|')) {
+    game.removeFind(target.key.slice(5))
+    game.resetHits(target.key)
+    return true
+  }
+
   // --- Puntos de chatarra con usos limitados ---
   if (def.uses !== undefined) {
     const id = target.key.replace('ship|', '')

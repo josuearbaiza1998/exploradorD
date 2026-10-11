@@ -5,7 +5,7 @@ import type { ItemId, ToolId } from './items'
  * Progresión escalonada: manos → hacha → martillo. El metal NO sale de las
  * rocas: solo de la nave (scavenging).
  */
-export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel' | 'structure' | 'cache'
+export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel' | 'structure' | 'cache' | 'buried' | 'bloom'
 
 export type HarvestDef = {
   label: string
@@ -95,6 +95,33 @@ export const HARVEST: Record<HarvestKind, HarvestDef> = {
     uses: 4,
   },
   // Contenedor de un lugar por descubrir: se abre una sola vez (botín en config/pois.ts).
+  // Restos que deja al descubierto una tormenta de arena.
+  buried: {
+    material: 'stone',
+    label: 'Restos desenterrados',
+    verb: 'Excavar',
+    icon: '⛏️',
+    hits: 2,
+    yields: [
+      { item: 'scrapMetal', min: 1, max: 2 },
+      { item: 'techParts', min: 0, max: 1 },
+      { item: 'cell', min: 0, max: 1 },
+    ],
+    regrowHours: null,
+  },
+  // Flor del desierto: brota alrededor del oasis tras la lluvia.
+  bloom: {
+    material: 'plant',
+    label: 'Flor del desierto',
+    verb: 'Recoger',
+    icon: '🌸',
+    hits: 1,
+    yields: [
+      { item: 'fiber', min: 2, max: 3 },
+      { item: 'cloth', min: 0, max: 1 },
+    ],
+    regrowHours: null,
+  },
   cache: {
     material: 'metal',
     label: 'Contenedor',

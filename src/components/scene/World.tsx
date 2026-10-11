@@ -1,8 +1,11 @@
 import { DayNightCycle } from '@/components/environment/DayNightCycle'
 import { Lighting } from '@/components/environment/Lighting'
 import { AudioSystem } from '@/components/systems/AudioSystem'
+import { Finds } from '@/components/props/Finds'
+import { WeatherRewards } from '@/components/systems/WeatherRewards'
 import { Pois } from '@/components/props/Pois'
 import { HitEffects } from '@/components/props/HitEffects'
+import { Fauna } from '@/components/environment/Fauna'
 import { Clouds } from '@/components/environment/Clouds'
 import { SkyDome } from '@/components/environment/SkyDome'
 import { ChargingPad } from '@/components/props/ChargingPad'
@@ -18,6 +21,7 @@ import { Vegetation } from '@/components/props/Vegetation'
 import { Weather } from '@/components/weather/Weather'
 import { Sea } from '@/components/terrain/Sea'
 import { Terrain } from '@/components/terrain/Terrain'
+import { Footprints } from '@/components/player/Footprints'
 import { Robot } from '@/components/player/Robot'
 import { ThirdPersonCamera } from '@/components/player/ThirdPersonCamera'
 
@@ -28,6 +32,7 @@ export function World() {
       <DayNightCycle />
       <RobotSystems />
       <AudioSystem />
+      <WeatherRewards />
       <SkyDome />
       <Clouds />
       <Lighting />
@@ -43,11 +48,14 @@ export function World() {
       <InteractionHighlight />
       <HitEffects />
       <Pois />
+      <Finds />
       <Structures />
       <BuildGhost />
       <Oasis />
       <Vegetation />
+      <Fauna />
       <Robot />
+      <Footprints />
       <ThirdPersonCamera />
     </>
   )

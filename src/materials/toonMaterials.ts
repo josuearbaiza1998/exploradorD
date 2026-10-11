@@ -31,8 +31,8 @@ export function sharedToon(color: string, opts: { bands?: 2 | 3; emissive?: stri
     mat = createToonMaterial({
       color: new Color(color),
       bands: opts.bands,
-      emissive: opts.emissive ? new Color(opts.emissive) : undefined,
-      emissiveIntensity: opts.emissiveIntensity,
+      // Solo claves definidas: three avisa si se le pasan valores undefined.
+      ...(opts.emissive ? { emissive: new Color(opts.emissive), emissiveIntensity: opts.emissiveIntensity ?? 1 } : {}),
     })
     cache.set(key, mat)
   }

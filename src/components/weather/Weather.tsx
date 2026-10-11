@@ -1,3 +1,4 @@
+import { DustDevils } from './DustDevils'
 import { DustParticles } from './DustParticles'
 import { GroundDust } from './GroundDust'
 import { GroundMist } from './GroundMist'
@@ -11,6 +12,7 @@ export function Weather() {
       <GroundDust />
       <GroundMist />
       <RainParticles />
+      <DustDevils />
     </>
   )
 }

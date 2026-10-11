@@ -32,6 +32,7 @@ export function Compass() {
   const boxes = useGameStore((s) => s.droppedBoxes)
   const discovered = useGameStore((s) => s.discovered)
   const looted = useGameStore((s) => s.looted)
+  const finds = useGameStore((s) => s.finds)
 
   useEffect(() => {
     let raf = 0
@@ -82,6 +83,14 @@ export function Compass() {
           <span className="cmp-dist" />
         </span>
       ))}
+      {finds
+        .filter((f) => f.kind === 'buried')
+        .map((f) => (
+          <span key={f.id} className="cmp-marker poi" data-bearing="0" data-x={f.x} data-z={f.z}>
+            <span className="cmp-icon">⛏️</span>
+            <span className="cmp-dist" />
+          </span>
+        ))}
       {boxes.map((b) => (
         <span key={b.id} className="cmp-marker box" data-bearing="0" data-x={b.position[0]} data-z={b.position[2]}>
           <span className="cmp-icon">🎒</span>

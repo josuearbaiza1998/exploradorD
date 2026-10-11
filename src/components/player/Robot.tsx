@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import type { Group } from 'three'
 import { CHARGING_PAD } from '@/config/world'
 import { MATERIALS } from '@/materials/toonMaterials'
+import { PALETTE } from '@/config/palette'
 import { getGame } from '@/store/gameStore'
 import { cameraAxes } from '@/systems/cameraRig'
 import { focus } from '@/systems/focus'
@@ -21,6 +22,10 @@ const BASE_JUMP = MOTOR_CONFIG.jumpSpeed
 const SPRINT_HOLD = 3
 /** Velocidad del piloto automático en modo emergencia (renqueante). */
 const AUTOPILOT_SPEED = 2.4
+/** Batería (%) bajo la que las gafas parpadean en rojo. */
+const LOW_LENS_BELOW = 15
+/** Batería (%) bajo la que el robot cojea. */
+const LIMP_BELOW = 9
 const ACCELERATION = 10
 const TURN_SPEED = 10
 
@@ -67,7 +72,9 @@ export function Robot() {
       player.sprintCharge = sprintSince.current < 0 ? 0 : Math.min(1, (now - sprintSince.current) / SPRINT_HOLD)
       player.sprinting = player.sprintCharge >= 1
       MOTOR_CONFIG.jumpSpeed = BASE_JUMP * fx.jump
-      const speed = RUN_SPEED * fx.speed * (player.sprinting ? fx.sprint : 1) * (environment.sheltered ? 1 : weatherState.speed) * (1 - headwind * storm * 0.35)
+      // Con la batería casi agotada el robot cojea y va más lento.
+      const limp = getGame().battery < LIMP_BELOW ? 0.7 : 1
+      const speed = limp * RUN_SPEED * fx.speed * (player.sprinting ? fx.sprint : 1) * (environment.sheltered ? 1 : weatherState.speed) * (1 - headwind * storm * 0.35)
       targetX = dirX * speed
       targetZ = dirZ * speed
       // Las ráfagas fuertes empujan al robot (sensación de tormenta).
@@ -130,9 +137,24 @@ export function Robot() {
         body.current.position.z = 0
       }
     }
-    // Visor: se apaga en emergencia y parpadea durante la recarga.
+    // Cojera con muy poca batería: balanceo irregular al andar.
+    const battery = getGame().battery
+    if (body.current && ROBOT_RIGGED) {
+      const limping = mode === 'active' && battery < LIMP_BELOW && player.grounded && player.speed > 0.5
+      const t = state.clock.elapsedTime
+      const target = limping ? Math.max(0, Math.sin(t * 7)) * 0.14 - 0.03 : 0
+      body.current.rotation.z += (target - body.current.rotation.z) * (1 - Math.exp(-12 * dt))
+      body.current.position.y = limping ? -Math.max(0, Math.sin(t * 7)) * 0.07 : 0
+    }
+    // Visor: se apaga en emergencia, parpadea durante la recarga y en rojo
+    // cuando queda poca batería.
+    const t = state.clock.elapsedTime
+    const low = mode === 'active' && battery < LOW_LENS_BELOW
+    const blinkOn = Math.sin(t * (battery < LIMP_BELOW ? 10 : 5)) > 0
+    MATERIALS.robotAccent.color.set(low && blinkOn ? '#ff3b30' : PALETTE.robotAccent)
+    MATERIALS.robotAccent.emissive.set(low && blinkOn ? '#ff3b30' : PALETTE.robotAccent)
     MATERIALS.robotAccent.emissiveIntensity =
-      mode === 'active' ? 0.6 : mode === 'recharging' ? 0.25 + Math.sin(state.clock.elapsedTime * 2) * 0.2 : 0.05
+      mode === 'active' ? (low ? (blinkOn ? 1.2 : 0.15) : 0.6) : mode === 'recharging' ? 0.25 + Math.sin(t * 2) * 0.2 : 0.05
   })
 
   return (

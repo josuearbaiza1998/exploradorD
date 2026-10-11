@@ -149,7 +149,7 @@ export function RobotSystems() {
     // --- Objetivo de recolección (lo que el robot tiene delante) ---
     game.setTarget(
       game.mode === 'active' && !nearest && !game.build
-        ? findTarget(player.position.x, player.position.z, player.heading, game.harvested, game.structures, game.looted)
+        ? findTarget(player.position.x, player.position.z, player.heading, game.harvested, game.structures, game.looted, game.finds)
         : null,
     )
 

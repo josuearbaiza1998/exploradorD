@@ -6,6 +6,7 @@ import { getHeight } from '@/utils/terrain/heightfield'
 import { STRUCTURES } from '@/config/structures'
 import { POIS, poiLocalToWorld, type PoiId } from '@/config/pois'
 import type { PlacedStructure } from '@/store/slices/structuresSlice'
+import type { Find } from '@/store/slices/explorationSlice'
 
 /** Alcance de interacción (m) medido desde el borde del objeto. */
 export const INTERACT_RANGE = 1.6
@@ -18,6 +19,7 @@ const REACH_RADIUS: Record<string, number> = { palms: 0.5, smallTrees: 0.5, rock
 export const propKey = (layerId: string, cx: number, cz: number, index: number) => `${layerId}|${cx}:${cz}|${index}`
 export const salvageKey = (id: string) => `ship|${id}`
 export const cacheKey = (id: PoiId) => `poi|${id}`
+export const findKey = (id: string) => `find|${id}`
 
 export const POI_CACHES = POIS.map((poi) => {
   const w = poiLocalToWorld(poi, poi.cache[0], poi.cache[1])
@@ -41,6 +43,7 @@ export function findTarget(
   harvested: Record<string, number>,
   structures: PlacedStructure[] = [],
   looted: Partial<Record<PoiId, true>> = {},
+  finds: Find[] = [],
 ): InteractionTarget | null {
   const fx = Math.sin(heading)
   const fz = Math.cos(heading)
@@ -96,6 +99,12 @@ export function findTarget(
   for (const c of POI_CACHES) {
     if (looted[c.id] || Math.abs(c.x - px) > reach + 2 || Math.abs(c.z - pz) > reach + 2) continue
     consider(c.key, 'cache', c.x, c.y, c.z, 0.9)
+  }
+
+  // Hallazgos del clima.
+  for (const f of finds) {
+    if (Math.abs(f.x - px) > reach || Math.abs(f.z - pz) > reach) continue
+    consider(findKey(f.id), f.kind, f.x, getHeight(f.x, f.z), f.z, 0.6)
   }
 
   return best

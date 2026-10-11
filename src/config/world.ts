@@ -58,7 +58,7 @@ export const LANDMARK_HILLS: LandmarkHill[] = [
   // Colina media a la derecha: enmarca la vista hacia la nave sin taparla.
   { x: 55, z: -20, radius: 38, height: 20, ridge: 1.4 },
   // Pico alto detrás de la nave: mirador para ver toda la isla.
-  { x: 120, z: -175, radius: 60, height: 48, ridge: 1.9 },
+  { x: 104, z: -158, radius: 55, height: 44, ridge: 1.9 },
   // Colinas que ocultan la zona sur (secretos futuros).
   { x: -40, z: 130, radius: 42, height: 22, ridge: 1.5 },
   { x: 100, z: 95, radius: 50, height: 28, ridge: 1.7 },

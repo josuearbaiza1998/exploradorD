@@ -68,6 +68,7 @@ export const useGameStore = create<GameState>()(
         looted: s.looted,
         repairs: s.repairs,
         shipRepairedSeen: s.shipRepairedSeen,
+        finds: s.finds,
       }),
       // Si se cerró la partida en mitad de una emergencia, al volver se arranca
       // en la nave con la batería mínima para no quedar bloqueado.
