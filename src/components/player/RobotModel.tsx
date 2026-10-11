@@ -11,6 +11,7 @@ import { getGame, useGameStore } from '@/store/gameStore'
 import { player } from '@/systems/player'
 import { Backpack } from './Backpack'
 import { HeldTool } from './HeldTool'
+import { HeadUpgrades, LimbUpgrades, limbBetween, type Limb } from './RobotUpgrades'
 
 /** Altura final de la sonda en metros. */
 const ROBOT_HEIGHT = 2.1
@@ -63,6 +64,9 @@ const RECOLOR: Record<string, string> = {
   Black: PALETTE.robotDark,
 }
 
+/** Fracción del clip Jump con la pose de vuelo (piernas recogidas). */
+const JUMP_HOLD = 0.42
+
 type Clip = 'Idle' | 'Walking' | 'Running' | 'Jump' | 'Punch' | 'Death' | 'Sitting'
 
 function RiggedRobot({ path }: { path: string }) {
@@ -90,16 +94,22 @@ function RiggedRobot({ path }: { path: string }) {
     return { bones, scale, offsetY: -box.min.y * scale }
   }, [scene])
 
-  const handBone = setup.bones['Palm2.R'] ?? setup.bones['LowerArm.R']
+  // GLTFLoader quita los puntos de los nombres (Palm2.R → Palm2R).
+  const handBone = setup.bones.Palm2R ?? setup.bones['Palm2.R'] ?? setup.bones.LowerArmR
 
   // Pose de referencia (primer fotograma de Idle): ahí se miden cabeza y
   // torso para colocar gafas y mochila, y se fijan los anclajes a los huesos.
   const current = useRef<{ clip: Clip; action?: AnimationAction }>({ clip: 'Idle' })
   const lastAction = useRef(0)
+  /** Momento (s) en que dejó de pisar suelo; null si está en el suelo. */
+  const airSince = useRef<number | null>(null)
   const [rig, setRig] = useState<{
     /** Centro de cada gafa, apoyado sobre la superficie de la cara. */
     eyes: Vector3[]
     back: Vector3
+    headTop: number
+    legs: Limb[]
+    arms: Limb[]
     rest: Record<'head' | 'torso' | 'hand', Matrix4 | undefined>
   } | null>(null)
   useLayoutEffect(() => {
@@ -153,8 +163,21 @@ function RiggedRobot({ path }: { path: string }) {
       const z = hit ? root.worldToLocal(hit.point.clone()).z : head.max.z - 0.1
       return new Vector3(local.x, eyeY, z - 0.04)
     })
+    // Tramos de piernas y antebrazos para las piezas de las mejoras.
+    const at = (o: Object3D | undefined) => o && new Vector3().setFromMatrixPosition(boneInRoot(o, root))
+    const limb = (from: string, to: string) => {
+      const a = setup.bones[from]
+      const pa = at(a)
+      const pb = at(setup.bones[to])
+      return a && pa && pb ? limbBetween(a, boneInRoot(a, root), pa, pb) : null
+    }
+    const legs = [limb('LowerLegL', 'LowerLegL_end'), limb('LowerLegR', 'LowerLegR_end')].filter((l): l is Limb => !!l)
+    const arms = [limb('LowerArmL', 'Palm2L'), limb('LowerArmR', 'Palm2R')].filter((l): l is Limb => !!l)
     setRig({
       eyes: lenses,
+      headTop: head.max.y,
+      legs,
+      arms,
       back: new Vector3(0, body.min.y + (body.max.y - body.min.y) * 0.6, body.min.z + 0.12),
       rest: {
         head: setup.bones.Head && boneInRoot(setup.bones.Head, root),
@@ -171,12 +194,17 @@ function RiggedRobot({ path }: { path: string }) {
   useFrame(() => {
     const mode = getGame().mode
     const now = performance.now() / 1000
+    // En el aire (saltando o cayendo) nunca corre: pose de salto. Un margen
+    // corto evita parpadeos al bajar escalones o pequeños desniveles.
+    if (player.grounded) airSince.current = null
+    else airSince.current ??= now
+    const airborne = !player.grounded && (player.velocity.y > 1 || now - (airSince.current ?? now) > 0.12)
     let clip: Clip
     if (mode === 'emergency') clip = 'Death'
     else if (mode === 'recharging') clip = 'Sitting'
     else if (mode === 'returning') clip = 'Walking'
     else if (now - player.actionAt < 0.45) clip = 'Punch'
-    else if (!player.grounded && player.velocity.y > 1) clip = 'Jump'
+    else if (airborne) clip = 'Jump'
     else if (player.speed < 0.35) clip = 'Idle'
     else if (player.speed < 4) clip = 'Walking'
     else clip = 'Running'
@@ -194,6 +222,15 @@ function RiggedRobot({ path }: { path: string }) {
         current.current = { clip, action: next }
       }
     }
+    // Caída: el clip de salto se congela en la pose de vuelo (si entró ya
+    // cayendo, salta directamente a esa pose) hasta tocar suelo.
+    const jumpAction = actions.Jump
+    if (clip === 'Jump' && jumpAction) {
+      const hold = jumpAction.getClip().duration * JUMP_HOLD
+      if (player.velocity.y <= 1 && jumpAction.time < hold && cur.clip !== 'Jump') jumpAction.time = hold
+      jumpAction.paused = jumpAction.time >= hold && player.velocity.y <= 1
+    } else if (jumpAction) jumpAction.paused = false
+
     // Pisadas acordes a la velocidad real (evita "patinar").
     const a = current.current.action
     if (a && clip === 'Walking') a.timeScale = Math.max(0.6, player.speed / 2.2)
@@ -204,6 +241,8 @@ function RiggedRobot({ path }: { path: string }) {
   // La mochila se queda en el suelo cuando el robot la ha soltado.
   const carrying = useGameStore((s) => s.droppedBoxes.length === 0)
   const lens = sharedToon(PALETTE.robotDark)
+  const batteryLevel = useGameStore((s) => s.upgrades.battery ?? 0)
+  const solarLevel = useGameStore((s) => s.upgrades.solar ?? 0)
 
   return (
     <group ref={outer}>
@@ -224,11 +263,13 @@ function RiggedRobot({ path }: { path: string }) {
                 </mesh>
               </group>
             ))}
+            <HeadUpgrades eyes={rig.eyes} top={rig.headTop} />
           </BoneAttachment>
+          <LimbUpgrades legs={rig.legs} arms={rig.arms} />
           {carrying && (
             <BoneAttachment bone={setup.bones.Torso} rest={rig.rest.torso}>
               <group position={rig.back} scale={0.8}>
-                <Backpack />
+                <Backpack cells={batteryLevel} solar={solarLevel} />
               </group>
             </BoneAttachment>
           )}
