@@ -1,4 +1,5 @@
 import type { ModelId } from '@/assets/models'
+import type { HarvestKind } from './harvest'
 import { OASIS_WATER_LEVEL } from '@/utils/terrain/heightfield'
 import { oasisProximity, type ScatterRule } from '@/utils/scatter'
 
@@ -17,11 +18,14 @@ export type PropLayer = {
   colliderRadius?: number
   /** Altura del colisionador en unidades del modelo (para que la cámara no lo atraviese). */
   colliderHeight?: number
+  /** Si se puede recolectar, qué tipo de recurso es (ver config/harvest.ts). */
+  harvest?: HarvestKind
 }
 
 export const PROP_LAYERS: PropLayer[] = [
   {
     id: 'palms',
+    harvest: 'palm',
     model: 'palmTree',
     rule: {
       seed: 1,
@@ -37,6 +41,7 @@ export const PROP_LAYERS: PropLayer[] = [
   },
   {
     id: 'oasisShrubs',
+    harvest: 'shrub',
     model: 'shrub',
     rule: {
       seed: 2,
@@ -49,6 +54,7 @@ export const PROP_LAYERS: PropLayer[] = [
   },
   {
     id: 'dryShrubs',
+    harvest: 'shrub',
     model: 'shrub',
     rule: {
       seed: 3,
@@ -62,6 +68,7 @@ export const PROP_LAYERS: PropLayer[] = [
   {
     // Árboles pequeños: los que el robot podrá romper sin herramientas.
     id: 'smallTrees',
+    harvest: 'smallTree',
     model: 'smallTree',
     rule: {
       seed: 4,
@@ -91,6 +98,7 @@ export const PROP_LAYERS: PropLayer[] = [
   {
     // Rocas: en la Fase 4 requerirán herramientas para minarse.
     id: 'rocks',
+    harvest: 'rock',
     model: 'rock',
     rule: {
       seed: 6,

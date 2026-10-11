@@ -22,6 +22,8 @@ export const player = {
   speed: 0,
   /** Se incrementa en cada teletransporte para que la cámara salte sin suavizado. */
   teleportId: 0,
+  /** Momento (s, performance.now) del último golpe/acción, para la animación. */
+  actionAt: -10,
 }
 
 export function teleportPlayer(x: number, z: number, heading?: number) {

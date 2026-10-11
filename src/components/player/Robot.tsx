@@ -9,6 +9,7 @@ import { focus } from '@/systems/focus'
 import { consumeJump, getMoveVector } from '@/systems/input'
 import { simpleMotor } from '@/systems/physics/characterMotor'
 import { player } from '@/systems/player'
+import { HeldTool } from './HeldTool'
 import { RobotModel } from './RobotModel'
 
 const RUN_SPEED = 6.5
@@ -85,6 +86,15 @@ export function Robot() {
       body.current.rotation.x += (run * 0.18 + slump - body.current.rotation.x) * kk
       body.current.position.y = player.grounded ? Math.abs(Math.sin(t * 9)) * 0.08 * run : 0
       body.current.rotation.z = Math.sin(t * 9) * 0.04 * run
+      // Golpe: embestida corta hacia delante al recolectar.
+      const since = performance.now() / 1000 - player.actionAt
+      if (since < 0.3) {
+        const punch = Math.sin((since / 0.3) * Math.PI)
+        body.current.rotation.x += punch * 0.35
+        body.current.position.z = punch * 0.25
+      } else {
+        body.current.position.z = 0
+      }
     }
     // Visor: se apaga en emergencia y parpadea durante la recarga.
     MATERIALS.robotAccent.emissiveIntensity =
@@ -95,6 +105,7 @@ export function Robot() {
     <group ref={root} name="robot">
       <group ref={body}>
         <RobotModel />
+        <HeldTool />
       </group>
     </group>
   )

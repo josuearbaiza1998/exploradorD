@@ -4,6 +4,8 @@ import { RotateDeviceHint } from '@/components/ui/RotateDeviceHint'
 import { DebugPanel } from '@/components/ui/DebugPanel'
 import { EmergencyOverlay } from '@/components/ui/EmergencyOverlay'
 import { SensorOverlay } from '@/components/ui/SensorOverlay'
+import { NoticeToast } from '@/components/ui/NoticeToast'
+import { InventoryPanel } from '@/components/ui/inventory/InventoryPanel'
 
 export default function App() {
   return (
@@ -12,6 +14,8 @@ export default function App() {
       <SensorOverlay />
       <EmergencyOverlay />
       <TouchControls />
+      <NoticeToast />
+      <InventoryPanel />
       <DebugPanel />
       <RotateDeviceHint />
     </div>

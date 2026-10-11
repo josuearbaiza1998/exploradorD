@@ -7,6 +7,7 @@ import { robotBatteryMaterial } from '@/materials/toonMaterials'
 import { getGame, useGameStore } from '@/store/gameStore'
 import { hourOfDay, realToGameHours } from '@/store/slices/clockSlice'
 import { environment } from '@/systems/environmentState'
+import { findTarget } from '@/systems/interaction/interactables'
 import { player, teleportPlayer } from '@/systems/player'
 import { wind } from '@/systems/wind'
 import { ambientTemperature } from '@/systems/worldClock'
@@ -29,12 +30,14 @@ const red = new Color('#ff3d3d')
  *  - Consumo/carga de batería (movimiento, frío, panel solar).
  *  - Suciedad de sensores por polvo.
  *  - Máquina de estados del modo reposo: caja → regreso → recarga.
- *  - Detección de la caja caída más cercana para poder recogerla.
+ *  - Detección de la caja caída más cercana y del recurso que el robot tiene delante.
+ *  - Rebrote de recursos recolectados.
  *  - Guardado periódico de la posición.
  */
 export function RobotSystems() {
   const saveTimer = useRef(0)
   const lastGrounded = useRef(true)
+  const sweepTimer = useRef(0)
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.1)
@@ -103,6 +106,20 @@ export function RobotSystems() {
       }
     }
     game.setNearbyBox(nearest)
+
+    // --- Objetivo de recolección (lo que el robot tiene delante) ---
+    game.setTarget(
+      game.mode === 'active' && !nearest
+        ? findTarget(player.position.x, player.position.z, player.heading, game.harvested)
+        : null,
+    )
+
+    // --- Rebrote de recursos (cada pocos segundos basta) ---
+    sweepTimer.current += dt
+    if (sweepTimer.current > 2) {
+      sweepTimer.current = 0
+      game.sweepRegrown()
+    }
 
     // --- Indicador de batería en la espalda del robot (UI diegética) ---
     const b = getGame().battery / ROBOT.batteryMax

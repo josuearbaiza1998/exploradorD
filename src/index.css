@@ -216,3 +216,112 @@ html, body, #root, .app {
 @keyframes glitch { 0% { opacity: 0.9; transform: translateX(0); } 100% { opacity: 0.5; transform: translateX(3px); } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+
+/* ---------- Interacción ---------- */
+.interact-wrap { position: relative; display: flex; flex-direction: column; align-items: center; }
+.interact-caption {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  white-space: nowrap;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(10, 14, 40, 0.45);
+  pointer-events: none;
+}
+.interact-caption.locked { color: #ffcf8a; }
+.interact-btn.locked { background: rgba(255, 184, 77, 0.25); animation: none; opacity: 0.8; }
+
+.notice {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  transform: translate(-50%, 8px);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 600;
+  background: rgba(10, 14, 40, 0.5);
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.25s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.notice.show { opacity: 1; transform: translate(-50%, 0); }
+.notice.warn { color: #ffcf8a; }
+.notice.info { color: #9fe8ff; }
+
+/* ---------- Mochila ---------- */
+.bag-btn {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(10, 14, 40, 0.4);
+  backdrop-filter: blur(4px);
+}
+
+.inv-backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 8, 25, 0.45);
+  padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
+}
+
+.inv-panel {
+  width: min(760px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  border-radius: 16px;
+  background: rgba(16, 22, 52, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 10px 14px 14px;
+  font-size: 13px;
+}
+.inv-panel header { display: flex; justify-content: space-between; align-items: center; }
+.inv-panel h2 { margin: 0; font-size: 16px; }
+.inv-panel h3 { margin: 8px 0 6px; font-size: 13px; opacity: 0.85; font-weight: 600; }
+.inv-close { background: none; border: none; color: #fff; font-size: 18px; }
+.inv-columns { display: grid; grid-template-columns: 1fr 1.2fr; gap: 14px; }
+.inv-empty { opacity: 0.7; font-size: 12px; }
+.inv-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.inv-grid li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 4px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+}
+.inv-icon { font-size: 22px; }
+.inv-count { position: absolute; top: 4px; right: 8px; font-weight: 700; font-size: 12px; }
+.inv-name { font-size: 10px; opacity: 0.8; text-align: center; }
+.inv-use, .recipe button {
+  margin-top: 4px;
+  font: inherit;
+  font-size: 11px;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 5px 8px;
+  background: #ff7a3d;
+}
+.inv-use:disabled, .recipe button:disabled { background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.6); }
+.inv-bench { font-style: normal; font-weight: 400; font-size: 11px; opacity: 0.7; }
+.inv-bench.on { color: #9fe8ff; opacity: 1; }
+.recipe-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.recipe { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; background: rgba(255, 255, 255, 0.07); }
+.recipe-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.recipe-cost { display: flex; gap: 8px; font-size: 11px; }
+.recipe-cost .have { color: #9dffb0; }
+.recipe-cost .lack { color: #ff9a8a; }
+.recipe-desc { font-size: 10px; opacity: 0.7; }
+.recipe button { margin: 0; white-space: nowrap; }

@@ -1,5 +1,6 @@
 import type { StateCreator } from 'zustand'
 import { ITEMS, type Inventory, type ItemId } from '@/config/items'
+import type { Recipe } from '@/config/recipes'
 import type { GameState } from '../gameStore'
 
 export type DroppedBox = {
@@ -24,6 +25,8 @@ export type InventorySlice = {
   dropInventoryBox: (position: [number, number, number]) => DroppedBox | null
   recoverBox: (id: string) => void
   setNearbyBox: (id: string | null) => void
+  /** Fabrica una receta si se cumplen materiales, estación y progresión. */
+  craft: (recipe: Recipe, atWorkbench: boolean) => boolean
 }
 
 const isEmpty = (inv: Inventory) => Object.values(inv).every((n) => !n)
@@ -90,5 +93,18 @@ export const createInventorySlice: StateCreator<GameState, [], [], InventorySlic
 
   setNearbyBox: (nearbyBoxId) => {
     if (get().nearbyBoxId !== nearbyBoxId) set({ nearbyBoxId })
+  },
+
+  craft: (recipe, atWorkbench) => {
+    const s = get()
+    if (recipe.station === 'ship' && !atWorkbench) return false
+    if (recipe.requires && !s.inventory[recipe.requires]) return false
+    if (ITEMS[recipe.output].kind === 'tool' && s.inventory[recipe.output]) return false
+    if (!s.hasItems(recipe.cost)) return false
+    const inventory: Inventory = { ...s.inventory }
+    for (const [id, n] of Object.entries(recipe.cost) as [ItemId, number][]) inventory[id] = (inventory[id] ?? 0) - n
+    const [merged] = mergeInventories(inventory, { [recipe.output]: recipe.amount })
+    set({ inventory: merged })
+    return true
   },
 })

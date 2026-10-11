@@ -77,3 +77,26 @@ export const CHARGING_PAD: Vec2 = (() => {
   const rot = -CRASH_SITE.rotation
   return { x: CRASH_SITE.x + localZ * Math.sin(rot), z: CRASH_SITE.z + localZ * Math.cos(rot) }
 })()
+
+/**
+ * Puntos de chatarra alrededor de la nave (coordenadas LOCALES de la nave).
+ * debris = escombros sueltos (a mano) · hullPanel = paneles del casco (hacha).
+ */
+export const SALVAGE_NODES: { id: string; kind: 'debris' | 'hullPanel'; local: [number, number, number]; rot: number }[] = [
+  { id: 'debris-1', kind: 'debris', local: [6, 0, 10], rot: 0.4 },
+  { id: 'debris-2', kind: 'debris', local: [-5, 0, -13], rot: 1.2 },
+  { id: 'debris-3', kind: 'debris', local: [9, 0, -7], rot: 2.1 },
+  { id: 'debris-4', kind: 'debris', local: [-10, 0, -3], rot: 0.7 },
+  { id: 'debris-5', kind: 'debris', local: [4, 0, 15], rot: 1.9 },
+  { id: 'panel-1', kind: 'hullPanel', local: [3.3, 1.6, -3], rot: 0 },
+  { id: 'panel-2', kind: 'hullPanel', local: [-3.3, 1.6, 2], rot: Math.PI },
+]
+
+/** Convierte coordenadas locales de la nave a mundo (XZ). */
+export function shipLocalToWorld(lx: number, lz: number): Vec2 {
+  const rot = -CRASH_SITE.rotation
+  return {
+    x: CRASH_SITE.x + lx * Math.cos(rot) + lz * Math.sin(rot),
+    z: CRASH_SITE.z - lx * Math.sin(rot) + lz * Math.cos(rot),
+  }
+}

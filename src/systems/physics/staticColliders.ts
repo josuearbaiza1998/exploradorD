@@ -1,8 +1,10 @@
 import { CHUNK_SIZE, CRASH_SITE } from '@/config/world'
 import { COLLIDABLE_LAYERS, getLayerChunk } from '@/systems/propPlacement'
+import { propKey } from '@/systems/interaction/interactables'
+import { getGame } from '@/store/gameStore'
 
 /** Círculo en XZ con altura sobre el suelo `h` (para la cámara). */
-export type CircleCollider = { x: number; z: number; r: number; h: number }
+export type CircleCollider = { x: number; z: number; r: number; h: number; key?: string }
 
 const chunkCache = new Map<string, CircleCollider[]>()
 
@@ -13,10 +15,11 @@ function chunkColliders(cx: number, cz: number): CircleCollider[] {
   if (list) return list
   list = []
   for (const layer of COLLIDABLE_LAYERS) {
-    for (const m of getLayerChunk(layer, cx, cz)) {
-      const e = m.elements
+    const matrices = getLayerChunk(layer, cx, cz)
+    for (let i = 0; i < matrices.length; i++) {
+      const e = matrices[i].elements
       const scale = Math.hypot(e[0], e[1], e[2])
-      list.push({ x: e[12], z: e[14], r: (layer.colliderRadius ?? 0) * scale, h: (layer.colliderHeight ?? 2) * scale })
+      list.push({ x: e[12], z: e[14], r: (layer.colliderRadius ?? 0) * scale, h: (layer.colliderHeight ?? 2) * scale, key: layer.harvest ? propKey(layer.id, cx, cz, i) : undefined })
     }
   }
   chunkCache.set(key, list)
@@ -45,6 +48,7 @@ const result: CircleCollider[] = []
 /** Colisionadores cercanos a (x, z). Reutiliza el array de salida: no guardar la referencia. */
 export function queryColliders(x: number, z: number, radius: number): CircleCollider[] {
   result.length = 0
+  const harvested = getGame().harvested
   const pad = radius + 3
   const minCx = Math.floor((x - pad) / CHUNK_SIZE)
   const maxCx = Math.floor((x + pad) / CHUNK_SIZE)
@@ -53,6 +57,7 @@ export function queryColliders(x: number, z: number, radius: number): CircleColl
   for (let cz = minCz; cz <= maxCz; cz++) {
     for (let cx = minCx; cx <= maxCx; cx++) {
       for (const c of chunkColliders(cx, cz)) {
+        if (c.key && c.key in harvested) continue // talado/picado: ya no bloquea
         if (Math.abs(c.x - x) < pad + c.r && Math.abs(c.z - z) < pad + c.r) result.push(c)
       }
     }

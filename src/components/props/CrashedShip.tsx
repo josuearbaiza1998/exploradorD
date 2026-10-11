@@ -13,7 +13,7 @@ const engine = new Vector3(0, 3, -10.5)
   .applyAxisAngle(new Vector3(0, 1, 0), -CRASH_SITE.rotation)
   .add(new Vector3(CRASH_SITE.x, groundY - 0.6, CRASH_SITE.z))
 
-/** Primitivas temporales de la nave (casco, alas, motor, escombros). */
+/** Primitivas temporales de la nave (casco, alas, motor). Los escombros recolectables están en <SalvageNodes/>. */
 function ShipPlaceholder() {
   return (
     <group rotation={[0.12, 0, -0.18]}>
@@ -40,18 +40,6 @@ function ShipPlaceholder() {
       <mesh material={MATERIALS.ember} position={[0, 2.4, -10.6]} rotation-x={Math.PI / 2}>
         <cylinderGeometry args={[1.3, 1.3, 0.3, 8]} />
       </mesh>
-      {/* Escombros: futura fuente de chatarra (scavenging) */}
-      {[
-        [5, 0.4, 9, 0.4],
-        [-4, 0.3, -12, 1.2],
-        [8, 0.3, -6, 2.1],
-        [-9, 0.5, -3, 0.7],
-        [3, 0.3, 14, 1.9],
-      ].map(([x, y, z, r], i) => (
-        <mesh key={i} material={i % 2 ? MATERIALS.shipHull : MATERIALS.shipAccent} position={[x, y, z]} rotation={[r, r * 2, r * 0.5]} castShadow>
-          <boxGeometry args={[1.4, 0.6, 1.1]} />
-        </mesh>
-      ))}
     </group>
   )
 }

@@ -3,6 +3,8 @@ import type { Matrix4, MeshToonMaterial } from 'three'
 import { InstancedProp, type PropPart } from '@/components/common/InstancedProp'
 import { PROP_LAYERS, type PropLayer, type PropLayerId } from '@/config/propLayers'
 import { getLayerChunk } from '@/systems/propPlacement'
+import { propKey } from '@/systems/interaction/interactables'
+import { useGameStore } from '@/store/gameStore'
 import { useVisibleChunks } from '@/hooks/useVisibleChunks'
 import { MATERIALS } from '@/materials/toonMaterials'
 import { applyWindSway } from '@/materials/windSway'
@@ -39,18 +41,30 @@ const PARTS: Record<PropLayerId, PropPart[]> = {
   rocks: [{ geometry: rockGeometry, material: MATERIALS.rock }],
 }
 
-function layerMatrices(layer: PropLayer, chunks: { cx: number; cz: number }[]): Matrix4[] {
+function layerMatrices(
+  layer: PropLayer,
+  chunks: { cx: number; cz: number }[],
+  harvested: Record<string, number>,
+): Matrix4[] {
   const all: Matrix4[] = []
-  for (const c of chunks) for (const m of getLayerChunk(layer, c.cx, c.cz)) all.push(m)
+  for (const c of chunks) {
+    const list = getLayerChunk(layer, c.cx, c.cz)
+    for (let i = 0; i < list.length; i++) {
+      // Lo recolectado desaparece hasta que rebrota.
+      if (layer.harvest && propKey(layer.id, c.cx, c.cz, i) in harvested) continue
+      all.push(list[i])
+    }
+  }
   return all
 }
 
 /** Vegetación y rocas instanciadas por capas, distribuidas por chunk. */
 export function Vegetation() {
   const chunks = useVisibleChunks()
+  const harvested = useGameStore((s) => s.harvested)
   const layers = useMemo(
-    () => PROP_LAYERS.map((layer) => ({ layer, matrices: layerMatrices(layer, chunks) })),
-    [chunks],
+    () => PROP_LAYERS.map((layer) => ({ layer, matrices: layerMatrices(layer, chunks, harvested) })),
+    [chunks, harvested],
   )
   return (
     <group name="vegetation">
