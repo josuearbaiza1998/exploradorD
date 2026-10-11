@@ -12,6 +12,7 @@ export type ItemId =
   | 'techParts'
   | 'crystal'
   | 'fulgurite'
+  | 'meteorite'
   | 'cell'
   | 'cloth'
   | 'axe'
@@ -35,6 +36,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   techParts: { id: 'techParts', name: 'Componentes', icon: '💾', stack: 20, kind: 'resource' },
   crystal: { id: 'crystal', name: 'Cristal azul', icon: '🔹', stack: 30, kind: 'resource', description: 'Crece en la cueva de cristal. Guarda energía.' },
   fulgurite: { id: 'fulgurite', name: 'Fulgurita', icon: '⚡', stack: 20, kind: 'resource', description: 'Arena fundida por un rayo. Conduce muy bien la energía.' },
+  meteorite: { id: 'meteorite', name: 'Fragmento de meteorito', icon: '☄️', stack: 20, kind: 'resource', description: 'Metal caído del cielo. En la nave se funde en componentes.' },
   cell: {
     id: 'cell',
     name: 'Celda de energía',

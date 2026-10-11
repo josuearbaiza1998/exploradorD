@@ -19,6 +19,8 @@ export const MODEL_PATHS = {
   batteryBank: null,
   shelter: null,
   lightningRod: null,
+  windTurbine: null,
+  rainCollector: null,
 } satisfies Record<string, string | null>
 
 export type ModelId = keyof typeof MODEL_PATHS

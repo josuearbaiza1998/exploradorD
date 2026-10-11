@@ -1,3 +1,5 @@
+import { MeshBasicMaterial } from "three";
+import { radialTexture } from "@/utils/radialTexture";
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Group, Mesh } from "three";
@@ -263,6 +265,18 @@ function Cave() {
     [],
   );
   const black = sharedToon("#0e0b0a");
+  const mouthShadow = useMemo(
+    () =>
+      new MeshBasicMaterial({
+        color: "#000000",
+        map: radialTexture(),
+        transparent: true,
+        opacity: 0.85,
+        depthWrite: false,
+        fog: false,
+      }),
+    [],
+  );
   return (
     <group>
       <mesh
@@ -292,9 +306,15 @@ function Cave() {
       >
         <dodecahedronGeometry args={[1, 0]} />
       </mesh>
-      {/* Boca de la cueva */}
-      <mesh material={black} position={[0, 1.6, -0.6]} scale={[1.9, 1.7, 1]}>
+      {/* Boca de la cueva: hueco en sombra que se funde con la roca (sin bordes duros) */}
+      <mesh material={black} position={[0, 1.4, -1.6]} scale={[1.7, 1.5, 0.9]}>
         <sphereGeometry args={[1, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+      </mesh>
+      <mesh material={mouthShadow} position={[0, 1.7, -0.7]} renderOrder={2}>
+        <planeGeometry args={[5.2, 4.4]} />
+      </mesh>
+      <mesh material={mouthShadow} position={[0, 0.03, 0.2]} rotation-x={-Math.PI / 2} scale={[1, 0.55, 1]} renderOrder={2}>
+        <circleGeometry args={[2.6, 16]} />
       </mesh>
       {[
         [-1.6, 0.4, 0.4, 0.3],

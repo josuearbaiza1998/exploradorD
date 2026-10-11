@@ -54,15 +54,22 @@ export function Puddles() {
     [],
   )
   const timer = useRef(0)
-  useFrame(({ clock }, delta) => {
+  const rebuild = useRef(0)
+  useFrame((_, delta) => {
     const m = ref.current
     if (!m) return
     const w = ecology.wetness
     m.visible = w > 0.08
-    activePuddles.length = 0
-    if (!m.visible) return
+    if (!m.visible) {
+      activePuddles.length = 0
+      return
+    }
     const px = player.position.x
     const pz = player.position.z
+    // Rendimiento: los charcos cercanos se recalculan unas pocas veces por segundo.
+    if ((rebuild.current -= delta) > 0) return
+    rebuild.current = 0.3
+    activePuddles.length = 0
     const size = Math.min(1, (w - 0.08) / 0.5)
     let n = 0
     for (const p of puddleSpots()) {
@@ -72,14 +79,14 @@ export function Puddles() {
       activePuddles.push({ x: p.x, z: p.z, y: p.y, r })
       dummy.position.set(p.x, p.y + 0.05, p.z)
       dummy.rotation.set(0, p.x, 0)
-      dummy.scale.set(r * (1 + Math.sin(clock.elapsedTime + p.z) * 0.02), 1, r * 0.8)
+      dummy.scale.set(r, 1, r * 0.8)
       dummy.updateMatrix()
       m.setMatrixAt(n++, dummy.matrix)
     }
     m.count = n
     m.instanceMatrix.needsUpdate = true
     // Pisar un charco lava un poco las gafas.
-    if ((timer.current -= delta) <= 0) {
+    if ((timer.current -= 0.3) <= 0) {
       timer.current = 0.5
       const inPuddle = activePuddles.some((p) => (p.x - px) ** 2 + (p.z - pz) ** 2 < p.r * p.r)
       if (inPuddle && player.speed > 0.5 && getGame().sensorDirt > 0) getGame().cleanSensors(0.03)

@@ -5,7 +5,7 @@ import type { ItemId, ToolId } from './items'
  * Progresión escalonada: manos → hacha → martillo. El metal NO sale de las
  * rocas: solo de la nave (scavenging).
  */
-export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel' | 'structure' | 'cache' | 'buried' | 'bloom' | 'note' | 'crystal' | 'fulgurite' | 'scavenger'
+export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel' | 'structure' | 'cache' | 'buried' | 'bloom' | 'note' | 'crystal' | 'fulgurite' | 'meteorite' | 'scavenger' | 'panelClean' | 'collector'
 
 export type HarvestDef = {
   label: string
@@ -133,6 +133,26 @@ export const HARVEST: Record<HarvestKind, HarvestDef> = {
     yields: [{ item: 'crystal', min: 1, max: 3 }],
     regrowHours: 72,
   },
+  // Panel solar cubierto de arena: limpiarlo devuelve su rendimiento.
+  panelClean: {
+    material: 'plant',
+    label: 'Panel con arena',
+    verb: 'Limpiar',
+    icon: '🧹',
+    hits: 2,
+    yields: [],
+    regrowHours: null,
+  },
+  // Colector con agua: refresca al robot y le lava las gafas.
+  collector: {
+    material: 'metal',
+    label: 'Colector de lluvia',
+    verb: 'Refrescarse',
+    icon: '💧',
+    hits: 1,
+    yields: [],
+    regrowHours: null,
+  },
   // Robots carroñeros: dos golpes los apagan y sueltan lo que llevan.
   scavenger: {
     material: 'metal',
@@ -154,6 +174,16 @@ export const HARVEST: Record<HarvestKind, HarvestDef> = {
     icon: '✊',
     hits: 1,
     yields: [{ item: 'fulgurite', min: 1, max: 2 }],
+    regrowHours: null,
+  },
+  // Lo que queda de una bola de fuego de la lluvia de estrellas.
+  meteorite: {
+    material: 'metal',
+    label: 'Meteorito',
+    verb: 'Recoger',
+    icon: '✊',
+    hits: 2,
+    yields: [{ item: 'meteorite', min: 1, max: 2 }],
     regrowHours: null,
   },
   // Registro de la expedición anterior: se lee (se puede releer).

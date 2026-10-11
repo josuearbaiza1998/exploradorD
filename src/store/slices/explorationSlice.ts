@@ -42,7 +42,7 @@ export type ExplorationSlice = {
 export type JournalKind = 'place' | 'part' | 'upgrade' | 'repair' | 'tool' | 'note'
 export type JournalEntry = { id: number; at: number; kind: JournalKind; icon: string; title: string; text?: string }
 
-export type Find = { id: string; kind: 'buried' | 'bloom' | 'fulgurite'; x: number; z: number; until: number }
+export type Find = { id: string; kind: 'buried' | 'bloom' | 'fulgurite' | 'meteorite'; x: number; z: number; until: number }
 
 /** Máximo de hallazgos a la vez (no llenar el mapa si nadie los recoge). */
 const MAX_FINDS = 14

@@ -4,7 +4,7 @@ import type { Inventory } from './items'
  * Estructuras construibles. La supervivencia depende de la energía y de
  * refugiarse del clima, no de comer: estas son las piezas para ello.
  */
-export type StructureType = 'solarPanel' | 'batteryBank' | 'shelter' | 'lightningRod'
+export type StructureType = 'solarPanel' | 'batteryBank' | 'shelter' | 'lightningRod' | 'windTurbine' | 'rainCollector'
 
 export type StructureDef = {
   name: string
@@ -19,6 +19,8 @@ export type StructureDef = {
   shelterRadius?: number
   /** Carga solar que da al robot (%/h a pleno sol) dentro de `chargeRadius`. */
   solarRate?: number
+  /** Carga por viento (%/h con viento fuerte) dentro de `chargeRadius`. */
+  windRate?: number
   /** Capacidad de almacenamiento (%) de un banco de baterías. */
   bankCapacity?: number
   /** Distancia a la que carga al robot o se conecta a otras estructuras. */
@@ -70,7 +72,30 @@ export const STRUCTURES: Record<StructureType, StructureDef> = {
     colliders: [[0, 0, 0.3, 5]],
     chargeRadius: 10,
   },
+  windTurbine: {
+    name: 'Molino de viento',
+    icon: '🌬️',
+    description: 'Genera energía con el viento, de día y de noche. Carga al robot cerca y llena los bancos próximos.',
+    cost: { wood: 4, scrapMetal: 3, techParts: 1 },
+    footprint: 1.2,
+    colliders: [[0, 0, 0.4, 6]],
+    windRate: 12,
+    chargeRadius: 6,
+  },
+  rainCollector: {
+    name: 'Colector de lluvia',
+    icon: '🪣',
+    description: 'Recoge agua cuando llueve. Úsala para enfriar al robot y lavarle las gafas.',
+    cost: { wood: 3, fiber: 4, stone: 2 },
+    footprint: 1,
+    colliders: [[0, 0, 0.7, 1.4]],
+  },
 }
+
+/** Polvo de un panel por encima del cual se puede limpiar (y rinde bastante menos). */
+export const PANEL_DIRTY = 0.2
+/** Agua que gasta cada refresco en el colector (0..1). */
+export const COLLECTOR_USE = 0.25
 
 /** Distancia (m) a la que un pararrayos desvía los rayos hacia sí. */
 export const ROD_ATTRACT = 70

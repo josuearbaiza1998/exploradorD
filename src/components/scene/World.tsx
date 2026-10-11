@@ -15,6 +15,8 @@ import { Fauna } from '@/components/environment/Fauna'
 import { Scavengers } from '@/components/environment/Scavengers'
 import { Clouds } from '@/components/environment/Clouds'
 import { SkyDome } from '@/components/environment/SkyDome'
+import { SkyEvents } from '@/components/environment/SkyEvents'
+import { FarIsland } from '@/components/environment/FarIsland'
 import { ChargingPad } from '@/components/props/ChargingPad'
 import { DroppedBoxes } from '@/components/props/DroppedBoxes'
 import { RobotSystems } from '@/components/systems/RobotSystems'
@@ -44,6 +46,8 @@ export function World() {
       <CaveSystem />
       <EcologySystem />
       <SkyDome />
+      <SkyEvents />
+      <FarIsland />
       <Clouds />
       <Lighting />
       <Weather />

@@ -9,6 +9,8 @@ import { SALVAGE_NODES } from '@/config/world'
 import { POIS, type PoiId } from '@/config/pois'
 import { useUiStore } from '@/store/uiStore'
 import { knockScavenger } from '@/systems/scavengers'
+import { COLLECTOR_USE } from '@/config/structures'
+import { thermal } from '@/systems/thermal'
 
 /** Energía (%) que cuesta cada golpe. */
 const HIT_COST = 0.25
@@ -64,6 +66,27 @@ export function performInteraction(): boolean {
     const part = POIS.find((p) => p.id === id)?.part
     if (part) game.notify(`Pieza encontrada: ${ITEMS[part].icon} ${ITEMS[part].name}`, 'gain')
     if (text) emitFloatText({ text, x: tx, y: ty, z: tz })
+    game.resetHits(target.key)
+    return true
+  }
+
+  // --- Panel solar con arena: limpio y rindiendo de nuevo ---
+  if (target.key.startsWith('clean|')) {
+    const id = target.key.slice(6)
+    game.setStructureState({ panelDirt: { ...game.panelDirt, [id]: 0 } })
+    game.notify('🔆 Panel limpio: vuelve a cargar a pleno sol', 'info')
+    game.resetHits(target.key)
+    return true
+  }
+
+  // --- Colector de lluvia: agua fresca para el robot ---
+  if (target.key.startsWith('water|')) {
+    const id = target.key.slice(6)
+    game.setStructureState({ water: { ...game.water, [id]: Math.max(0, (game.water[id] ?? 0) - COLLECTOR_USE) } })
+    thermal.heat = 0
+    thermal.overheated = false
+    game.cleanSensors(1)
+    game.notify('💧 Agua fresca: robot refrigerado y gafas limpias', 'gain')
     game.resetHits(target.key)
     return true
   }

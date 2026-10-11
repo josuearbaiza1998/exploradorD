@@ -20,6 +20,8 @@ export const player = {
   grounded: true,
   inWater: false,
   climbing: false,
+  /** Ciclo de la escalada (avanza al trepar; manos y pies alternos). */
+  climbPhase: 0,
   /** Aguanta una ráfaga de tormenta quieto (postura contra el viento). */
   bracing: false,
   /** Inclinación contra el viento al andar 0..1. */

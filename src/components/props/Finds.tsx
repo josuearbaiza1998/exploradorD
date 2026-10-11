@@ -96,14 +96,66 @@ function Fulgurite({ find }: { find: Find }) {
   )
 }
 
+/**
+ * Meteorito recién caído: cráter oscuro, roca negra con grietas incandescentes
+ * que se enfrían con las horas y un hilo de humo.
+ */
+function Meteorite({ find }: { find: Find }) {
+  const glow = useRef<Group>(null)
+  const smoke = useRef<Group>(null)
+  const crater = sharedToon('#3b2f29')
+  const rock = sharedToon('#2c2a33')
+  const ember = sharedToon('#ffb36b', { emissive: '#ff6a1a', emissiveIntensity: 2 })
+  const puff = sharedToon('#a8a29c')
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime
+    if (glow.current) glow.current.scale.setScalar(0.85 + Math.sin(t * 3 + find.x) * 0.15)
+    smoke.current?.children.forEach((c, i) => {
+      const k = (t * 0.35 + i / 3) % 1
+      c.position.set(Math.sin(k * 5 + i) * 0.2, 0.6 + k * 2.4, Math.cos(k * 4 + i) * 0.2)
+      c.scale.setScalar(0.15 + k * 0.45)
+    })
+  })
+  return (
+    <group position={[find.x, getHeight(find.x, find.z), find.z]} rotation-y={find.z}>
+      <mesh material={crater} rotation-x={-Math.PI / 2} position-y={0.03}>
+        <circleGeometry args={[2.2, 10]} />
+      </mesh>
+      <mesh material={sharedToon(PALETTE.sandDark)} position-y={0.02} rotation-x={-Math.PI / 2} scale={[1.25, 1.25, 0.5]}>
+        <torusGeometry args={[0.85, 0.28, 4, 10]} />
+      </mesh>
+      <mesh material={rock} position-y={0.3} rotation={[0.4, 0.2, 0.7]} castShadow>
+        <dodecahedronGeometry args={[0.5, 0]} />
+      </mesh>
+      <group ref={glow} position-y={0.3}>
+        {[0, 1, 2, 3].map((i) => (
+          <mesh key={i} material={ember} position={[Math.cos(i * 1.6) * 0.42, Math.sin(i * 2.3) * 0.2, Math.sin(i * 1.6) * 0.42]} rotation={[i, i * 0.7, 0]} userData={{ noOutline: true }}>
+            <boxGeometry args={[0.08, 0.32, 0.05]} />
+          </mesh>
+        ))}
+      </group>
+      <group ref={smoke}>
+        {[0, 1, 2].map((i) => (
+          <mesh key={i} material={puff} userData={{ noOutline: true }}>
+            <icosahedronGeometry args={[1, 0]} />
+          </mesh>
+        ))}
+      </group>
+    </group>
+  )
+}
+
+const FIND_VIEW = { buried: Buried, bloom: Bloom, fulgurite: Fulgurite, meteorite: Meteorite }
+
 /** Hallazgos del clima en el mundo. */
 export function Finds() {
   const finds = useGameStore((s) => s.finds)
   return (
     <>
-      {finds.map((f) =>
-        f.kind === 'buried' ? <Buried key={f.id} find={f} /> : f.kind === 'fulgurite' ? <Fulgurite key={f.id} find={f} /> : <Bloom key={f.id} find={f} />,
-      )}
+      {finds.map((f) => {
+        const View = FIND_VIEW[f.kind]
+        return <View key={f.id} find={f} />
+      })}
     </>
   )
 }

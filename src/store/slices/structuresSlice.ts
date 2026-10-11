@@ -9,6 +9,10 @@ export type StructuresSlice = {
   structures: PlacedStructure[]
   /** Carga de cada banco de baterías (separada para no re-renderizar las estructuras). */
   bankCharge: Record<string, number>
+  /** Polvo acumulado en cada panel solar (0..1). */
+  panelDirt: Record<string, number>
+  /** Agua guardada en cada colector de lluvia (0..1). */
+  water: Record<string, number>
   /** Modo construcción activo: qué se va a colocar y con qué giro. */
   build: { type: StructureType; rot: number } | null
 
@@ -20,11 +24,14 @@ export type StructuresSlice = {
   /** Desmonta y devuelve la mitad de los materiales (redondeando hacia arriba). */
   dismantleStructure: (id: string) => Inventory
   setBankCharge: (id: string, value: number) => void
+  setStructureState: (patch: { panelDirt?: Record<string, number>; water?: Record<string, number> }) => void
 }
 
 export const createStructuresSlice: StateCreator<GameState, [], [], StructuresSlice> = (set, get) => ({
   structures: [],
   bankCharge: {},
+  panelDirt: {},
+  water: {},
   build: null,
 
   startBuild: (type) => set({ build: { type, rot: 0 } }),
@@ -71,4 +78,5 @@ export const createStructuresSlice: StateCreator<GameState, [], [], StructuresSl
   },
 
   setBankCharge: (id, value) => set({ bankCharge: { ...get().bankCharge, [id]: value } }),
+  setStructureState: (patch) => set(patch),
 })

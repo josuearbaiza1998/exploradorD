@@ -1,15 +1,22 @@
 import { useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { AdditiveBlending, BufferAttribute, BufferGeometry, DoubleSide, Object3D, OctahedronGeometry, PointsMaterial, type InstancedMesh, type Points } from 'three'
+import { AdditiveBlending, BufferAttribute, BufferGeometry, DoubleSide, MeshBasicMaterial, Object3D, OctahedronGeometry, PointsMaterial, type InstancedMesh, type Points } from 'three'
 import { useRef } from 'react'
 import { CAVE_BLOCKERS, CAVE_CACHE, CAVE_ORIGIN, CAVE_PATH, caveFloor, caveHeadroom } from '@/config/cave'
 import { CAVE_CRYSTAL_WORLD } from '@/systems/interaction/interactables'
 import { createToonMaterial } from '@/materials/toonMaterials'
+import { useQuality } from '@/store/settingsStore'
 import { useGameStore } from '@/store/gameStore'
 import { useInCave } from '@/hooks/useInCave'
+import { radialTexture } from '@/utils/radialTexture'
 import { Cache } from './Pois'
 
 const RING = 14
+
+/** Luz difusa: se suma a lo de detrás y se desvanece en los bordes. */
+function glowMaterial(color: string, opacity: number) {
+  return new MeshBasicMaterial({ color, map: radialTexture(), transparent: true, opacity, blending: AdditiveBlending, depthWrite: false, side: DoubleSide, fog: false, toneMapped: false })
+}
 const STEP = 0.8
 
 type Sample = { x: number; z: number; nx: number; nz: number; w: number; floor: number }
@@ -70,6 +77,8 @@ function buildShell(samples: Sample[]) {
   pos.push(last.x, last.floor + caveHeadroom(last.w) * 0.4, last.z - 1.5)
   const b = (samples.length - 1) * (RING + 1)
   for (let j = 0; j < RING; j++) idx.push(b + j, c, b + j + 1)
+  // Tramo inferior (entre los dos pies del arco): sin él quedaba un hueco al fondo.
+  idx.push(b, b + RING, c)
   const g = new BufferGeometry()
   g.setAttribute('position', new BufferAttribute(new Float32Array(pos), 3))
   g.setIndex(idx)
@@ -153,27 +162,31 @@ function Interior() {
   const floor = useMemo(() => buildFloor(samples), [samples])
   const rock = useMemo(() => createToonMaterial({ color: '#3d3646', side: DoubleSide, flatShading: true }), [])
   const ground = useMemo(() => createToonMaterial({ color: '#4d4350', flatShading: true }), [])
-  const exitGlow = useMemo(() => createToonMaterial({ color: '#ffe2b0', emissive: '#ffd08a', emissiveIntensity: 1.6, side: DoubleSide }), [])
+  const exitGlow = useMemo(() => glowMaterial('#fff0d0', 1), [])
   const looted = useGameStore((s) => !!s.looted.cave)
-  const lights = [8, 34, 62, 92, samples.length - 22, samples.length - 6].map((i) => samples[Math.min(i, samples.length - 1)])
+  // En calidad baja, menos luces puntuales (cada una encarece todos los píxeles).
+  const extras = useQuality().extras
+  const lights = [8, 34, 62, 92, samples.length - 22, samples.length - 6]
+    .map((i) => samples[Math.min(i, samples.length - 1)])
+    .filter((_, i) => extras || i === 1 || i === 4)
   const cacheY = caveFloor(CAVE_CACHE.x, CAVE_CACHE.z)
   return (
     <group name="cave-interior">
       <mesh geometry={shell} material={rock} receiveShadow />
       <mesh geometry={floor} material={ground} receiveShadow />
-      {/* Luz del exterior en la boca: por ahí se sale */}
-      <mesh material={exitGlow} position={[CAVE_ORIGIN.x, CAVE_ORIGIN.y + 1.6, CAVE_ORIGIN.z + 1.2]}>
-        <circleGeometry args={[2.6, 12]} />
+      {/* Luz del exterior en la boca: un resplandor difuso, por ahí se sale */}
+      <mesh material={exitGlow} position={[CAVE_ORIGIN.x, CAVE_ORIGIN.y + 2.2, CAVE_ORIGIN.z + 1.4]} renderOrder={3}>
+        <planeGeometry args={[11, 8]} />
       </mesh>
       <pointLight position={[CAVE_ORIGIN.x, CAVE_ORIGIN.y + 2, CAVE_ORIGIN.z - 1]} color="#ffd9a0" intensity={8} distance={14} decay={1.5} />
       <Crystals samples={samples} />
       {lights.map((s, i) => (
-        <pointLight key={i} position={[s.x, s.floor + (i >= 4 ? 4 : 2.2), s.z]} color="#5fd4ff" intensity={i >= 4 ? 26 : 12} distance={i >= 4 ? 30 : 18} decay={1.4} />
+        <pointLight key={i} position={[s.x, s.floor + (i >= lights.length - 2 ? 4 : 2.2), s.z]} color="#5fd4ff" intensity={extras ? (i >= 4 ? 26 : 12) : 22} distance={extras ? (i >= 4 ? 30 : 18) : 40} decay={1.4} />
       ))}
       <Geode />
       <Pool />
       <HarvestCrystals />
-      <Spores />
+      {extras && <Spores />}
       <group position={[CAVE_CACHE.x, cacheY, CAVE_CACHE.z]} rotation-y={0}>
         <Cache looted={looted} glow="#7fe8ff" />
       </group>

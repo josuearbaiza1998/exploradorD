@@ -16,7 +16,7 @@ const PLANTS = ['dryShrubs|', 'oasisShrubs|', 'smallTrees|', 'palms|']
  * calor lo secan. La humedad sube el oasis y hace rebrotar las plantas.
  */
 export function EcologySystem() {
-  const t = useRef({ save: 0, regrow: 0, init: false })
+  const t = useRef({ save: 0, regrow: 0, init: false, struct: 0, structGh: 0 })
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.1)
     const game = getGame()
@@ -46,6 +46,36 @@ export function EcologySystem() {
         game.hastenRegrow(s.regrow, PLANTS)
         s.regrow = 0
       }
+    }
+    // Estructuras: el polvo cubre los paneles (sobre todo con tormenta de
+    // arena) y la lluvia los lava y llena los colectores.
+    s.structGh += gh
+    if ((s.struct -= dt) <= 0 && game.structures.length) {
+      s.struct = 1
+      const h = s.structGh
+      s.structGh = 0
+      const dust = weatherState.dust
+      let changed = false
+      const panelDirt = { ...game.panelDirt }
+      const water = { ...game.water }
+      for (const st of game.structures) {
+        if (st.type === 'solarPanel') {
+          const prev = panelDirt[st.id] ?? 0
+          const next = Math.min(1, Math.max(0, prev + (dust * dust * 0.35 + dust * 0.02 - rain * 0.8) * h))
+          if (Math.abs(next - prev) > 0.002) {
+            panelDirt[st.id] = next
+            changed = true
+          }
+        } else if (st.type === 'rainCollector') {
+          const prev = water[st.id] ?? 0
+          const next = Math.min(1, Math.max(0, prev + (rain * 0.5 - (rain > 0.1 ? 0 : 0.004)) * h))
+          if (Math.abs(next - prev) > 0.002) {
+            water[st.id] = next
+            changed = true
+          }
+        }
+      }
+      if (changed) game.setStructureState({ panelDirt, water })
     }
     if ((s.save -= dt) <= 0) {
       s.save = 6

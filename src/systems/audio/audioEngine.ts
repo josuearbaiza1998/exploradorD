@@ -266,3 +266,75 @@ export function thunder(near = 0, delay = 0) {
     c.start(t, Math.random(), 0.4)
   }
 }
+
+/** Bus de eco de la cueva (retardo con realimentación), creado al primer uso. */
+let echoBus: GainNode | null = null
+function echo(): GainNode | null {
+  if (!engine) return null
+  if (echoBus) return echoBus
+  const { ctx, master } = engine
+  const input = ctx.createGain()
+  const delay = ctx.createDelay(1)
+  delay.delayTime.value = 0.23
+  const fb = ctx.createGain()
+  fb.gain.value = 0.42
+  const damp = ctx.createBiquadFilter()
+  damp.type = 'lowpass'
+  damp.frequency.value = 2200
+  input.connect(master)
+  input.connect(delay)
+  delay.connect(damp).connect(fb).connect(delay)
+  damp.connect(master)
+  echoBus = input
+  return input
+}
+
+/** Gota que cae en un charco de la cueva: "plic" que baja de tono, con eco. */
+export function drip(volume = 1) {
+  if (!engine) return
+  const bus = echo()
+  if (!bus) return
+  const { ctx } = engine
+  const t = ctx.currentTime
+  const o = ctx.createOscillator()
+  o.type = 'sine'
+  const f0 = 1400 + Math.random() * 900
+  o.frequency.setValueAtTime(f0, t)
+  o.frequency.exponentialRampToValueAtTime(f0 * 0.45, t + 0.09)
+  const g = ctx.createGain()
+  g.gain.setValueAtTime(0.0001, t)
+  g.gain.exponentialRampToValueAtTime(0.16 * volume, t + 0.005)
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12)
+  o.connect(g).connect(bus)
+  o.start(t)
+  o.stop(t + 0.15)
+}
+
+/** Paso dentro de la cueva: el mismo "chof", pero rebota en las paredes. */
+export function caveStep(volume = 1) {
+  const bus = echo()
+  if (!bus) return
+  burst(bus, { freq: 320 + Math.random() * 100, dur: 0.12, vol: 0.14 * volume, q: 0.8 })
+}
+
+/** Silbido de un meteorito que cruza el cielo y su impacto sordo. */
+export function meteorFall(dur: number, distance: number) {
+  if (!engine) return
+  const { ctx, master } = engine
+  const t = ctx.currentTime
+  const src = ctx.createBufferSource()
+  src.buffer = engine.noise
+  const f = ctx.createBiquadFilter()
+  f.type = 'bandpass'
+  f.Q.value = 3
+  f.frequency.setValueAtTime(2400, t)
+  f.frequency.exponentialRampToValueAtTime(300, t + dur)
+  const g = ctx.createGain()
+  const vol = Math.max(0.08, 0.5 - distance / 400)
+  g.gain.setValueAtTime(0.0001, t)
+  g.gain.exponentialRampToValueAtTime(vol, t + dur * 0.8)
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+  src.connect(f).connect(g).connect(master)
+  src.start(t, Math.random(), dur + 0.1)
+  thunder(Math.max(0, 0.6 - distance / 300), dur + distance / 340)
+}

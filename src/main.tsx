@@ -10,9 +10,10 @@ if (import.meta.env.DEV) {
     import('./systems/player'),
     import('./systems/interaction/interactables'),
     import('./systems/cameraRig'),
-  ]).then(([store, p, inter, cam]) => {
+    import('./systems/skyEvents'),
+  ]).then(([store, p, inter, cam, sky]) => {
     Object.assign(window, {
-      __game: { getGame: store.getGame, setState: store.useGameStore.setState, player: p.player, teleport: p.teleportPlayer, salvage: inter.SALVAGE_WORLD, camera: cam.cameraRig },
+      __game: { getGame: store.getGame, setState: store.useGameStore.setState, player: p.player, teleport: p.teleportPlayer, salvage: inter.SALVAGE_WORLD, camera: cam.cameraRig, sky: sky.skyEvents },
     })
   })
 }

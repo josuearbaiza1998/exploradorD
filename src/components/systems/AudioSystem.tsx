@@ -8,9 +8,12 @@ import { environment } from '@/systems/environmentState'
 import { player } from '@/systems/player'
 import { weatherState } from '@/systems/weatherState'
 import { wind } from '@/systems/wind'
+import { cave } from '@/config/cave'
 import {
+  caveStep,
   chirp,
   crackle,
+  drip,
   playFootstep,
   playHit,
   playLowBattery,
@@ -32,7 +35,7 @@ export function AudioSystem() {
   const lastPos = useRef({ x: player.position.x, z: player.position.z })
   const lastAction = useRef(player.actionAt)
   const lastKind = useRef<HarvestKind | null>(null)
-  const timers = useRef({ crackle: 0, chirp: 0, beep: 0, thunder: 12 })
+  const timers = useRef({ crackle: 0, chirp: 0, beep: 0, thunder: 12, drip: 1 })
 
   // El audio solo puede arrancar tras un gesto del usuario.
   useEffect(() => {
@@ -57,19 +60,21 @@ export function AudioSystem() {
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.1)
     const game = getGame()
-    const sheltered = environment.sheltered
+    // En la cueva el exterior se oye apagado y gotea el agua del techo.
+    const inside = cave.active
+    const sheltered = environment.sheltered || inside
     const night = 1 - environment.palette.daylight
     const t = timers.current
 
     // --- Ambientes en bucle ---
     const fireDist = Math.hypot(player.position.x - CRASH_SITE.x, player.position.z - CRASH_SITE.z)
     const fire = Math.max(0, 1 - fireDist / 45)
-    const crickets = night * (1 - weatherState.rain) * Math.max(0, 1 - wind.strength * 1.2)
+    const crickets = inside ? 0 : night * (1 - weatherState.rain) * Math.max(0, 1 - wind.strength * 1.2)
     setAmbience({
-      wind: (0.12 + wind.strength * 0.88) * (sheltered ? 0.45 : 1),
-      windPitch: wind.strength,
-      rain: weatherState.rain * (sheltered ? 0.6 : 1),
-      fire,
+      wind: inside ? 0.05 + wind.strength * 0.08 : (0.12 + wind.strength * 0.88) * (sheltered ? 0.45 : 1),
+      windPitch: inside ? 0 : wind.strength,
+      rain: weatherState.rain * (inside ? 0.08 : sheltered ? 0.6 : 1),
+      fire: inside ? 0 : fire,
       crickets,
     })
 
@@ -86,6 +91,14 @@ export function AudioSystem() {
       if (t.chirp <= 0) {
         chirp()
         t.chirp = 0.25 + Math.random() * 1.1
+      }
+    }
+    if (inside) {
+      t.drip -= dt
+      if (t.drip <= 0) {
+        drip(0.5 + Math.random() * 0.5)
+        // Tras la lluvia gotea más.
+        t.drip = (0.6 + Math.random() * 2.2) * (1 - weatherState.rain * 0.5)
       }
     }
     // Truenos lejanos sin rayo visible solo con aguacero sin rayos cercanos
@@ -108,7 +121,9 @@ export function AudioSystem() {
       stepDist.current += moved
       if (stepDist.current > STEP_LENGTH) {
         stepDist.current = 0
-        playFootstep(Math.min(1, 0.5 + player.speed / 8))
+        const vol = Math.min(1, 0.5 + player.speed / 8)
+        if (inside) caveStep(vol)
+        else playFootstep(vol)
       }
     }
 

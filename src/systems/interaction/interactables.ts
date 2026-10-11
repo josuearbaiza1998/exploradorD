@@ -3,7 +3,8 @@ import { PROP_LAYERS } from '@/config/propLayers'
 import type { InteractionTarget } from '@/store/slices/worldSlice'
 import { getLayerChunk } from '@/systems/propPlacement'
 import { getHeight } from '@/utils/terrain/heightfield'
-import { STRUCTURES } from '@/config/structures'
+import { COLLECTOR_USE, PANEL_DIRTY, STRUCTURES } from '@/config/structures'
+import { getGame } from '@/store/gameStore'
 import { NOTES } from '@/config/notes'
 import { CAVE_CACHE, CAVE_CRYSTALS, CAVE_ORIGIN, caveFloor } from '@/config/cave'
 import { POIS, poiLocalToWorld, type PoiId } from '@/config/pois'
@@ -101,8 +102,14 @@ export function findTarget(
   }
 
   // Estructuras propias (se pueden desmontar).
+  const game = getGame()
   for (const st of structures) {
-    consider(`struct|${st.id}`, 'structure', st.x, getHeight(st.x, st.z), st.z, STRUCTURES[st.type].footprint * 0.6)
+    const y = getHeight(st.x, st.z)
+    const r = STRUCTURES[st.type].footprint * 0.6
+    // Panel sucio → limpiar; colector con agua → refrescarse; si no, desmontar.
+    if (st.type === 'solarPanel' && (game.panelDirt[st.id] ?? 0) > PANEL_DIRTY) consider(`clean|${st.id}`, 'panelClean', st.x, y, st.z, r)
+    else if (st.type === 'rainCollector' && (game.water[st.id] ?? 0) >= COLLECTOR_USE) consider(`water|${st.id}`, 'collector', st.x, y, st.z, r)
+    else consider(`struct|${st.id}`, 'structure', st.x, y, st.z, r)
   }
 
   for (const n of SALVAGE_WORLD) {

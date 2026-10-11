@@ -11,7 +11,7 @@ import { cameraAxes } from '@/systems/cameraRig'
 import { focus } from '@/systems/focus'
 import { consumeJump, getMoveVector } from '@/systems/input'
 import { MOTOR_CONFIG, simpleMotor, wallBlock } from '@/systems/physics/characterMotor'
-import { getHeight } from '@/utils/terrain/heightfield'
+import { getHeight, getSlope } from '@/utils/terrain/heightfield'
 import { upgradeEffects } from '@/config/upgrades'
 import { player } from '@/systems/player'
 import { environment } from '@/systems/environmentState'
@@ -143,12 +143,27 @@ export function Robot() {
     // Inclinación del cuerpo: hacia la pared al trepar, hacia delante contra el viento.
     if (lean.current) {
       const t = state.clock.elapsedTime
-      const want = player.climbing ? 0.55 : player.bracing ? 0.3 + Math.sin(t * 17) * 0.025 : player.headwind * 0.22
       const kk = 1 - Math.exp(-6 * dt)
+      let want = player.bracing ? 0.3 + Math.sin(t * 17) * 0.025 : player.headwind * 0.22
+      let sway = 0
+      let back = 0
+      let up = 0
+      if (player.climbing) {
+        // El cuerpo se pega a la pared: paralelo a la roca, según lo empinada que esté.
+        const slope = getSlope(player.position.x, player.position.z, 0.75)
+        want = Math.min(0.95, Math.max(0.35, Math.PI / 2 - Math.atan(slope)))
+        player.climbPhase += dt * Math.min(1, player.speed / 1.1) * 3.2
+        // Cada tirón sube el cuerpo y lo balancea hacia el brazo que agarra.
+        const ph = player.climbPhase * Math.PI * 2
+        sway = Math.sin(ph) * 0.09
+        up = 0.32 + Math.abs(Math.sin(ph)) * 0.1
+        back = -0.5 - want * 0.25
+      }
       lean.current.rotation.x += (want - lean.current.rotation.x) * kk
+      lean.current.rotation.z += (sway - lean.current.rotation.z) * kk
       // Trepando se separa de la pared para no meterse dentro de la roca.
-      lean.current.position.z += ((player.climbing ? -0.55 : 0) - lean.current.position.z) * kk
-      lean.current.position.y += ((player.climbing ? 0.35 : 0) - lean.current.position.y) * kk
+      lean.current.position.z += (back - lean.current.position.z) * kk
+      lean.current.position.y += (up - lean.current.position.y) * kk
     }
 
     focus.copy(player.position)

@@ -1,6 +1,7 @@
 import { BANK_DISCHARGE_RATE, STRUCTURES } from '@/config/structures'
 import { ROBOT } from '@/config/robot'
 import { getGame } from '@/store/gameStore'
+import { wind } from '@/systems/wind'
 
 /** Distancia máxima panel → banco para cargarlo. */
 const PANEL_TO_BANK = 9
@@ -31,9 +32,15 @@ export function updateEnergyGrid(
   const charges: Record<string, number> = { ...game.bankCharge }
   let changed = false
 
-  for (const p of panels) {
-    const def = STRUCTURES.solarPanel
-    const power = (def.solarRate ?? 0) * solarFactor * gameHours
+  // Generadores: paneles (sol, menos si tienen polvo) y molinos (viento, también de noche).
+  const windPower = Math.max(0, Math.min(1, (wind.strength - 0.15) / 0.75))
+  const generators = [...panels, ...game.structures.filter((s) => s.type === 'windTurbine')]
+  for (const p of generators) {
+    const def = STRUCTURES[p.type]
+    const power =
+      p.type === 'solarPanel'
+        ? (def.solarRate ?? 0) * solarFactor * (1 - (game.panelDirt[p.id] ?? 0) * 0.85) * gameHours
+        : (def.windRate ?? 0) * windPower * gameHours
     if (power <= 0) continue
     if (!robotFull && Math.hypot(px - p.x, pz - p.z) < (def.chargeRadius ?? 0)) {
       gained += power

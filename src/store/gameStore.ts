@@ -66,6 +66,8 @@ export const useGameStore = create<GameState>()(
         moisture: s.moisture,
         structures: s.structures,
         bankCharge: s.bankCharge,
+        panelDirt: s.panelDirt,
+        water: s.water,
         upgrades: s.upgrades,
         discovered: s.discovered,
         looted: s.looted,

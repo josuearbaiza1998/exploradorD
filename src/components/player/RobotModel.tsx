@@ -98,6 +98,9 @@ function aimBone(bone: Object3D | undefined, child: Object3D | undefined, local:
   bone.updateMatrixWorld(true)
 }
 
+/** Curva suave 0..1. */
+const smooth = (x: number) => x * x * (3 - 2 * x)
+
 type Clip = 'Idle' | 'Walking' | 'Running' | 'Jump' | 'Punch' | 'Death' | 'Sitting'
 
 function RiggedRobot({ path }: { path: string }) {
@@ -296,18 +299,27 @@ function RiggedRobot({ path }: { path: string }) {
     const L = pw.side
     const R = -pw.side
     if (pw.climb > 0.01) {
-      // El ciclo avanza al moverse; quieto, se queda agarrado.
-      pw.phase += dt * Math.min(1, player.speed / 1.2) * 6
       const w = pw.climb
-      for (const [sfx, side, off] of [['L', L, 0], ['R', R, Math.PI]] as const) {
-        const a = Math.sin(pw.phase + off)
-        const reach = 0.5 + 0.5 * a
-        aimBone(b[`UpperArm${sfx}`], b[`LowerArm${sfx}`], [side * 0.35, 0.55 + 0.45 * reach, 0.55], w)
-        aimBone(b[`LowerArm${sfx}`], b[`Palm2${sfx}`], [side * 0.12, 0.7 + 0.3 * reach, 0.6 - 0.2 * reach], w)
-        const step = Math.max(0, -a)
-        aimBone(b[`UpperLeg${sfx}`], b[`LowerLeg${sfx}`], [side * 0.18, -0.85, 0.2 + 0.55 * step], w)
-        aimBone(b[`LowerLeg${sfx}`], b[`LowerLeg${sfx}_end`], [side * 0.08, -0.9, -0.15 + 0.25 * step], w)
+      // Ciclo mano-pie en diagonal: brazo izquierdo con pierna derecha y al revés.
+      // Cada extremidad se estira rápido (alcanzar) y luego tira despacio (agarrada).
+      const cyc = (off: number) => {
+        const p = (((player.climbPhase + off) % 1) + 1) % 1
+        // 0..0.3 alcanzar (sube), 0.3..1 tirar (baja poco a poco).
+        return p < 0.3 ? smooth(p / 0.3) : 1 - smooth((p - 0.3) / 0.7)
       }
+      for (const [sfx, side, off] of [['L', L, 0], ['R', R, 0.5]] as const) {
+        const reach = cyc(off)
+        const push = cyc(off + 0.5)
+        // Brazo: de la altura del hombro a bien estirado por encima de la cabeza, contra la roca.
+        aimBone(b[`UpperArm${sfx}`], b[`LowerArm${sfx}`], [side * (0.95 - reach * 0.35), 0.2 + reach * 0.9, 0.22], w)
+        // Antebrazo: doblado al tirar, recto al alcanzar; la mano siempre hacia la pared.
+        aimBone(b[`LowerArm${sfx}`], b[`Palm2${sfx}`], [side * (0.1 - reach * 0.05), 0.55 + reach * 0.6, 0.5 - reach * 0.2], w)
+        // Pierna: la rodilla sube hacia la pared y luego empuja hasta estirarse.
+        aimBone(b[`UpperLeg${sfx}`], b[`LowerLeg${sfx}`], [side * 0.22, -0.95 + push * 0.55, 0.15 + push * 0.75], w)
+        aimBone(b[`LowerLeg${sfx}`], b[`LowerLeg${sfx}_end`], [side * 0.06, -1, -0.05 - push * 0.35], w)
+      }
+      // Cabeza: mira hacia arriba, buscando el siguiente agarre.
+      aimBone(b.Neck, b.Head, [0, 0.95, -0.15], w * 0.7)
     }
     if (pw.brace > 0.01) {
       const w = pw.brace

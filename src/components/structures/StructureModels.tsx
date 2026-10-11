@@ -4,6 +4,7 @@ import type { StructureType } from '@/config/structures'
 
 const panelCells = createToonMaterial({ color: '#2b4fa8', emissive: '#18306a', emissiveIntensity: 0.3 })
 const fabric = createToonMaterial({ color: '#e0a35a', flatShading: true })
+export const waterMat = createToonMaterial({ color: '#5fb8e0', emissive: '#2a8fc0', emissiveIntensity: 0.4 })
 export const rodCrystal = createToonMaterial({ color: '#b6f4ff', emissive: '#5fd4ff', emissiveIntensity: 1.4, flatShading: true })
 export const bankLightMaterial = createToonMaterial({ color: '#3ad0ff', emissive: '#3ad0ff', emissiveIntensity: 1 })
 
@@ -41,6 +42,58 @@ export function StructurePlaceholder({ type, override }: { type: StructureType; 
           {!override && (
             <mesh name="bank-light" material={bankLightMaterial} position={[0, 0.15, 0.41]}>
               <boxGeometry args={[0.18, 0.9, 0.02]} />
+            </mesh>
+          )}
+        </group>
+      )
+    case 'windTurbine':
+      return (
+        <group>
+          <mesh material={m(MATERIALS.shipDark)} position-y={0.12} castShadow>
+            <cylinderGeometry args={[0.5, 0.6, 0.24, 8]} />
+          </mesh>
+          <mesh material={m(MATERIALS.palmTrunk)} position-y={2.6} castShadow>
+            <cylinderGeometry args={[0.1, 0.18, 5, 6]} />
+          </mesh>
+          <mesh material={m(MATERIALS.shipHull)} position={[0, 5.2, 0.1]} castShadow>
+            <boxGeometry args={[0.36, 0.36, 0.7]} />
+          </mesh>
+          {/* Aspas: las gira <Structures/> según el viento */}
+          <group name="turbine-rotor" position={[0, 5.2, 0.5]}>
+            {[0, 1, 2].map((i) => (
+              <group key={i} rotation-z={(i * Math.PI * 2) / 3}>
+                <mesh material={m(fabric)} position-y={1.2} castShadow>
+                  <boxGeometry args={[0.28, 2.4, 0.05]} />
+                </mesh>
+              </group>
+            ))}
+            <mesh material={m(MATERIALS.shipAccent)} rotation-x={Math.PI / 2}>
+              <coneGeometry args={[0.16, 0.3, 8]} />
+            </mesh>
+          </group>
+        </group>
+      )
+    case 'rainCollector':
+      return (
+        <group>
+          {[0, 1, 2].map((i) => {
+            const a = (i * Math.PI * 2) / 3
+            return (
+              <mesh key={i} material={m(MATERIALS.palmTrunk)} position={[Math.cos(a) * 0.55, 0.55, Math.sin(a) * 0.55]} castShadow>
+                <cylinderGeometry args={[0.05, 0.06, 1.1, 5]} />
+              </mesh>
+            )
+          })}
+          {/* Embudo de fibra y depósito */}
+          <mesh material={m(fabric)} position-y={1.35} castShadow>
+            <cylinderGeometry args={[0.95, 0.35, 0.5, 10, 1, true]} />
+          </mesh>
+          <mesh material={m(MATERIALS.shipHull)} position-y={0.6} castShadow>
+            <cylinderGeometry args={[0.45, 0.45, 0.9, 10]} />
+          </mesh>
+          {!override && (
+            <mesh name="collector-water" material={waterMat} position-y={1.06} rotation-x={-Math.PI / 2}>
+              <circleGeometry args={[0.42, 12]} />
             </mesh>
           )}
         </group>

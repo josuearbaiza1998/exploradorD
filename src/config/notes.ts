@@ -58,6 +58,13 @@ export const NOTES: NoteDef[] = [
     text: 'Los cristales de la cueva guardan la energía de las tormentas. Con un martillo se arrancan fragmentos, y con el tiempo vuelven a crecer. Mezclados con la arena que funde un rayo dan una buena celda.',
   },
   {
+    id: 'n9',
+    x: 161,
+    z: -65,
+    title: 'Registro 9 · La otra isla',
+    text: 'Desde esta playa se ve otra isla al este. De noche parpadea una luz en su cima, siempre al mismo ritmo: no es un fuego, es una baliza. Alguien la encendió. Tengo que encontrar la forma de cruzar.',
+  },
+  {
     id: 'n7',
     x: -55,
     z: 128,
