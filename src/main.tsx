@@ -12,9 +12,14 @@ if (import.meta.env.DEV) {
     import('./systems/cameraRig'),
   ]).then(([store, p, inter, cam]) => {
     Object.assign(window, {
-      __game: { getGame: store.getGame, player: p.player, teleport: p.teleportPlayer, salvage: inter.SALVAGE_WORLD, camera: cam.cameraRig },
+      __game: { getGame: store.getGame, setState: store.useGameStore.setState, player: p.player, teleport: p.teleportPlayer, salvage: inter.SALVAGE_WORLD, camera: cam.cameraRig },
     })
   })
+}
+
+// Service worker (solo en producción): necesario para instalar en la pantalla de inicio.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => void navigator.serviceWorker.register('/sw.js'))
 }
 
 createRoot(document.getElementById('root')!).render(

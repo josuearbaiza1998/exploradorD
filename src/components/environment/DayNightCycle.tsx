@@ -2,7 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { getGame } from '@/store/gameStore'
 import { hourOfDay } from '@/store/slices/clockSlice'
 import { celestialDirection, handoverFade, sampleDayNight } from '@/systems/dayNightPalette'
-import { environment } from '@/systems/environmentState'
+import { mistForHour, environment } from '@/systems/environmentState'
 import { updateWind, wind } from '@/systems/wind'
 import { windUniforms } from '@/materials/windSway'
 import { updateWeatherState, weatherState } from '@/systems/weatherState'
@@ -33,6 +33,9 @@ export function DayNightCycle() {
     environment.palette.sunIntensity *= handoverFade(hour) * weatherState.sun
     // Con polvo o nubes la luz se difunde: menos sol directo, algo más de ambiente.
     environment.palette.ambient *= 1 + (1 - weatherState.sun) * 0.8
+    // Bruma: el viento fuerte y la arena en suspensión la deshacen.
+    environment.mist =
+      mistForHour(hour) * Math.max(0, 1 - Math.max(0, weatherState.wind - 0.4) * 2) * (1 - Math.min(1, weatherState.dust))
     environment.weatherTint.copy(weatherState.tint).multiplyScalar(0.2 + 0.8 * environment.palette.daylight)
   }, -1)
   return null

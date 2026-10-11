@@ -5,6 +5,10 @@ import { Fog } from 'three'
 import { environment } from '@/systems/environmentState'
 import { focus } from '@/systems/focus'
 import { weatherState } from '@/systems/weatherState'
+import { getGame } from '@/store/gameStore'
+import { Color } from 'three'
+
+const MIST_COLOR = new Color('#9fb0d8')
 
 const SHADOW_DISTANCE = 120
 const LIGHT_DISTANCE = 150
@@ -33,8 +37,13 @@ export function Lighting() {
     if (sun.current) scene.add(sun.current.target)
   }, [scene])
 
-  useFrame(() => {
+  const nv = useRef(0)
+  useFrame((_, delta) => {
     const p = environment.palette
+    // Visión nocturna: sube la luz ambiente de noche (el tinte verde lo pone la UI).
+    const nvTarget = getGame().nightVisionOn ? 1 - p.daylight : 0
+    nv.current += (nvTarget - nv.current) * Math.min(1, delta * 4)
+    environment.nightVision = nv.current
     const light = sun.current
     if (light) {
       light.color.copy(p.sunColor)
@@ -47,17 +56,24 @@ export function Lighting() {
       light.target.position.copy(focus)
       light.target.updateMatrixWorld()
     }
-    if (ambient.current) ambient.current.intensity = p.ambient
+    if (ambient.current) ambient.current.intensity = p.ambient + nv.current * 1.1
     if (hemi.current) {
       hemi.current.color.copy(p.hemiSky)
       hemi.current.groundColor.copy(p.hemiGround)
-      hemi.current.intensity = p.ambient * 1.4
+      hemi.current.intensity = p.ambient * 1.4 + nv.current * 0.6
     }
     if (scene.fog instanceof Fog) {
       // La niebla se cierra con tormentas/lluvia y toma el color del clima.
       scene.fog.color.copy(p.skyHorizon).lerp(environment.weatherTint, weatherState.tintAmount)
       scene.fog.near = weatherState.fogNear
       scene.fog.far = weatherState.fogFar
+      // Bruma nocturna: de noche y al amanecer la niebla se acerca y se vuelve azulada.
+      const mist = environment.mist * (1 - nv.current * 0.7)
+      if (mist > 0) {
+        scene.fog.color.lerp(MIST_COLOR, mist * 0.6)
+        scene.fog.near *= 1 - mist * 0.75
+        scene.fog.far *= 1 - mist * 0.55
+      }
     }
   })
 

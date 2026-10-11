@@ -1,5 +1,7 @@
 import { DayNightCycle } from '@/components/environment/DayNightCycle'
 import { Lighting } from '@/components/environment/Lighting'
+import { AudioSystem } from '@/components/systems/AudioSystem'
+import { Clouds } from '@/components/environment/Clouds'
 import { SkyDome } from '@/components/environment/SkyDome'
 import { ChargingPad } from '@/components/props/ChargingPad'
 import { DroppedBoxes } from '@/components/props/DroppedBoxes'
@@ -23,7 +25,9 @@ export function World() {
     <>
       <DayNightCycle />
       <RobotSystems />
+      <AudioSystem />
       <SkyDome />
+      <Clouds />
       <Lighting />
       <Weather />
 

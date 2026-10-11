@@ -10,18 +10,20 @@ export const ROBOT = {
   batteryLow: 20,
 
   drain: {
-    /** Consumo en reposo (%/h). */
-    idle: 1,
+    /** Consumo en reposo (%/h). Corriendo sin parar dura ~13 min reales de noche. */
+    idle: 0.4,
     /** Consumo extra a velocidad máxima (%/h). */
-    moving: 5,
+    moving: 2.2,
     /** Coste fijo por salto (%). */
-    jump: 0.3,
+    jump: 0.15,
+    /** Visión nocturna encendida (%/h). */
+    nightVision: 0.5,
     /** Multiplicador cuando la temperatura baja de 0 °C (frío nocturno). */
     coldMultiplier: 1.6,
   },
 
   /** Panel solar integrado: carga pasiva a pleno sol (%/h). */
-  solarCharge: 1.5,
+  solarCharge: 0.8,
 
   /** Horas in-game que tarda la recarga completa en la nave. */
   rechargeHours: 2,

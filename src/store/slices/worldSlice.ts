@@ -23,7 +23,8 @@ export type WorldSlice = {
   notice: { id: number; text: string; tone: 'gain' | 'info' | 'warn' } | null
 
   setTarget: (t: InteractionTarget | null) => void
-  addHit: (key: string) => number
+  /** Suma `power` golpes (los brazos mejorados golpean doble). Devuelve el total. */
+  addHit: (key: string, power?: number) => number
   markHarvested: (key: string, regrowAt: number) => void
   resetHits: (key: string) => void
   setSalvageUses: (id: string, uses: number) => void
@@ -47,8 +48,8 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
     set({ target })
   },
 
-  addHit: (key) => {
-    const n = (get().hits[key] ?? 0) + 1
+  addHit: (key, power = 1) => {
+    const n = (get().hits[key] ?? 0) + power
     set({ hits: { ...get().hits, [key]: n } })
     return n
   },

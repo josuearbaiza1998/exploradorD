@@ -6,27 +6,22 @@ import { getGame, useGameStore } from '@/store/gameStore'
 import { player } from '@/systems/player'
 import { STRUCTURES, type StructureType } from '@/config/structures'
 import { CELL_CHARGE } from '@/config/robot'
-import { CleanButton } from '@/components/ui/controls/CleanButton'
+import { UPGRADES, type UpgradeId } from '@/config/upgrades'
+import { useUiStore, type InventoryTab } from '@/store/uiStore'
 
 const nearWorkbench = () =>
   Math.hypot(player.position.x - CHARGING_PAD.x, player.position.z - CHARGING_PAD.z) < WORKBENCH_RADIUS
 
-/** Botón de mochila (esquina superior izquierda) + panel de inventario y fabricación. */
+/** Panel de mochila: inventario, fabricación, construcción y mejoras (lo abre la botonera del HUD). */
 export function InventoryPanel() {
-  const [open, setOpen] = useState(false)
-  return (
-    <>
-      <button className="bag-btn" aria-label="Mochila" onClick={() => setOpen(true)}>
-        🎒
-      </button>
-      <CleanButton />
-      {open && <Panel onClose={() => setOpen(false)} />}
-    </>
-  )
+  const tab = useUiStore((s) => s.inventoryTab)
+  if (!tab) return null
+  return <Panel tab={tab} />
 }
 
-function Panel({ onClose }: { onClose: () => void }) {
-  const [tab, setTab] = useState<'items' | 'build'>('items')
+function Panel({ tab }: { tab: InventoryTab }) {
+  const setTab = useUiStore((s) => s.openInventory)
+  const onClose = useUiStore((s) => s.closeInventory)
   return (
     <div className="inv-backdrop" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="inv-panel">
@@ -38,12 +33,15 @@ function Panel({ onClose }: { onClose: () => void }) {
             <button className={tab === 'build' ? 'active' : ''} onClick={() => setTab('build')}>
               Construir
             </button>
+            <button className={tab === 'upgrades' ? 'active' : ''} onClick={() => setTab('upgrades')}>
+              Mejoras
+            </button>
           </div>
           <button className="inv-close" onClick={onClose} aria-label="Cerrar">
             ✕
           </button>
         </header>
-        {tab === 'items' ? <ItemsTab /> : <BuildTab onClose={onClose} />}
+        {tab === 'items' ? <ItemsTab /> : tab === 'build' ? <BuildTab onClose={onClose} /> : <UpgradesTab />}
       </div>
     </div>
   )
@@ -196,5 +194,73 @@ function RecipeRow({ recipe, atBench }: { recipe: Recipe; atBench: boolean }) {
         {reason || 'Fabricar'}
       </button>
     </li>
+  )
+}
+
+/** Mejoras de las partes del robot: solo en el banco de la nave. */
+function UpgradesTab() {
+  const inventory = useGameStore((s) => s.inventory)
+  const upgrades = useGameStore((s) => s.upgrades)
+  const [atBench, setAtBench] = useState(nearWorkbench)
+  useEffect(() => {
+    const id = window.setInterval(() => setAtBench(nearWorkbench()), 500)
+    return () => window.clearInterval(id)
+  }, [])
+  return (
+    <>
+      <p className="inv-hint">
+        {atBench ? <em className="inv-bench on">En el banco de la nave</em> : <em className="inv-bench">Acércate a la nave para instalar mejoras</em>}
+      </p>
+      <ul className="recipe-list upgrade-list">
+        {(Object.keys(UPGRADES) as UpgradeId[]).map((id) => {
+          const def = UPGRADES[id]
+          const level = upgrades[id] ?? 0
+          const next = def.levels[level]
+          const affordable = !!next && (Object.entries(next.cost) as [ItemId, number][]).every(([i, n]) => (inventory[i] ?? 0) >= n)
+          let reason = ''
+          if (!next) reason = 'Al máximo'
+          else if (!atBench) reason = 'En la nave'
+          else if (!affordable) reason = 'Faltan materiales'
+          return (
+            <li key={id} className={`recipe ${reason ? 'disabled' : ''}`}>
+              <span className="inv-icon">{def.icon}</span>
+              <div className="recipe-info">
+                <strong>
+                  {def.name}{' '}
+                  <span className="upgrade-pips">
+                    {def.levels.map((_, i) => (
+                      <i key={i} className={i < level ? 'on' : ''} />
+                    ))}
+                  </span>
+                </strong>
+                {next ? (
+                  <>
+                    <span className="recipe-desc">Nivel {level + 1}: {next.description}</span>
+                    <span className="recipe-cost">
+                      {(Object.entries(next.cost) as [ItemId, number][]).map(([i, n]) => (
+                        <span key={i} className={(inventory[i] ?? 0) >= n ? 'have' : 'lack'}>
+                          {ITEMS[i].icon}
+                          {inventory[i] ?? 0}/{n}
+                        </span>
+                      ))}
+                    </span>
+                  </>
+                ) : (
+                  <span className="recipe-desc">{def.levels[def.levels.length - 1].description}</span>
+                )}
+              </div>
+              <button
+                disabled={!!reason}
+                onClick={() => {
+                  if (getGame().buyUpgrade(id, atBench)) getGame().notify(`Mejora instalada: ${def.icon} ${def.name}`, 'info')
+                }}
+              >
+                {reason || 'Instalar'}
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </>
   )
 }

@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Color } from 'three'
 import { ROBOT } from '@/config/robot'
+import { upgradeEffects } from '@/config/upgrades'
 import { CHARGING_PAD, CRASH_SITE } from '@/config/world'
 import { robotBatteryMaterial } from '@/materials/toonMaterials'
 import { getGame, useGameStore } from '@/store/gameStore'
@@ -78,14 +79,18 @@ export function RobotSystems() {
           game.notify(sheltered ? 'A cubierto junto a la nave' : 'Expuesto al clima', sheltered ? 'info' : 'warn')
         }
         environment.sheltered = sheltered
-        let drain = ROBOT.drain.idle + ROBOT.drain.moving * effort
+        const fx = upgradeEffects(game.upgrades)
+        let drain = ROBOT.drain.idle + ROBOT.drain.moving * effort * fx.movingDrain
+        if (game.nightVisionOn) drain += ROBOT.drain.nightVision
         if (ambientTemperature(hour) < 0 && !sheltered) drain *= ROBOT.drain.coldMultiplier
         if (!sheltered) drain *= weatherState.drain
-        const solar = ROBOT.solarCharge * environment.palette.daylight * weatherState.solar
+        // Más capacidad = el mismo consumo baja menos el porcentaje.
+        drain /= fx.capacity
+        const solar = ROBOT.solarCharge * fx.solar * environment.palette.daylight * weatherState.solar
         let delta = (solar - drain) * gameHours
         delta += gridGain
         // Coste del salto: al despegar del suelo hacia arriba.
-        if (lastGrounded.current && !player.grounded && player.velocity.y > 0) delta -= ROBOT.drain.jump
+        if (lastGrounded.current && !player.grounded && player.velocity.y > 0) delta -= ROBOT.drain.jump / fx.capacity
         lastGrounded.current = player.grounded
         game.addBattery(delta)
 
@@ -93,8 +98,9 @@ export function RobotSystems() {
         // El clima añade suciedad aunque estés quieto (tormenta) o la lava (lluvia).
         if (!sheltered) {
           game.addSensorDirt(
-            ROBOT.sensors.dirtPerHour * gameHours * effort * (0.5 + wind.strength * 2) +
-              weatherState.dirtPerHour * gameHours,
+            (ROBOT.sensors.dirtPerHour * gameHours * effort * (0.5 + wind.strength * 2) +
+              weatherState.dirtPerHour * gameHours) *
+              fx.dirt,
           )
           if (weatherState.washPerHour > 0) game.cleanSensors(weatherState.washPerHour * gameHours)
         }

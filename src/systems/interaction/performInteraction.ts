@@ -1,3 +1,4 @@
+import { upgradeEffects } from '@/config/upgrades'
 import { HARVEST } from '@/config/harvest'
 import { ITEMS } from '@/config/items'
 import { getGame } from '@/store/gameStore'
@@ -32,8 +33,11 @@ export function performInteraction(): boolean {
 
   lastHit = now
   player.actionAt = now
-  game.addBattery(-HIT_COST)
-  const hits = game.addHit(target.key)
+  const fx = upgradeEffects(game.upgrades)
+  game.addBattery(-HIT_COST / fx.capacity)
+  // Los brazos mejorados rinden doble en recursos naturales (no en la nave ni en estructuras).
+  const natural = target.kind === 'smallTree' || target.kind === 'palm' || target.kind === 'rock' || target.kind === 'shrub'
+  const hits = game.addHit(target.key, natural ? fx.hitPower : 1)
   if (hits < def.hits) return true
 
   // --- Estructura propia: desmontar y recuperar la mitad ---

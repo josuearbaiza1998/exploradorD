@@ -7,7 +7,8 @@ import { getGame } from '@/store/gameStore'
 import { cameraAxes } from '@/systems/cameraRig'
 import { focus } from '@/systems/focus'
 import { consumeJump, getMoveVector } from '@/systems/input'
-import { simpleMotor } from '@/systems/physics/characterMotor'
+import { MOTOR_CONFIG, simpleMotor } from '@/systems/physics/characterMotor'
+import { upgradeEffects } from '@/config/upgrades'
 import { player } from '@/systems/player'
 import { environment } from '@/systems/environmentState'
 import { weatherState } from '@/systems/weatherState'
@@ -15,6 +16,7 @@ import { wind } from '@/systems/wind'
 import { ROBOT_RIGGED, RobotModel } from './RobotModel'
 
 const RUN_SPEED = 6.5
+const BASE_JUMP = MOTOR_CONFIG.jumpSpeed
 /** Velocidad del piloto automático en modo emergencia (renqueante). */
 const AUTOPILOT_SPEED = 2.4
 const ACCELERATION = 10
@@ -52,7 +54,9 @@ export function Robot() {
       const len = Math.hypot(dirX, dirZ)
       const headwind = len > 0 ? Math.max(0, -(dirX * wind.dirX + dirZ * wind.dirZ) / len) : 0
       const storm = Math.max(0, wind.strength - 0.6) * 2.5
-      const speed = RUN_SPEED * (environment.sheltered ? 1 : weatherState.speed) * (1 - headwind * storm * 0.35)
+      const fx = upgradeEffects(getGame().upgrades)
+      MOTOR_CONFIG.jumpSpeed = BASE_JUMP * fx.jump
+      const speed = RUN_SPEED * fx.speed * (environment.sheltered ? 1 : weatherState.speed) * (1 - headwind * storm * 0.35)
       targetX = dirX * speed
       targetZ = dirZ * speed
       // Las ráfagas fuertes empujan al robot (sensación de tormenta).
