@@ -1,7 +1,7 @@
 import { Suspense, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useAnimations, useGLTF } from '@react-three/drei'
-import { Box3, LoopOnce, Matrix4, Mesh, Vector3, type AnimationAction, type Group, type Object3D } from 'three'
+import { Box3, LoopOnce, Matrix4, Mesh, Raycaster, Vector3, type AnimationAction, type Group, type Object3D } from 'three'
 import { modelPath } from '@/assets/models'
 import { Outlined } from '@/components/common/Outlined'
 import { BoneAttachment, boneInRoot } from '@/components/common/BoneAttachment'
@@ -97,8 +97,8 @@ function RiggedRobot({ path }: { path: string }) {
   const current = useRef<{ clip: Clip; action?: AnimationAction }>({ clip: 'Idle' })
   const lastAction = useRef(0)
   const [rig, setRig] = useState<{
-    eyes: Vector3
-    eyeSpread: number
+    /** Centro de cada gafa, apoyado sobre la superficie de la cara. */
+    eyes: Vector3[]
     back: Vector3
     rest: Record<'head' | 'torso' | 'hand', Matrix4 | undefined>
   } | null>(null)
@@ -138,9 +138,23 @@ function RiggedRobot({ path }: { path: string }) {
     })
     torsoBack.applyMatrix4(inv)
     const body = torsoBack.isEmpty() ? torso : torsoBack
+    // Las gafas se apoyan donde está realmente la cara: rayo desde delante
+    // hasta la malla de la cabeza (la caja incluye la visera, que sobresale).
+    const headMeshes: Mesh[] = []
+    setup.bones.Head?.traverse((o) => o instanceof Mesh && !o.userData.isOutline && headMeshes.push(o))
+    const ray = new Raycaster()
+    const fwd = new Vector3(0, 0, -1).transformDirection(root.matrixWorld)
+    const eyeY = head.min.y + (head.max.y - head.min.y) * 0.42
+    const cx = (head.min.x + head.max.x) / 2
+    const lenses = [-1, 1].map((side) => {
+      const local = new Vector3(cx + side * hw * 0.2, eyeY, head.max.z + 1)
+      ray.set(root.localToWorld(local.clone()), fwd)
+      const hit = ray.intersectObjects(headMeshes, false)[0]
+      const z = hit ? root.worldToLocal(hit.point.clone()).z : head.max.z - 0.1
+      return new Vector3(local.x, eyeY, z - 0.04)
+    })
     setRig({
-      eyes: new Vector3((head.min.x + head.max.x) / 2, head.min.y + (head.max.y - head.min.y) * 0.42, head.max.z - 0.07),
-      eyeSpread: hw * 0.2,
+      eyes: lenses,
       back: new Vector3(0, body.min.y + (body.max.y - body.min.y) * 0.6, body.min.z + 0.12),
       rest: {
         head: setup.bones.Head && boneInRoot(setup.bones.Head, root),
@@ -200,8 +214,8 @@ function RiggedRobot({ path }: { path: string }) {
         <>
           <BoneAttachment bone={setup.bones.Head} rest={rig.rest.head}>
             {/* Gafas redondas (sensores ópticos): se ensucian con la arena */}
-            {[-1, 1].map((side) => (
-              <group key={side} position={[rig.eyes.x + side * rig.eyeSpread, rig.eyes.y, rig.eyes.z]}>
+            {rig.eyes.map((eye, i) => (
+              <group key={i} position={eye}>
                 <mesh material={lens} position-z={0.03} rotation-x={Math.PI / 2} castShadow>
                   <cylinderGeometry args={[0.11, 0.12, 0.12, 12]} />
                 </mesh>
