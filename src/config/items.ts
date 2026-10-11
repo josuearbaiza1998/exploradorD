@@ -12,6 +12,7 @@ export type ItemId =
   | 'cloth'
   | 'axe'
   | 'hammer'
+  | 'sonicCleaner'
 
 export type ItemKind = 'resource' | 'tool' | 'consumable'
 
@@ -47,6 +48,14 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     stack: 1,
     kind: 'tool',
     description: 'Rompe rocas para obtener piedra.',
+  },
+  sonicCleaner: {
+    id: 'sonicCleaner',
+    name: 'Limpiador sónico',
+    icon: '📡',
+    stack: 1,
+    kind: 'tool',
+    description: 'Sacude el polvo de los sensores con vibración. Reutilizable, gasta batería.',
   },
 }
 

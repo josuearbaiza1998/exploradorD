@@ -1,0 +1,12 @@
+import { DustParticles } from './DustParticles'
+import { RainParticles } from './RainParticles'
+
+/** Efectos visuales del clima (la lógica vive en DayNightCycle + weatherState). */
+export function Weather() {
+  return (
+    <>
+      <DustParticles />
+      <RainParticles />
+    </>
+  )
+}

@@ -9,6 +9,7 @@ import { SalvageNodes } from '@/components/props/SalvageNodes'
 import { CrashedShip } from '@/components/props/CrashedShip'
 import { Oasis } from '@/components/props/Oasis'
 import { Vegetation } from '@/components/props/Vegetation'
+import { Weather } from '@/components/weather/Weather'
 import { Sea } from '@/components/terrain/Sea'
 import { Terrain } from '@/components/terrain/Terrain'
 import { Robot } from '@/components/player/Robot'
@@ -22,6 +23,7 @@ export function World() {
       <RobotSystems />
       <SkyDome />
       <Lighting />
+      <Weather />
 
       <Terrain />
       <Sea />

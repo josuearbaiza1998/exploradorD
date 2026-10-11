@@ -20,11 +20,13 @@ import {
 // Materiales con balanceo por viento (clones para no afectar a otros usos).
 // Material.copy() no conserva flatShading, así que lo reaplicamos.
 const toonClone = (m: MeshToonMaterial) => Object.assign(m.clone(), { flatShading: true })
-const swayLeaf = applyWindSway(toonClone(MATERIALS.palmLeaf), 0.11)
-const swayTrunk = applyWindSway(toonClone(MATERIALS.palmTrunk), 0.025)
+const swayLeaf = applyWindSway(toonClone(MATERIALS.palmLeaf), 0.06)
+const swayTrunk = applyWindSway(toonClone(MATERIALS.palmTrunk), 0.06)
 const swayShrubDry = applyWindSway(toonClone(MATERIALS.shrubDry), 0.5)
 const swayShrubGreen = applyWindSway(toonClone(MATERIALS.shrubGreen), 0.18)
-const swayTreeTrunk = applyWindSway(toonClone(MATERIALS.palmTrunk), 0.05)
+// Tronco y copa de un mismo árbol comparten flexión: si no, la copa se separa con viento fuerte.
+const swayTreeTrunk = applyWindSway(toonClone(MATERIALS.palmTrunk), 0.09)
+const swayTreeCrown = applyWindSway(toonClone(MATERIALS.shrubDry), 0.09)
 
 const PARTS: Record<PropLayerId, PropPart[]> = {
   palms: [
@@ -35,7 +37,7 @@ const PARTS: Record<PropLayerId, PropPart[]> = {
   dryShrubs: [{ geometry: shrubGeometry, material: swayShrubDry }],
   smallTrees: [
     { geometry: smallTreeGeometry.trunk, material: swayTreeTrunk },
-    { geometry: smallTreeGeometry.crown, material: swayShrubDry },
+    { geometry: smallTreeGeometry.crown, material: swayTreeCrown },
   ],
   cacti: [{ geometry: cactusGeometry, material: MATERIALS.cactus }],
   rocks: [{ geometry: rockGeometry, material: MATERIALS.rock }],

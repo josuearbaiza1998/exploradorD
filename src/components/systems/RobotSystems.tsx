@@ -9,6 +9,8 @@ import { hourOfDay, realToGameHours } from '@/store/slices/clockSlice'
 import { environment } from '@/systems/environmentState'
 import { findTarget } from '@/systems/interaction/interactables'
 import { player, teleportPlayer } from '@/systems/player'
+import { isSheltered } from '@/systems/shelter'
+import { weatherState } from '@/systems/weatherState'
 import { wind } from '@/systems/wind'
 import { ambientTemperature } from '@/systems/worldClock'
 
@@ -27,8 +29,9 @@ const red = new Color('#ff3d3d')
 
 /**
  * Sistemas de supervivencia (sin geometría), ejecutados una vez por frame:
- *  - Consumo/carga de batería (movimiento, frío, panel solar).
- *  - Suciedad de sensores por polvo.
+ *  - Consumo/carga de batería (movimiento, frío, clima, panel solar).
+ *  - Suciedad de sensores por polvo y tormentas; la lluvia los lava.
+ *  - La nave sirve de refugio: anula frío, clima y suciedad.
  *  - Máquina de estados del modo reposo: caja → regreso → recarga.
  *  - Detección de la caja caída más cercana y del recurso que el robot tiene delante.
  *  - Rebrote de recursos recolectados.
@@ -58,9 +61,16 @@ export function RobotSystems() {
 
         // --- Batería ---
         const effort = Math.min(player.speed / MAX_SPEED, 1)
+        const sheltered = isSheltered(player.position.x, player.position.z)
+        // Aviso discreto al entrar/salir del refugio con mal tiempo.
+        if (sheltered !== environment.sheltered && weatherState.drain > 1.05) {
+          game.notify(sheltered ? 'A cubierto junto a la nave' : 'Expuesto al clima', sheltered ? 'info' : 'warn')
+        }
+        environment.sheltered = sheltered
         let drain = ROBOT.drain.idle + ROBOT.drain.moving * effort
-        if (ambientTemperature(hour) < 0) drain *= ROBOT.drain.coldMultiplier
-        const solar = ROBOT.solarCharge * environment.palette.daylight
+        if (ambientTemperature(hour) < 0 && !sheltered) drain *= ROBOT.drain.coldMultiplier
+        if (!sheltered) drain *= weatherState.drain
+        const solar = ROBOT.solarCharge * environment.palette.daylight * weatherState.solar
         let delta = (solar - drain) * gameHours
         // Coste del salto: al despegar del suelo hacia arriba.
         if (lastGrounded.current && !player.grounded && player.velocity.y > 0) delta -= ROBOT.drain.jump
@@ -68,7 +78,14 @@ export function RobotSystems() {
         game.addBattery(delta)
 
         // --- Sensores: el polvo se pega más al moverse con viento fuerte ---
-        game.addSensorDirt(ROBOT.sensors.dirtPerHour * gameHours * effort * (0.5 + wind.strength * 2))
+        // El clima añade suciedad aunque estés quieto (tormenta) o la lava (lluvia).
+        if (!sheltered) {
+          game.addSensorDirt(
+            ROBOT.sensors.dirtPerHour * gameHours * effort * (0.5 + wind.strength * 2) +
+              weatherState.dirtPerHour * gameHours,
+          )
+          if (weatherState.washPerHour > 0) game.cleanSensors(weatherState.washPerHour * gameHours)
+        }
 
         break
       }

@@ -25,6 +25,13 @@ export const RECIPES: Recipe[] = [
     station: 'ship',
     requires: 'axe',
   },
+  {
+    id: 'sonicCleaner',
+    output: 'sonicCleaner',
+    amount: 1,
+    cost: { scrapMetal: 2, techParts: 2, fiber: 2 },
+    station: 'ship',
+  },
 ]
 
 /** Distancia a la plataforma de la nave para usar el banco de trabajo. */

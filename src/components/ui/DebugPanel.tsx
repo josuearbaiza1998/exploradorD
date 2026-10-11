@@ -4,6 +4,7 @@ import { ROBOT } from '@/config/robot'
 import { getGame, useGameStore } from '@/store/gameStore'
 import { dayNumber, hourOfDay } from '@/store/slices/clockSlice'
 import { ambientTemperature } from '@/systems/worldClock'
+import { WEATHER, type WeatherId } from '@/config/weather'
 
 const SPEEDS = [1, 10, 60]
 
@@ -20,6 +21,7 @@ export function DebugPanel() {
   const inventory = useGameStore((s) => s.inventory)
   const boxes = useGameStore((s) => s.droppedBoxes.length)
   const mode = useGameStore((s) => s.mode)
+  const weather = useGameStore((s) => s.weather)
 
   useEffect(() => {
     const id = window.setInterval(() => force((n) => n + 1), 250)
@@ -66,12 +68,20 @@ export function DebugPanel() {
             {boxes > 0 && ` · 📦 ${boxes} caja(s) en el mapa`}
           </div>
           <div className="debug-row wrap">
+            {(Object.keys(WEATHER) as WeatherId[]).map((id) => (
+              <button key={id} className={weather === id ? 'active' : ''} onClick={() => g.setWeather(id)}>
+                {WEATHER[id].label}
+              </button>
+            ))}
+          </div>
+          <div className="debug-row wrap">
             <button onClick={() => g.setBattery(ROBOT.batteryCritical)}>Agotar batería</button>
             <button
               onClick={() => {
                 g.addItem('wood', 4)
                 g.addItem('scrapMetal', 2)
                 g.addItem('fiber', 3)
+                g.addItem('techParts', 2)
               }}
             >
               + Objetos

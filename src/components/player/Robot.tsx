@@ -9,6 +9,9 @@ import { focus } from '@/systems/focus'
 import { consumeJump, getMoveVector } from '@/systems/input'
 import { simpleMotor } from '@/systems/physics/characterMotor'
 import { player } from '@/systems/player'
+import { environment } from '@/systems/environmentState'
+import { weatherState } from '@/systems/weatherState'
+import { wind } from '@/systems/wind'
 import { HeldTool } from './HeldTool'
 import { RobotModel } from './RobotModel'
 
@@ -37,13 +40,27 @@ export function Robot() {
     let targetX = 0
     let targetZ = 0
     let jump = false
+    let pushX = 0
+    let pushZ = 0
 
     if (mode === 'active') {
       // Dirección deseada relativa a la cámara (joystick analógico => velocidad analógica).
       const move = getMoveVector()
       const axes = cameraAxes()
-      targetX = (axes.rightX * move.x + axes.forwardX * move.y) * RUN_SPEED
-      targetZ = (axes.rightZ * move.x + axes.forwardZ * move.y) * RUN_SPEED
+      const dirX = axes.rightX * move.x + axes.forwardX * move.y
+      const dirZ = axes.rightZ * move.x + axes.forwardZ * move.y
+      // Clima: la lluvia y la arena frenan; contra el viento de tormenta cuesta más.
+      const len = Math.hypot(dirX, dirZ)
+      const headwind = len > 0 ? Math.max(0, -(dirX * wind.dirX + dirZ * wind.dirZ) / len) : 0
+      const storm = Math.max(0, wind.strength - 0.6) * 2.5
+      const speed = RUN_SPEED * (environment.sheltered ? 1 : weatherState.speed) * (1 - headwind * storm * 0.35)
+      targetX = dirX * speed
+      targetZ = dirZ * speed
+      // Las ráfagas fuertes empujan al robot (sensación de tormenta).
+      if (!environment.sheltered && storm > 0) {
+        pushX = wind.dirX * storm * 0.9
+        pushZ = wind.dirZ * storm * 0.9
+      }
       jump = consumeJump()
     } else {
       consumeJump() // descartar pulsaciones durante la emergencia
@@ -58,8 +75,8 @@ export function Robot() {
     }
 
     const k = 1 - Math.exp(-ACCELERATION * dt)
-    wish.current.x += (targetX - wish.current.x) * k
-    wish.current.z += (targetZ - wish.current.z) * k
+    wish.current.x += (targetX + pushX - wish.current.x) * k
+    wish.current.z += (targetZ + pushZ - wish.current.z) * k
 
     simpleMotor.step(player, wish.current.x, wish.current.z, jump, dt)
     player.speed = Math.hypot(player.velocity.x, player.velocity.z)

@@ -4,6 +4,7 @@ import { RECIPES, WORKBENCH_RADIUS, type Recipe } from '@/config/recipes'
 import { CHARGING_PAD } from '@/config/world'
 import { getGame, useGameStore } from '@/store/gameStore'
 import { player } from '@/systems/player'
+import { CleanButton } from '@/components/ui/controls/CleanButton'
 
 const nearWorkbench = () =>
   Math.hypot(player.position.x - CHARGING_PAD.x, player.position.z - CHARGING_PAD.z) < WORKBENCH_RADIUS
@@ -16,6 +17,7 @@ export function InventoryPanel() {
       <button className="bag-btn" aria-label="Mochila" onClick={() => setOpen(true)}>
         🎒
       </button>
+      <CleanButton />
       {open && <Panel onClose={() => setOpen(false)} />}
     </>
   )

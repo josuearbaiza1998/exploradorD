@@ -25,9 +25,9 @@ src/
   App.tsx                    Composición raíz (canvas + UI)
   assets/models.ts           Registro de .glb: cambia null por la ruta y listo
   config/                    world.ts (POIs, colinas, chunks, isla) · palette.ts · items.ts
-                             harvest.ts (qué se recolecta y con qué) · recipes.ts
+                             harvest.ts (qué se recolecta y con qué) · recipes.ts · weather.ts
                              robot.ts (ajustes de batería) · propLayers.ts
-  store/                     Zustand: gameStore + slices (clock, robot, inventory, world)
+  store/                     Zustand: gameStore + slices (clock, robot, inventory, world, weather)
   components/
     common/                  ModelSlot e InstancedProp (placeholder hoy, useGLTF mañana)
     environment/             DayNightCycle, Lighting, SkyDome
@@ -36,6 +36,7 @@ src/
     player/                  Robot (controlador), RobotModel, ThirdPersonCamera
     scene/                   GameCanvas, World
     systems/                 RobotSystems (batería, sensores, modo reposo)
+    weather/                 DustParticles, RainParticles
     ui/                      controls/ (joystick, LookPad, botones), overlays de sensores/energía,
                              DebugPanel (temporal), RotateDeviceHint
   hooks/useVisibleChunks.ts  Qué chunks deben existir alrededor del foco
@@ -51,5 +52,5 @@ src/
 - **Fase 2 (hecha):** controlador en tercera persona con joysticks virtuales + cámara de seguimiento, sin motor de físicas (motor cinemático intercambiable).
 - **Fase 3 (hecha):** store de Zustand (guardado en el navegador): batería, sensores, inventario, caja caída, modo reposo y recarga en la nave.
 - **Fase 4 (hecha):** interacción y crafteo escalonado: manos → hacha futurista → martillo de impacto, chatarra finita de la nave, rebrote de recursos, mochila con fabricación.
-- **Fase 5:** clima con gameplay: polvo, tormentas de arena, lluvia, suciedad de sensores (UI diegética), frío nocturno.
+- **Fase 5 (hecha):** clima con gameplay: despejado/ventoso/tormenta de arena/lluvia torrencial con transiciones; niebla, cielo, polvo y lluvia; sensores, batería, velocidad y viento en contra; la nave como refugio; limpiador sónico.
 - **Fase 6:** energía y refugios (paneles solares, construcción), y terreno infinito por chunks.

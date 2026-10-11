@@ -4,6 +4,7 @@ import type { AmbientLight, DirectionalLight, HemisphereLight } from 'three'
 import { Fog } from 'three'
 import { environment } from '@/systems/environmentState'
 import { focus } from '@/systems/focus'
+import { weatherState } from '@/systems/weatherState'
 
 const SHADOW_DISTANCE = 120
 const LIGHT_DISTANCE = 150
@@ -52,7 +53,12 @@ export function Lighting() {
       hemi.current.groundColor.copy(p.hemiGround)
       hemi.current.intensity = p.ambient * 1.4
     }
-    if (scene.fog instanceof Fog) scene.fog.color.copy(p.skyHorizon)
+    if (scene.fog instanceof Fog) {
+      // La niebla se cierra con tormentas/lluvia y toma el color del clima.
+      scene.fog.color.copy(p.skyHorizon).lerp(environment.weatherTint, weatherState.tintAmount)
+      scene.fog.near = weatherState.fogNear
+      scene.fog.far = weatherState.fogFar
+    }
   })
 
   return (
