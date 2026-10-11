@@ -1,4 +1,8 @@
 import { useMemo } from 'react'
+import { useFrame } from '@react-three/fiber'
+import { Color } from 'three'
+import { ecology } from '@/systems/ecology'
+import { PALETTE } from '@/config/palette'
 import type { BufferGeometry, Matrix4, MeshToonMaterial } from 'three'
 import { InstancedProp, type PropPart } from '@/components/common/InstancedProp'
 import { PROP_LAYERS, type PropLayer, type PropLayerId } from '@/config/propLayers'
@@ -31,6 +35,17 @@ const swayShrubGreen = applyWindSway(toonClone(MATERIALS.shrubGreen), 0.18)
 // Tronco y copa de un mismo árbol comparten flexión: si no, la copa se separa con viento fuerte.
 const swayTreeTrunk = applyWindSway(toonClone(MATERIALS.deadWood), 0.09)
 const swayTreeCrown = applyWindSway(toonClone(MATERIALS.deadWood), 0.09)
+
+// Color de las plantas según la humedad: verdes tras la lluvia, pajizas en sequía.
+const GREEN = { shrub: new Color(PALETTE.shrubGreen), leaf: new Color(PALETTE.palmLeaf) }
+const DRY = new Color('#b9a25a')
+const LUSH = new Color('#4fae4a')
+function tintPlants(moisture: number) {
+  const dry = Math.max(0, 0.45 - moisture) / 0.45
+  const lush = Math.max(0, moisture - 0.6) / 0.4
+  swayShrubGreen.color.copy(GREEN.shrub).lerp(DRY, dry * 0.7).lerp(LUSH, lush * 0.5)
+  swayLeaf.color.copy(GREEN.leaf).lerp(DRY, dry * 0.45).lerp(LUSH, lush * 0.35)
+}
 
 /** Contorno de cómic para props instanciados grandes (rocas, mesas). */
 const outlined = (geometries: BufferGeometry[], thickness: number): PropPart[] =>
@@ -79,6 +94,7 @@ function layerMatrices(
 
 /** Vegetación y rocas instanciadas por capas, distribuidas por chunk. */
 export function Vegetation() {
+  useFrame(() => tintPlants(ecology.moisture))
   const allChunks = useVisibleChunks()
   const chunkVersion = useChunkVersion()
   const harvested = useGameStore((s) => s.harvested)

@@ -19,6 +19,11 @@ export const player = {
   heading: Math.atan2(CRASH_SITE.x - SPAWN.x, CRASH_SITE.z - SPAWN.z),
   grounded: true,
   inWater: false,
+  climbing: false,
+  /** Aguanta una ráfaga de tormenta quieto (postura contra el viento). */
+  bracing: false,
+  /** Inclinación contra el viento al andar 0..1. */
+  headwind: 0,
   /** Velocidad horizontal actual en m/s (para animaciones). */
   speed: 0,
   /** Se incrementa en cada teletransporte para que la cámara salte sin suavizado. */

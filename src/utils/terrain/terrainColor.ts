@@ -1,6 +1,6 @@
 import { Color } from 'three'
 import { PALETTE } from '@/config/palette'
-import { ISLAND, OASIS, WORLD_SEED } from '@/config/world'
+import { isClimbWall, ISLAND, OASIS, WORLD_SEED } from '@/config/world'
 import { smoothstep } from '@/utils/math'
 import { valueNoise2D } from '@/utils/noise'
 import { OASIS_WATER_LEVEL } from './heightfield'
@@ -30,6 +30,12 @@ export function terrainColor(x: number, y: number, z: number, slope: number, out
   if (rockiness > 0) {
     tmp.copy(c.rock).lerp(c.rockDark, smoothstep(0.9, 1.4, slope))
     out.lerp(tmp, rockiness)
+  }
+
+  // Paredes escalables: roca oscura con estratos horizontales, se reconocen de lejos.
+  if (isClimbWall(x, z, y, slope)) {
+    const band = Math.sin(y * 0.9 + n * 2) > 0.3 ? 0.55 : 0.85
+    out.copy(c.rockDark).multiplyScalar(band + 0.15)
   }
 
   // Orilla del mar.

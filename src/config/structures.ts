@@ -4,7 +4,7 @@ import type { Inventory } from './items'
  * Estructuras construibles. La supervivencia depende de la energía y de
  * refugiarse del clima, no de comer: estas son las piezas para ello.
  */
-export type StructureType = 'solarPanel' | 'batteryBank' | 'shelter'
+export type StructureType = 'solarPanel' | 'batteryBank' | 'shelter' | 'lightningRod'
 
 export type StructureDef = {
   name: string
@@ -61,7 +61,23 @@ export const STRUCTURES: Record<StructureType, StructureDef> = {
     ],
     shelterRadius: 2.8,
   },
+  lightningRod: {
+    name: 'Pararrayos',
+    icon: '⚡',
+    description: 'En tormenta atrae los rayos cercanos: protege al robot y carga los bancos de baterías próximos.',
+    cost: { scrapMetal: 3, crystal: 2, techParts: 1 },
+    footprint: 0.8,
+    colliders: [[0, 0, 0.3, 5]],
+    chargeRadius: 10,
+  },
 }
+
+/** Distancia (m) a la que un pararrayos desvía los rayos hacia sí. */
+export const ROD_ATTRACT = 70
+/** Distancia (m) a la que protege al robot de los rayos. */
+export const ROD_PROTECT = 25
+/** Carga (%) que da cada rayo capturado a los bancos cercanos (o al robot). */
+export const ROD_CHARGE = 15
 
 /** Velocidad a la que un banco de baterías recarga al robot (%/h). */
 export const BANK_DISCHARGE_RATE = 25

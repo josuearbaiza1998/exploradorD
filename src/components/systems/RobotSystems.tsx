@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { flushExplored, revealAround } from '@/systems/exploredMap'
 import { useFrame } from '@react-three/fiber'
 import { Color } from 'three'
 import { ROBOT } from '@/config/robot'
@@ -50,6 +51,7 @@ export function RobotSystems() {
   const sweepTimer = useRef(0)
   const shadeTimer = useRef(0)
   const coverNear = useRef(false)
+  const mapTimer = useRef({ reveal: 0, flush: 0 })
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.1)
@@ -57,6 +59,17 @@ export function RobotSystems() {
     const gameHours = realToGameHours(dt, game)
     const hour = hourOfDay(game.totalHours)
     game.tickModeTime(dt)
+
+    // Niebla del minimapa: lo que el robot ve se queda en el mapa.
+    const mt = mapTimer.current
+    if ((mt.reveal -= dt) <= 0 && !inCave()) {
+      mt.reveal = 0.5
+      revealAround(player.position.x, player.position.z)
+    }
+    if ((mt.flush -= dt) <= 0) {
+      mt.flush = 8
+      flushExplored()
+    }
 
     // Paneles solares y bancos de baterías construidos: los bancos se llenan
     // aunque el robot esté lejos; solo se carga al robot si está activo.
@@ -88,6 +101,7 @@ export function RobotSystems() {
         environment.sheltered = sheltered
         const fx = upgradeEffects(game.upgrades)
         let drain = ROBOT.drain.idle + ROBOT.drain.moving * effort * fx.movingDrain
+        if (player.climbing) drain += ROBOT.drain.moving * fx.climbDrain
         if (game.nightVisionOn) drain += ROBOT.drain.nightVision
         if (player.sprinting) drain += ROBOT.drain.sprint * fx.movingDrain
         // --- Temperatura: sol del mediodía y frío nocturno ---

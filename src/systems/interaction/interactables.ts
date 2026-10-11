@@ -5,10 +5,11 @@ import { getLayerChunk } from '@/systems/propPlacement'
 import { getHeight } from '@/utils/terrain/heightfield'
 import { STRUCTURES } from '@/config/structures'
 import { NOTES } from '@/config/notes'
-import { CAVE_CACHE, caveFloor } from '@/config/cave'
+import { CAVE_CACHE, CAVE_CRYSTALS, CAVE_ORIGIN, caveFloor } from '@/config/cave'
 import { POIS, poiLocalToWorld, type PoiId } from '@/config/pois'
 import type { PlacedStructure } from '@/store/slices/structuresSlice'
 import type { Find } from '@/store/slices/explorationSlice'
+import { scavengerKey, scavengers } from '@/systems/scavengers'
 
 /** Alcance de interacción (m) medido desde el borde del objeto. */
 export const INTERACT_RANGE = 1.6
@@ -24,7 +25,14 @@ export const cacheKey = (id: PoiId) => `poi|${id}`
 export const findKey = (id: string) => `find|${id}`
 export const noteKey = (id: string) => `note|${id}`
 
-export const NOTE_WORLD = NOTES.map((n) => ({ ...n, key: noteKey(n.id), y: getHeight(n.x, n.z) }))
+export const NOTE_WORLD = NOTES.map((n) => ({ ...n, key: noteKey(n.id), y: n.cave ? caveFloor(n.x, n.z) : getHeight(n.x, n.z) }))
+
+export const caveCrystalKey = (i: number) => `cavecrystal|${i}`
+export const CAVE_CRYSTAL_WORLD = CAVE_CRYSTALS.map(([lx, lz], i) => {
+  const x = CAVE_ORIGIN.x + lx
+  const z = CAVE_ORIGIN.z + lz
+  return { key: caveCrystalKey(i), x, z, y: caveFloor(x, z) }
+})
 
 export const POI_CACHES = POIS.map((poi) => {
   // El contenedor de la cueva está al fondo de su interior.
@@ -112,6 +120,18 @@ export function findTarget(
   for (const n of NOTE_WORLD) {
     if (Math.abs(n.x - px) > reach || Math.abs(n.z - pz) > reach) continue
     consider(n.key, 'note', n.x, n.y, n.z, 0.5)
+  }
+
+  // Racimos de cristal de la cueva.
+  for (const c of CAVE_CRYSTAL_WORLD) {
+    if (Math.abs(c.x - px) > reach || Math.abs(c.z - pz) > reach) continue
+    consider(c.key, 'crystal', c.x, c.y, c.z, 0.8)
+  }
+
+  // Carroñeros (se mueven).
+  for (const sc of scavengers) {
+    if (!sc.active || Math.abs(sc.x - px) > reach || Math.abs(sc.z - pz) > reach) continue
+    consider(scavengerKey(sc), 'scavenger', sc.x, getHeight(sc.x, sc.z) + 0.4, sc.z, 0.6)
   }
 
   // Hallazgos del clima.

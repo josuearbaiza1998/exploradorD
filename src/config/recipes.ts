@@ -35,6 +35,8 @@ export const RECIPES: Recipe[] = [
   { id: 'drone', output: 'drone', amount: 1, cost: { scrapMetal: 4, techParts: 3, fiber: 2 }, station: 'ship' },
   { id: 'hook', output: 'hook', amount: 1, cost: { scrapMetal: 3, fiber: 4, techParts: 1 }, station: 'ship' },
   { id: 'cell', output: 'cell', amount: 1, cost: { scrapMetal: 2, techParts: 1 }, station: 'ship' },
+  // Celda sin metal: lo que deja la tormenta y lo que crece en la cueva.
+  { id: 'cellFulgurite', output: 'cell', amount: 1, cost: { fulgurite: 2, crystal: 1 }, station: 'ship' },
 ]
 
 /** Distancia a la plataforma de la nave para usar el banco de trabajo. */

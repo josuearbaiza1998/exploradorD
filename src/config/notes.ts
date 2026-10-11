@@ -4,7 +4,7 @@ import type { Vec2 } from './world'
  * Registros sueltos por el mapa: tabletas de datos de la expedición anterior
  * (la sonda D-2 y su nave). Cuentan la historia a quien explora.
  */
-export type NoteDef = Vec2 & { id: string; title: string; text: string }
+export type NoteDef = Vec2 & { id: string; title: string; text: string; /** Está dentro de la cueva. */ cave?: true }
 
 export const NOTES: NoteDef[] = [
   {
@@ -44,10 +44,18 @@ export const NOTES: NoteDef[] = [
   },
   {
     id: 'n6',
-    x: 82,
-    z: -150,
+    x: 84,
+    z: -135,
     title: 'Registro 6 · La antena',
-    text: 'La tormenta arrastró la antena de largo alcance hasta el islote frente al pico. Sin una forma de cruzar el agua no puedo recuperarla.',
+    text: 'La tormenta arrastró la antena de largo alcance hasta el islote frente al pico. Para llegar al pico hay que trepar la pared de roca, y desde allí cruzar el agua. Yo no tenía con qué.',
+  },
+  {
+    id: 'n8',
+    x: 700 - 5,
+    z: 700 - 68,
+    cave: true,
+    title: 'Registro 8 · Cristales',
+    text: 'Los cristales de la cueva guardan la energía de las tormentas. Con un martillo se arrancan fragmentos, y con el tiempo vuelven a crecer. Mezclados con la arena que funde un rayo dan una buena celda.',
   },
   {
     id: 'n7',

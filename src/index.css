@@ -751,3 +751,37 @@ html, body, #root, .app {
 .fade-overlay { position: absolute; inset: 0; background: #000; pointer-events: none; animation: fade-out 0.9s ease-in forwards; z-index: 3; }
 @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
 .grapple-btn { border-color: rgba(255, 180, 80, 0.9); background: rgba(130, 70, 20, 0.75); box-shadow: 0 0 12px rgba(255, 160, 60, 0.5); }
+
+/* Minimapa (debajo de los botones del HUD) y mapa grande */
+.minimap {
+  position: absolute;
+  top: 54px;
+  right: 0;
+  width: 112px;
+  height: 112px;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+  touch-action: none;
+}
+@media (max-height: 420px) {
+  .minimap { width: 92px; height: 92px; top: 48px; }
+}
+.map-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 10, 16, 0.55);
+  pointer-events: auto;
+}
+.map-big {
+  width: min(86vh, 86vw);
+  height: min(86vh, 86vw);
+  border-radius: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}

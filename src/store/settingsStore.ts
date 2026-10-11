@@ -22,6 +22,9 @@ export const useSettings = create<{
   /** Nivel que decide el modo automático. */
   autoLevel: QualityLevel
   setMode: (m: QualityMode) => void
+  /** Minimapa visible en el HUD. */
+  minimap: boolean
+  setMinimap: (on: boolean) => void
   stepAuto: (dir: -1 | 1) => void
 }>()(
   persist(
@@ -29,6 +32,8 @@ export const useSettings = create<{
       mode: 'auto',
       autoLevel: 'high',
       setMode: (mode) => set({ mode }),
+      minimap: true,
+      setMinimap: (minimap) => set({ minimap }),
       stepAuto: (dir) => {
         const i = ORDER.indexOf(get().autoLevel) + dir
         if (i >= 0 && i < ORDER.length) set({ autoLevel: ORDER[i] })

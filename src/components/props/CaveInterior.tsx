@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { BufferAttribute, BufferGeometry, DoubleSide, Object3D, OctahedronGeometry, type InstancedMesh } from 'three'
+import { AdditiveBlending, BufferAttribute, BufferGeometry, DoubleSide, Object3D, OctahedronGeometry, PointsMaterial, type InstancedMesh, type Points } from 'three'
 import { useRef } from 'react'
-import { CAVE_CACHE, CAVE_ORIGIN, CAVE_PATH, caveFloor, caveHeadroom } from '@/config/cave'
+import { CAVE_BLOCKERS, CAVE_CACHE, CAVE_ORIGIN, CAVE_PATH, caveFloor, caveHeadroom } from '@/config/cave'
+import { CAVE_CRYSTAL_WORLD } from '@/systems/interaction/interactables'
 import { createToonMaterial } from '@/materials/toonMaterials'
 import { useGameStore } from '@/store/gameStore'
 import { useInCave } from '@/hooks/useInCave'
@@ -115,7 +116,7 @@ function Crystals({ samples }: { samples: Sample[] }) {
       const r = s.w - 0.2
       const x = s.x + s.nx * side * r
       const z = s.z + s.nz * side * r
-      const big = i > samples.length - 14
+      const big = i > samples.length - 30
       d.position.set(x, s.floor + 0.2 + hash(i, 3) * (big ? 2 : 0.8), z)
       d.rotation.set(hash(i, 1) * 0.8, hash(i, 2) * 3, side * (0.4 + hash(i, 4) * 0.5))
       const k = (big ? 0.7 : 0.25) + hash(i, 5) * (big ? 0.6 : 0.3)
@@ -154,7 +155,7 @@ function Interior() {
   const ground = useMemo(() => createToonMaterial({ color: '#4d4350', flatShading: true }), [])
   const exitGlow = useMemo(() => createToonMaterial({ color: '#ffe2b0', emissive: '#ffd08a', emissiveIntensity: 1.6, side: DoubleSide }), [])
   const looted = useGameStore((s) => !!s.looted.cave)
-  const lights = [8, 30, 52, samples.length - 6].map((i) => samples[Math.min(i, samples.length - 1)])
+  const lights = [8, 34, 62, 92, samples.length - 22, samples.length - 6].map((i) => samples[Math.min(i, samples.length - 1)])
   const cacheY = caveFloor(CAVE_CACHE.x, CAVE_CACHE.z)
   return (
     <group name="cave-interior">
@@ -167,11 +168,126 @@ function Interior() {
       <pointLight position={[CAVE_ORIGIN.x, CAVE_ORIGIN.y + 2, CAVE_ORIGIN.z - 1]} color="#ffd9a0" intensity={8} distance={14} decay={1.5} />
       <Crystals samples={samples} />
       {lights.map((s, i) => (
-        <pointLight key={i} position={[s.x, s.floor + 2.2, s.z]} color="#5fd4ff" intensity={i === 3 ? 22 : 10} distance={i === 3 ? 26 : 16} decay={1.4} />
+        <pointLight key={i} position={[s.x, s.floor + (i >= 4 ? 4 : 2.2), s.z]} color="#5fd4ff" intensity={i >= 4 ? 26 : 12} distance={i >= 4 ? 30 : 18} decay={1.4} />
       ))}
+      <Geode />
+      <Pool />
+      <HarvestCrystals />
+      <Spores />
       <group position={[CAVE_CACHE.x, cacheY, CAVE_CACHE.z]} rotation-y={0}>
         <Cache looted={looted} glow="#7fe8ff" />
       </group>
     </group>
   )
+}
+
+const local = (lx: number, lz: number) => ({ x: CAVE_ORIGIN.x + lx, z: CAVE_ORIGIN.z + lz })
+
+/** Geoda gigante en el centro de la cámara: un racimo de cristales que late. */
+function Geode() {
+  const [bx, bz, br] = CAVE_BLOCKERS[0]
+  const p = local(bx, bz)
+  const y = caveFloor(p.x, p.z)
+  const mat = useMemo(() => createToonMaterial({ color: '#9ff0ff', emissive: '#4ac8ff', emissiveIntensity: 1.4, flatShading: true }), [])
+  const base = useMemo(() => createToonMaterial({ color: '#2f2a38', flatShading: true }), [])
+  useFrame(({ clock }) => {
+    mat.emissiveIntensity = 1.2 + Math.sin(clock.elapsedTime * 0.9) * 0.4
+  })
+  const shards = useMemo(
+    () =>
+      Array.from({ length: 11 }, (_, i) => {
+        const a = (i / 11) * Math.PI * 2
+        const r = i === 0 ? 0 : br * (0.35 + hash(i, 9) * 0.4)
+        return {
+          pos: [Math.cos(a) * r, 0.6 + hash(i, 2) * 0.6, Math.sin(a) * r] as [number, number, number],
+          rot: [Math.cos(a) * (i ? 0.5 : 0), a, Math.sin(a) * (i ? 0.5 : 0)] as [number, number, number],
+          s: (i === 0 ? [0.9, 3.4, 0.9] : [0.45, 1.4 + hash(i, 4) * 1.4, 0.45]) as [number, number, number],
+        }
+      }),
+    [br],
+  )
+  return (
+    <group position={[p.x, y, p.z]}>
+      <mesh material={base} scale={[br, 0.6, br]}>
+        <icosahedronGeometry args={[1, 0]} />
+      </mesh>
+      {shards.map((sh, i) => (
+        <mesh key={i} material={mat} position={sh.pos} rotation={sh.rot} scale={sh.s}>
+          <octahedronGeometry args={[1, 0]} />
+        </mesh>
+      ))}
+      <pointLight position={[0, 3, 0]} color="#7fe3ff" intensity={18} distance={20} decay={1.5} />
+    </group>
+  )
+}
+
+/** Lago subterráneo: agua quieta que brilla desde el fondo. */
+function Pool() {
+  const [bx, bz, br] = CAVE_BLOCKERS[1]
+  const p = local(bx, bz)
+  const y = caveFloor(p.x, p.z)
+  const water = useMemo(() => createToonMaterial({ color: '#1f6f9a', emissive: '#1aa6d8', emissiveIntensity: 0.9, transparent: true, opacity: 0.85 }), [])
+  const rim = useMemo(() => createToonMaterial({ color: '#3a3344', flatShading: true }), [])
+  useFrame(({ clock }) => {
+    water.emissiveIntensity = 0.8 + Math.sin(clock.elapsedTime * 0.6) * 0.15
+  })
+  return (
+    <group position={[p.x, y, p.z]}>
+      <mesh material={rim} rotation-x={-Math.PI / 2} position-y={0.04}>
+        <ringGeometry args={[br * 0.92, br * 1.15, 14]} />
+      </mesh>
+      <mesh material={water} rotation-x={-Math.PI / 2} position-y={0.06}>
+        <circleGeometry args={[br * 0.95, 20]} />
+      </mesh>
+    </group>
+  )
+}
+
+/** Racimos que se arrancan con el martillo (desaparecen hasta que rebrotan). */
+function HarvestCrystals() {
+  const harvested = useGameStore((s) => s.harvested)
+  const mat = useMemo(() => createToonMaterial({ color: '#b6f4ff', emissive: '#5fd4ff', emissiveIntensity: 1.6, flatShading: true }), [])
+  return (
+    <>
+      {CAVE_CRYSTAL_WORLD.map((c, i) =>
+        c.key in harvested ? null : (
+          <group key={c.key} position={[c.x, c.y, c.z]} rotation-y={i * 1.9}>
+            {[0, 1, 2, 3].map((k) => (
+              <mesh key={k} material={mat} position={[Math.cos(k * 1.6) * 0.3 * (k ? 1 : 0), 0.45, Math.sin(k * 1.6) * 0.3 * (k ? 1 : 0)]} rotation={[k ? 0.45 : 0, k, k ? 0.3 : 0]} scale={[0.22, k ? 0.6 : 0.9, 0.22]}>
+                <octahedronGeometry args={[1, 0]} />
+              </mesh>
+            ))}
+          </group>
+        ),
+      )}
+    </>
+  )
+}
+
+/** Esporas luminosas flotando en la cámara del fondo. */
+function Spores() {
+  const ref = useRef<Points>(null)
+  const N = 90
+  const { geometry, seeds } = useMemo(() => {
+    const g = new BufferGeometry()
+    g.setAttribute('position', new BufferAttribute(new Float32Array(N * 3), 3))
+    const seeds = Array.from({ length: N }, () => {
+      const p = local((Math.random() - 0.5) * 22, -72 - Math.random() * 20)
+      return { ...p, y: caveFloor(p.x, p.z) + 0.5 + Math.random() * 5, ph: Math.random() * 100 }
+    })
+    return { geometry: g, seeds }
+  }, [])
+  const material = useMemo(() => new PointsMaterial({ size: 0.18, color: '#9ff0ff', transparent: true, opacity: 0.85, blending: AdditiveBlending, depthWrite: false }), [])
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime
+    const arr = (geometry.getAttribute('position') as BufferAttribute).array as Float32Array
+    for (let i = 0; i < N; i++) {
+      const s = seeds[i]
+      arr[i * 3] = s.x + Math.sin(t * 0.3 + s.ph) * 0.8
+      arr[i * 3 + 1] = s.y + Math.sin(t * 0.5 + s.ph * 2) * 0.5
+      arr[i * 3 + 2] = s.z + Math.cos(t * 0.25 + s.ph) * 0.8
+    }
+    geometry.getAttribute('position').needsUpdate = true
+  })
+  return <points ref={ref} geometry={geometry} material={material} frustumCulled={false} />
 }

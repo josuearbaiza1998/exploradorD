@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { Group, Mesh, PointLight } from 'three'
 import { MeshBasicMaterial } from 'three'
@@ -9,6 +9,7 @@ import { player } from '@/systems/player'
 import { thermal } from '@/systems/thermal'
 import { environment } from '@/systems/environmentState'
 import { groundAt } from '@/systems/physics/characterMotor'
+import { dronePos, scavengers } from '@/systems/scavengers'
 
 /** Hueco tras el robot y a su izquierda (local: +x izquierda vista desde atrás). */
 const OFFSET_SIDE = 1.1
@@ -35,6 +36,12 @@ function DroneBody() {
   const eye = useRef<Mesh>(null)
   const lamp = useRef<PointLight>(null)
   const placed = useRef(false)
+  useEffect(
+    () => () => {
+      dronePos.active = false
+    },
+    [],
+  )
   const shell = sharedToon(PALETTE.robot)
   const dark = sharedToon(PALETTE.robotDark)
   const joint = sharedToon(PALETTE.robotJoint)
@@ -47,9 +54,15 @@ function DroneBody() {
     const h = player.heading
     const s = Math.sin(h)
     const c = Math.cos(h)
-    // Detrás (-forward) y a la izquierda del robot.
-    const tx = player.position.x - s * OFFSET_BACK + c * OFFSET_SIDE
-    const tz = player.position.z - c * OFFSET_BACK - s * OFFSET_SIDE
+    // Detrás (-forward) y a la izquierda del robot; si un carroñero se
+    // acerca, el dron sale a espantarlo.
+    let tx = player.position.x - s * OFFSET_BACK + c * OFFSET_SIDE
+    let tz = player.position.z - c * OFFSET_BACK - s * OFFSET_SIDE
+    const pest = scavengers.find((sc) => sc.active && sc.goal !== 'flee' && Math.hypot(sc.x - player.position.x, sc.z - player.position.z) < 14)
+    if (pest) {
+      tx = pest.x
+      tz = pest.z
+    }
     const floor = Math.max(groundAt(tx, tz), player.position.y)
     const ty = floor + HEIGHT + Math.sin(t * 2.2) * 0.12
     if (!placed.current) {
@@ -67,6 +80,9 @@ function DroneBody() {
     g.rotation.x = Math.min(0.35, Math.hypot(dx, dz) * 0.15)
     g.rotation.z = Math.sin(t * 1.3) * 0.05
     for (const r of rotors.current) if (r) r.rotation.y += dt * 40
+    dronePos.x = g.position.x
+    dronePos.z = g.position.z
+    dronePos.active = true
 
     // Ojo: rojo intermitente si hay problema, azul si todo va bien.
     const warn = getGame().battery < 15 || thermal.overheated || thermal.heat > 0.7

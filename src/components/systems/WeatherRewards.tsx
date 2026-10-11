@@ -26,6 +26,9 @@ export function WeatherRewards() {
       if (w === 'storm') game.notify('⛈️ Tormenta eléctrica: rachas fuertes y rayos. Mejor ponerse a cubierto.', 'warn')
       else if (w === 'rain' && prev.current !== 'storm') game.notify('🌧️ Llega un aguacero: el oasis lo agradecerá.', 'info')
       if (prev.current === 'sandstorm') {
+        // La arena cubre las cajas caídas lejos del robot (y borra las huellas).
+        if (game.buryBoxes([player.position.x, player.position.z], 6) > 0)
+          game.notify('🏜️ La tormenta enterró tu caja caída: búscala y desentiérrala', 'warn')
         const finds: Find[] = []
         for (let i = 0; i < 3; i++) {
           const s = landSpot(player.position.x, player.position.z, 12, 45, 2.5)

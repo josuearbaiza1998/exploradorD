@@ -28,6 +28,8 @@ export type WorldSlice = {
   markHarvested: (key: string, regrowAt: number) => void
   resetHits: (key: string) => void
   setSalvageUses: (id: string, uses: number) => void
+  /** Adelanta el rebrote de lo recolectado (la lluvia hace crecer las plantas). */
+  hastenRegrow: (hours: number, prefixes: string[]) => void
   /** Elimina los recursos que ya han vuelto a crecer. Devuelve si cambió algo. */
   sweepRegrown: () => boolean
   notify: (text: string, tone?: 'gain' | 'info' | 'warn') => void
@@ -67,6 +69,17 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
   },
 
   setSalvageUses: (id, uses) => set({ salvageUses: { ...get().salvageUses, [id]: uses } }),
+
+  hastenRegrow: (hours, prefixes) => {
+    const harvested = { ...get().harvested }
+    let changed = false
+    for (const [key, at] of Object.entries(harvested)) {
+      if (at === -1 || !prefixes.some((p) => key.startsWith(p))) continue
+      harvested[key] = at - hours
+      changed = true
+    }
+    if (changed) set({ harvested })
+  },
 
   sweepRegrown: () => {
     const { harvested, totalHours } = get()

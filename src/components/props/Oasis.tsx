@@ -5,6 +5,7 @@ import { PALETTE } from '@/config/palette'
 import { OASIS } from '@/config/world'
 import { createToonMaterial } from '@/materials/toonMaterials'
 import { OASIS_WATER_LEVEL } from '@/utils/terrain/heightfield'
+import { ecology } from '@/systems/ecology'
 
 const waterMaterial = createToonMaterial({
   color: PALETTE.oasisWater,
@@ -23,7 +24,12 @@ const waterMaterial = createToonMaterial({
 export function Oasis() {
   const water = useRef<Mesh>(null)
   useFrame(({ clock }) => {
-    if (water.current) water.current.position.y = OASIS_WATER_LEVEL + Math.sin(clock.elapsedTime * 0.8) * 0.04
+    const w = water.current
+    if (!w) return
+    // Con lluvia el oasis crece y se extiende; con sequía baja y encoge.
+    w.position.y = ecology.oasisLevel + Math.sin(clock.elapsedTime * 0.8) * 0.04
+    const grow = 1 + Math.max(-0.12, (ecology.oasisLevel - OASIS_WATER_LEVEL) * 0.45)
+    w.scale.set(grow, grow, 1)
   })
   return (
     <group name="oasis" position={[OASIS.x, 0, OASIS.z]}>

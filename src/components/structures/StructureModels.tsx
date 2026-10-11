@@ -4,6 +4,7 @@ import type { StructureType } from '@/config/structures'
 
 const panelCells = createToonMaterial({ color: '#2b4fa8', emissive: '#18306a', emissiveIntensity: 0.3 })
 const fabric = createToonMaterial({ color: '#e0a35a', flatShading: true })
+export const rodCrystal = createToonMaterial({ color: '#b6f4ff', emissive: '#5fd4ff', emissiveIntensity: 1.4, flatShading: true })
 export const bankLightMaterial = createToonMaterial({ color: '#3ad0ff', emissive: '#3ad0ff', emissiveIntensity: 1 })
 
 /**
@@ -42,6 +43,25 @@ export function StructurePlaceholder({ type, override }: { type: StructureType; 
               <boxGeometry args={[0.18, 0.9, 0.02]} />
             </mesh>
           )}
+        </group>
+      )
+    case 'lightningRod':
+      return (
+        <group>
+          <mesh material={m(MATERIALS.shipDark)} position-y={0.15} castShadow>
+            <cylinderGeometry args={[0.45, 0.55, 0.3, 8]} />
+          </mesh>
+          <mesh material={m(MATERIALS.shipHull)} position-y={2.6} castShadow>
+            <cylinderGeometry args={[0.06, 0.11, 5, 6]} />
+          </mesh>
+          {[1.4, 2.2, 3.0].map((y) => (
+            <mesh key={y} material={m(MATERIALS.shipAccent)} position-y={y} rotation-x={Math.PI / 2}>
+              <torusGeometry args={[0.2, 0.04, 5, 10]} />
+            </mesh>
+          ))}
+          <mesh name="rod-tip" material={m(rodCrystal)} position-y={5.35}>
+            <octahedronGeometry args={[0.28, 0]} />
+          </mesh>
         </group>
       )
     case 'shelter':

@@ -68,14 +68,35 @@ function ArmParts({ limb }: { limb: Limb }) {
   )
 }
 
+/** Garras de escalada: tres uñas curvas en el dorso de la mano. */
+function ClawParts({ limb, level }: { limb: Limb; level: number }) {
+  const mat = level >= 2 ? accent() : dark()
+  return (
+    <BoneAttachment bone={limb.bone} rest={limb.rest}>
+      <group position={limb.mid} quaternion={limb.quat}>
+        <mesh material={dark()} position-y={-limb.len * 0.3} castShadow>
+          <boxGeometry args={[0.22, 0.12, 0.24]} />
+        </mesh>
+        {[-0.07, 0, 0.07].map((x) => (
+          <mesh key={x} material={mat} position={[x, -limb.len * 0.55, 0.09]} rotation-x={Math.PI - 0.35} castShadow>
+            <coneGeometry args={[0.025, 0.2, 4]} />
+          </mesh>
+        ))}
+      </group>
+    </BoneAttachment>
+  )
+}
+
 /** Piezas de las mejoras que se ven en piernas y brazos. */
 export function LimbUpgrades({ legs, arms }: { legs: Limb[]; arms: Limb[] }) {
   const legLevel = useGameStore((s) => s.upgrades.legs ?? 0)
   const armLevel = useGameStore((s) => s.upgrades.arms ?? 0)
+  const climbLevel = useGameStore((s) => s.upgrades.climb ?? 0)
   return (
     <>
       {legLevel > 0 && legs.map((l, i) => <LegParts key={i} limb={l} level={legLevel} />)}
       {armLevel > 0 && arms.map((l, i) => <ArmParts key={i} limb={l} />)}
+      {climbLevel > 0 && arms.map((l, i) => <ClawParts key={i} limb={l} level={climbLevel} />)}
     </>
   )
 }

@@ -35,6 +35,7 @@ export function GameMenu() {
 
 function MainMenu() {
   const mode = useSettings((s) => s.mode)
+  const minimap = useSettings((s) => s.minimap)
   const level = useSettings(qualityLevel)
   const [muted, setMutedState] = useState(isMuted)
   const [fps, setFps] = useState(Math.round(perfStats.fps))
@@ -57,6 +58,21 @@ function MainMenu() {
           }}
         >
           {muted ? '🔇 Apagado' : '🔊 Encendido'}
+        </button>
+      </div>
+      <div className="menu-row">
+        <span>
+          Minimapa
+          <em className="menu-hint">Solo muestra lo que ya has explorado</em>
+        </span>
+        <button
+          className="inv-use"
+          onClick={() => {
+            playClick()
+            useSettings.getState().setMinimap(!minimap)
+          }}
+        >
+          {minimap ? '🗺️ Encendido' : '🚫 Apagado'}
         </button>
       </div>
       <div className="menu-row">

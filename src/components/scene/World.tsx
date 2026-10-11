@@ -6,10 +6,13 @@ import { Anchors } from '@/components/props/Anchors'
 import { Notes } from '@/components/props/Notes'
 import { Finds } from '@/components/props/Finds'
 import { CaveSystem } from '@/components/systems/CaveSystem'
+import { EcologySystem } from '@/components/systems/EcologySystem'
+import { Puddles } from '@/components/props/Puddles'
 import { WeatherRewards } from '@/components/systems/WeatherRewards'
 import { Pois } from '@/components/props/Pois'
 import { HitEffects } from '@/components/props/HitEffects'
 import { Fauna } from '@/components/environment/Fauna'
+import { Scavengers } from '@/components/environment/Scavengers'
 import { Clouds } from '@/components/environment/Clouds'
 import { SkyDome } from '@/components/environment/SkyDome'
 import { ChargingPad } from '@/components/props/ChargingPad'
@@ -39,6 +42,7 @@ export function World() {
       <AudioSystem />
       <WeatherRewards />
       <CaveSystem />
+      <EcologySystem />
       <SkyDome />
       <Clouds />
       <Lighting />
@@ -61,8 +65,10 @@ export function World() {
       <Structures />
       <BuildGhost />
       <Oasis />
+      <Puddles />
       <Vegetation />
       <Fauna />
+      <Scavengers />
       <Robot />
       <Drone />
       <Footprints />

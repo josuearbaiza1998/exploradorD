@@ -5,7 +5,7 @@ import type { ItemId, ToolId } from './items'
  * Progresión escalonada: manos → hacha → martillo. El metal NO sale de las
  * rocas: solo de la nave (scavenging).
  */
-export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel' | 'structure' | 'cache' | 'buried' | 'bloom' | 'note'
+export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel' | 'structure' | 'cache' | 'buried' | 'bloom' | 'note' | 'crystal' | 'fulgurite' | 'scavenger'
 
 export type HarvestDef = {
   label: string
@@ -120,6 +120,40 @@ export const HARVEST: Record<HarvestKind, HarvestDef> = {
       { item: 'fiber', min: 2, max: 3 },
       { item: 'cloth', min: 0, max: 1 },
     ],
+    regrowHours: null,
+  },
+  // Racimos de cristal de la cueva: vuelven a crecer.
+  crystal: {
+    material: 'stone',
+    label: 'Racimo de cristal',
+    verb: 'Arrancar',
+    icon: '🔨',
+    tool: 'hammer',
+    hits: 3,
+    yields: [{ item: 'crystal', min: 1, max: 3 }],
+    regrowHours: 72,
+  },
+  // Robots carroñeros: dos golpes los apagan y sueltan lo que llevan.
+  scavenger: {
+    material: 'metal',
+    label: 'Carroñero',
+    verb: 'Golpear',
+    icon: '✊',
+    hits: 2,
+    yields: [
+      { item: 'scrapMetal', min: 1, max: 2 },
+      { item: 'techParts', min: 0, max: 1 },
+    ],
+    regrowHours: null,
+  },
+  // Lo que deja un rayo al caer en la arena.
+  fulgurite: {
+    material: 'stone',
+    label: 'Fulgurita',
+    verb: 'Recoger',
+    icon: '✊',
+    hits: 1,
+    yields: [{ item: 'fulgurite', min: 1, max: 2 }],
     regrowHours: null,
   },
   // Registro de la expedición anterior: se lee (se puede releer).

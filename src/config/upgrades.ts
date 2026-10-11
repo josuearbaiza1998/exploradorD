@@ -10,7 +10,7 @@ export const CARRY_BASE = 30
 /** Carga extra que lleva el dron. */
 export const DRONE_CARRY = 10
 
-export type UpgradeId = 'battery' | 'legs' | 'solar' | 'sensors' | 'arms' | 'nightVision' | 'backpack'
+export type UpgradeId = 'battery' | 'legs' | 'solar' | 'sensors' | 'arms' | 'nightVision' | 'backpack' | 'climb'
 
 export type UpgradeDef = {
   id: UpgradeId
@@ -76,6 +76,15 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
       { description: `Carga ${CARRY_BASE + 60}`, cost: { stone: 6, scrapMetal: 3, techParts: 2 } },
     ],
   },
+  climb: {
+    id: 'climb',
+    name: 'Garras de escalada',
+    icon: '🧗',
+    levels: [
+      { description: 'Permite escalar paredes de roca, como la colina de la baliza', cost: { fiber: 6, stone: 4, scrapMetal: 2 } },
+      { description: 'Escala un 50 % más rápido y gasta menos batería al trepar', cost: { stone: 4, scrapMetal: 2, crystal: 3 } },
+    ],
+  },
   nightVision: {
     id: 'nightVision',
     name: 'Visión nocturna',
@@ -103,6 +112,12 @@ export function upgradeEffects(u: UpgradeLevels, drone = false) {
     dirt: 1 - [0, 0.35, 0.65][lv('sensors')],
     hitPower: lv('arms') > 0 ? 2 : 1,
     nightVision: lv('nightVision') > 0,
+    /** Nivel de garras: 0 = no puede trepar paredes de roca. */
+    climb: lv('climb'),
+    /** Velocidad al trepar (m/s). */
+    climbSpeed: [0, 1.7, 2.6][lv('climb')],
+    /** Multiplicador del gasto mientras trepa. */
+    climbDrain: [1, 1.8, 1.3][lv('climb')],
     /** Carga máxima de la mochila (recursos y consumibles; herramientas y piezas no ocupan). */
     carry: CARRY_BASE + [0, 15, 35, 60][lv('backpack')] + (drone ? DRONE_CARRY : 0),
   }

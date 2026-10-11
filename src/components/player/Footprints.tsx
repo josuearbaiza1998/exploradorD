@@ -69,7 +69,8 @@ export function Footprints() {
         state.next = (state.next + 1) % MAX
       }
     }
-    const erase = 1 + wind.strength * 1.5 + weatherState.dust * 6
+    // La tormenta de arena las borra en segundos.
+    const erase = 1 + wind.strength * 1.5 + weatherState.dust * weatherState.dust * 25
     for (let i = 0; i < MAX; i++) {
       const p = state.prints[i]
       p.age += dt * erase

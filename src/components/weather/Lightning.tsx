@@ -4,8 +4,8 @@ import { AdditiveBlending, InstancedMesh, MeshBasicMaterial, Object3D, BoxGeomet
 import { weatherState } from '@/systems/weatherState'
 import { environment } from '@/systems/environmentState'
 import { player } from '@/systems/player'
-import { getHeight } from '@/utils/terrain/heightfield'
 import { thunder } from '@/systems/audio/audioEngine'
+import { resolveStrike } from '@/systems/lightningStrike'
 
 const SEGMENTS = 22
 const BOLT_TIME = 0.32
@@ -56,13 +56,15 @@ export function Lightning() {
 }
 
 function strike(m: InstancedMesh, st: { age: number; flicker: number }) {
-  // Casi siempre lejos; de vez en cuando cerca para asustar.
-  const close = Math.random() < 0.15
-  const dist = close ? 18 + Math.random() * 20 : 60 + Math.random() * 150
+  // Casi siempre lejos; de vez en cuando cerca para asustar (más aún en lo alto).
+  const close = Math.random() < (player.position.y > 22 ? 0.4 : 0.15)
+  const d0 = close ? 18 + Math.random() * 20 : 60 + Math.random() * 150
   const ang = Math.random() * Math.PI * 2
-  const gx = player.position.x + Math.cos(ang) * dist
-  const gz = player.position.z + Math.sin(ang) * dist
-  const gy = Math.max(getHeight(gx, gz), -1.5)
+  const target = resolveStrike(player.position.x + Math.cos(ang) * d0, player.position.z + Math.sin(ang) * d0, close)
+  const gx = target.x
+  const gz = target.z
+  const gy = target.y
+  const dist = Math.hypot(gx - player.position.x, gz - player.position.z)
   const top = gy + 95
   // Tronco principal quebrado (14 tramos) y una rama (el resto).
   const main = 14

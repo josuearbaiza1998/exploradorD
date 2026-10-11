@@ -63,6 +63,7 @@ export const useGameStore = create<GameState>()(
         weatherSince: s.weatherSince,
         weatherUntil: s.weatherUntil,
         lastRainAt: s.lastRainAt,
+        moisture: s.moisture,
         structures: s.structures,
         bankCharge: s.bankCharge,
         upgrades: s.upgrades,
@@ -73,6 +74,7 @@ export const useGameStore = create<GameState>()(
         finds: s.finds,
         notesRead: s.notesRead,
         journal: s.journal,
+        explored: s.explored,
       }),
       // Si se cerró la partida en mitad de una emergencia, al volver se arranca
       // en la nave con la batería mínima para no quedar bloqueado.

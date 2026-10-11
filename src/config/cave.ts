@@ -10,14 +10,33 @@ export const CAVE_ORIGIN = { x: 700, y: 20, z: 700 }
 
 /** Camino local de la cueva: [x, z, medio ancho, altura del suelo]. Baja serpenteando hasta la cámara del fondo. */
 export const CAVE_PATH: [number, number, number, number][] = [
-  [0, 0, 3, 0],
-  [0, -12, 3.2, -1.5],
-  [8, -22, 3.6, -3],
-  [6, -33, 2.6, -4.5],
-  [-6, -42, 4, -6],
-  [-8, -55, 3, -7.5],
-  [0, -64, 5, -8],
-  [0, -72, 9, -8],
+  [0, 0, 4.2, 0],
+  [0, -12, 4.6, -1.5],
+  [9, -24, 5.4, -3],
+  [6, -36, 4.6, -4.5],
+  [-6, -47, 5.6, -6],
+  [-8, -59, 4.8, -7.5],
+  [0, -69, 8, -8],
+  // Gran cámara del fondo: geoda, lago subterráneo y el contenedor.
+  [0, -80, 13, -8.5],
+  [0, -92, 13, -8.5],
+]
+
+/** Rocas y agua de la cámara por las que no se pasa: [x, z, radio] (local). */
+export const CAVE_BLOCKERS: [number, number, number][] = [
+  [0, -84, 2.4], // geoda
+  [-7.5, -81, 3], // lago
+]
+
+/** Racimos de cristal que se pueden arrancar con el martillo (local). */
+export const CAVE_CRYSTALS: [number, number][] = [
+  [12.6, -26],
+  [-10.6, -48],
+  [9.5, -80],
+  [-10, -89],
+  [8.5, -91],
+  [4, -76],
+  [-5, -91.5],
 ]
 
 /** Estado mutable: ¿el robot está dentro? (no se guarda: al cargar se aparece en la entrada). */
@@ -59,14 +78,18 @@ export const caveHeadroom = (width: number) => 3.4 + width * 0.45
 export function caveContains(x: number, y: number, z: number, margin: number): boolean {
   const s = caveNearest(x, z)
   const floor = CAVE_ORIGIN.y + s.floor
-  return s.d < s.width - margin && y > floor + margin && y < floor + caveHeadroom(s.width) - margin && z - CAVE_ORIGIN.z < 0.3
+  return s.d < s.width - margin && z - CAVE_ORIGIN.z > CAVE_PATH[CAVE_PATH.length - 1][1] - 1 + margin && y > floor + margin && y < floor + caveHeadroom(s.width) - margin && z - CAVE_ORIGIN.z < 0.3
 }
 
 /** ¿Cabe el robot (radio r) en ese punto de la cueva? */
 export function caveCanEnter(x: number, z: number, r: number): boolean {
   const s = caveNearest(x, z)
   // El extremo inicial queda abierto hacia la salida: no se puede ir más atrás.
+  const lx = x - CAVE_ORIGIN.x
   const lz = z - CAVE_ORIGIN.z
+  if (CAVE_BLOCKERS.some(([bx, bz, br]) => (lx - bx) ** 2 + (lz - bz) ** 2 < (br + r) ** 2)) return false
+  // El fondo está cerrado (la tapa del final del túnel).
+  if (lz < CAVE_PATH[CAVE_PATH.length - 1][1] - 0.6 + r) return false
   return s.d <= s.width - r - 0.15 && lz < 1.5
 }
 
@@ -76,7 +99,7 @@ export const CAVE_ARRIVAL = { x: CAVE_ORIGIN.x, z: CAVE_ORIGIN.z - 3, heading: M
 export const CAVE_EXIT_Z = -0.6
 
 /** Contenedor con la pieza, al fondo de la cámara final. */
-export const CAVE_CACHE = { x: CAVE_ORIGIN.x, z: CAVE_ORIGIN.z - 76 }
+export const CAVE_CACHE = { x: CAVE_ORIGIN.x, z: CAVE_ORIGIN.z - 91 }
 
 // --- Boca de la cueva en el mundo (ver Cave en components/props/Pois.tsx) ---
 const cavePoi = POIS.find((p) => p.id === 'cave')!

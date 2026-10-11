@@ -14,6 +14,7 @@ const TARGET_HEIGHT = 1.7
 const MIN_GROUND_CLEARANCE = 0.6
 const FOLLOW_SHARPNESS = 14
 const CAMERA_RADIUS = 0.35
+const CAVE_CAMERA_DISTANCE = 5.2
 
 type Obstacle = { x: number; z: number; r: number; top: number }
 const obstacles: Obstacle[] = []
@@ -30,7 +31,7 @@ function gatherObstacles(x: number, z: number, reach: number) {
 
 function blocked(x: number, y: number, z: number): boolean {
   // Dentro de la cueva la cámara no puede atravesar paredes ni techo.
-  if (cave.active) return !caveContains(x, y, z, 0.45)
+  if (cave.active) return !caveContains(x, y, z, 0.35)
   if (y < getHeight(x, z) + MIN_GROUND_CLEARANCE) return true
   for (const o of obstacles) {
     if (y < o.top && (x - o.x) ** 2 + (z - o.z) ** 2 < o.r * o.r) return true
@@ -49,6 +50,7 @@ export function ThirdPersonCamera() {
   const smoothed = useMemo(() => new Vector3().copy(player.position), [])
 
   const lastTeleport = useRef(player.teleportId)
+  const smoothDist = useRef(cameraRig.distance)
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05)
@@ -72,16 +74,21 @@ export function ThirdPersonCamera() {
     const dirZ = Math.cos(cameraRig.yaw) * cosP
 
     // Si una duna, roca o tronco se interpone, acercamos la cámara (muestreo del brazo).
-    gatherObstacles(target.x, target.z, cameraRig.distance)
-    let dist = cameraRig.distance
-    const SAMPLES = 10
+    // En la cueva la cámara va más cerca (el túnel no deja sitio para más).
+    const reach = cave.active ? Math.min(cameraRig.distance, CAVE_CAMERA_DISTANCE) : cameraRig.distance
+    gatherObstacles(target.x, target.z, reach)
+    let dist = reach
+    const SAMPLES = 12
     for (let i = 1; i <= SAMPLES; i++) {
-      const d = (cameraRig.distance * i) / SAMPLES
+      const d = (reach * i) / SAMPLES
       if (blocked(target.x + dirX * d, target.y + dirY * d, target.z + dirZ * d)) {
-        dist = Math.max(1.2, d - cameraRig.distance / SAMPLES)
+        dist = Math.max(1.2, d - reach / SAMPLES)
         break
       }
     }
+    // Suavizado de la distancia: sin saltos bruscos al rozar una pared.
+    smoothDist.current += (dist - smoothDist.current) * (dist < smoothDist.current ? 1 : 1 - Math.exp(-5 * dt))
+    dist = smoothDist.current
 
     desired.set(target.x + dirX * dist, target.y + dirY * dist, target.z + dirZ * dist)
     if (!cave.active) desired.y = Math.max(desired.y, getHeight(desired.x, desired.z) + MIN_GROUND_CLEARANCE)

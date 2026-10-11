@@ -1,3 +1,4 @@
+import { Minimap } from './Minimap'
 import { useGameStore } from '@/store/gameStore'
 import { Compass } from './Compass'
 import { HudButtons } from './HudButtons'
@@ -16,6 +17,7 @@ export function Hud() {
       </div>
       <Compass />
       <HudButtons />
+      <Minimap />
       <DiscoveryBanner />
       <ShipRepairedModal />
     </div>

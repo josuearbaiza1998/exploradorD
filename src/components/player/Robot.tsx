@@ -10,7 +10,8 @@ import { getGame } from '@/store/gameStore'
 import { cameraAxes } from '@/systems/cameraRig'
 import { focus } from '@/systems/focus'
 import { consumeJump, getMoveVector } from '@/systems/input'
-import { MOTOR_CONFIG, simpleMotor } from '@/systems/physics/characterMotor'
+import { MOTOR_CONFIG, simpleMotor, wallBlock } from '@/systems/physics/characterMotor'
+import { getHeight } from '@/utils/terrain/heightfield'
 import { upgradeEffects } from '@/config/upgrades'
 import { player } from '@/systems/player'
 import { environment } from '@/systems/environmentState'
@@ -42,8 +43,10 @@ const angleDelta = (a: number, b: number) => Math.atan2(Math.sin(b - a), Math.co
 export function Robot() {
   const root = useRef<Group>(null)
   const body = useRef<Group>(null)
+  const lean = useRef<Group>(null)
   const wish = useRef({ x: 0, z: 0 })
   const sprintSince = useRef(-1)
+  const wallNoticeAt = useRef(-100)
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05)
@@ -74,20 +77,34 @@ export function Robot() {
       player.sprintCharge = sprintSince.current < 0 ? 0 : Math.min(1, (now - sprintSince.current) / SPRINT_HOLD)
       player.sprinting = player.sprintCharge >= 1
       MOTOR_CONFIG.jumpSpeed = BASE_JUMP * fx.jump
+      MOTOR_CONFIG.canClimb = fx.climb > 0
+      MOTOR_CONFIG.climbSpeed = fx.climbSpeed
       // Con la batería casi agotada el robot cojea y va más lento.
       const limp = (getGame().battery < LIMP_BELOW ? 0.7 : 1) * (thermal.overheated ? 0.6 : 1)
       const speed = limp * RUN_SPEED * fx.speed * (player.sprinting ? fx.sprint : 1) * (environment.sheltered ? 1 : weatherState.speed) * (1 - headwind * storm * 0.35)
       targetX = dirX * speed
       targetZ = dirZ * speed
-      // Las ráfagas fuertes empujan al robot (sensación de tormenta).
-      if (!environment.sheltered && storm > 0) {
-        pushX = wind.dirX * storm * 0.9
-        pushZ = wind.dirZ * storm * 0.9
+      // Las ráfagas fuertes empujan al robot (sensación de tormenta). Quieto,
+      // se planta contra el viento y apenas se desliza.
+      const exposed = !environment.sheltered && storm > 0 && !player.climbing
+      player.bracing = exposed && Math.hypot(move.x, move.y) < 0.15 && player.grounded
+      player.headwind = exposed && !player.bracing ? Math.min(1, headwind * storm) : 0
+      if (exposed) {
+        const k = player.bracing ? 0.3 : 0.9
+        pushX = wind.dirX * storm * k
+        pushZ = wind.dirZ * storm * k
       }
       jump = consumeJump()
+      // Aviso al chocar con una pared de roca sin garras.
+      if (now - wallBlock.at < 0.2 && now - wallNoticeAt.current > 25 && fx.climb === 0) {
+        wallNoticeAt.current = now
+        getGame().notify('🧗 Pared de roca: hacen falta garras de escalada (mejora en la nave)', 'warn')
+      }
     } else {
       player.sprintCharge = 0
       player.sprinting = false
+      player.bracing = false
+      player.headwind = 0
       sprintSince.current = -1
       consumeJump() // descartar pulsaciones durante la emergencia
       if (mode === 'returning') {
@@ -111,10 +128,27 @@ export function Robot() {
     } else simpleMotor.step(player, wish.current.x, wish.current.z, jump, dt)
     player.speed = Math.hypot(player.velocity.x, player.velocity.z)
 
-    // Girar el modelo hacia donde se mueve.
-    if (!grapple.active && Math.hypot(targetX, targetZ) > 0.3) {
-      const targetHeading = Math.atan2(targetX, targetZ)
-      player.heading += angleDelta(player.heading, targetHeading) * (1 - Math.exp(-TURN_SPEED * dt))
+    // Girar el modelo hacia donde se mueve; trepando, de cara a la pared;
+    // aguantando la tormenta, de cara al viento.
+    let face: number | null = null
+    if (player.climbing) {
+      const px = player.position.x
+      const pz = player.position.z
+      face = Math.atan2(getHeight(px + 0.6, pz) - getHeight(px - 0.6, pz), getHeight(px, pz + 0.6) - getHeight(px, pz - 0.6))
+    } else if (player.bracing) face = Math.atan2(-wind.dirX, -wind.dirZ)
+    else if (Math.hypot(targetX, targetZ) > 0.3) face = Math.atan2(targetX, targetZ)
+    if (!grapple.active && face !== null) {
+      player.heading += angleDelta(player.heading, face) * (1 - Math.exp(-(player.bracing ? 4 : TURN_SPEED) * dt))
+    }
+    // Inclinación del cuerpo: hacia la pared al trepar, hacia delante contra el viento.
+    if (lean.current) {
+      const t = state.clock.elapsedTime
+      const want = player.climbing ? 0.55 : player.bracing ? 0.3 + Math.sin(t * 17) * 0.025 : player.headwind * 0.22
+      const kk = 1 - Math.exp(-6 * dt)
+      lean.current.rotation.x += (want - lean.current.rotation.x) * kk
+      // Trepando se separa de la pared para no meterse dentro de la roca.
+      lean.current.position.z += ((player.climbing ? -0.55 : 0) - lean.current.position.z) * kk
+      lean.current.position.y += ((player.climbing ? 0.35 : 0) - lean.current.position.y) * kk
     }
 
     focus.copy(player.position)
@@ -165,8 +199,10 @@ export function Robot() {
 
   return (
     <group ref={root} name="robot">
-      <group ref={body}>
-        <RobotModel />
+      <group ref={lean}>
+        <group ref={body}>
+          <RobotModel />
+        </group>
       </group>
     </group>
   )

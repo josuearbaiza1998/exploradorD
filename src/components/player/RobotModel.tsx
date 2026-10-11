@@ -1,7 +1,7 @@
 import { Suspense, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useAnimations, useGLTF } from '@react-three/drei'
-import { Box3, LoopOnce, Matrix4, Mesh, Raycaster, Vector3, type AnimationAction, type Group, type Object3D } from 'three'
+import { Box3, LoopOnce, Matrix4, Mesh, Quaternion, Raycaster, Vector3, type AnimationAction, type Group, type Object3D } from 'three'
 import { modelPath } from '@/assets/models'
 import { Outlined } from '@/components/common/Outlined'
 import { BoneAttachment, boneInRoot } from '@/components/common/BoneAttachment'
@@ -67,6 +67,37 @@ const RECOLOR: Record<string, string> = {
 /** Fracción del clip Jump con la pose de vuelo (piernas recogidas). */
 const JUMP_HOLD = 0.42
 
+// --- Poses procedurales (el modelo no trae clips de trepar ni de aguantar viento) ---
+const _a = new Vector3()
+const _b = new Vector3()
+const _dir = new Vector3()
+const _q = new Quaternion()
+const _wq = new Quaternion()
+const _pq = new Quaternion()
+const _rootQ = new Quaternion()
+
+/**
+ * Gira `bone` para que el tramo hacia `child` apunte a `local` (ejes del
+ * robot: +Z delante, +Y arriba), mezclando con la pose animada según `w`.
+ * Funciona sin conocer los ejes locales de cada hueso.
+ */
+function aimBone(bone: Object3D | undefined, child: Object3D | undefined, local: [number, number, number], w: number) {
+  if (!bone || !child || !bone.parent) return
+  bone.getWorldPosition(_a)
+  child.getWorldPosition(_b)
+  const cur = _b.sub(_a)
+  if (cur.lengthSq() < 1e-8) return
+  cur.normalize()
+  _dir.set(local[0], local[1], local[2]).normalize().applyQuaternion(_rootQ)
+  _q.setFromUnitVectors(cur, _dir)
+  bone.getWorldQuaternion(_wq)
+  _q.multiply(_wq)
+  bone.parent.getWorldQuaternion(_pq)
+  _q.premultiply(_pq.invert())
+  bone.quaternion.slerp(_q, w)
+  bone.updateMatrixWorld(true)
+}
+
 type Clip = 'Idle' | 'Walking' | 'Running' | 'Jump' | 'Punch' | 'Death' | 'Sitting'
 
 function RiggedRobot({ path }: { path: string }) {
@@ -101,6 +132,8 @@ function RiggedRobot({ path }: { path: string }) {
   // torso para colocar gafas y mochila, y se fijan los anclajes a los huesos.
   const current = useRef<{ clip: Clip; action?: AnimationAction }>({ clip: 'Idle' })
   const lastAction = useRef(0)
+  /** Peso de las poses procedurales (0..1, con transición suave). */
+  const poseW = useRef({ climb: 0, brace: 0, phase: 0, side: 1 })
   /** Momento (s) en que dejó de pisar suelo; null si está en el suelo. */
   const airSince = useRef<number | null>(null)
   const [rig, setRig] = useState<{
@@ -191,7 +224,7 @@ function RiggedRobot({ path }: { path: string }) {
     }
   }, [scene, setup, actions, mixer])
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const mode = getGame().mode
     const now = performance.now() / 1000
     // En el aire (saltando o cayendo) nunca corre: pose de salto. Un margen
@@ -203,6 +236,7 @@ function RiggedRobot({ path }: { path: string }) {
     if (mode === 'emergency') clip = 'Death'
     else if (mode === 'recharging') clip = 'Sitting'
     else if (mode === 'returning') clip = 'Walking'
+    else if (player.climbing || player.bracing) clip = 'Idle'
     else if (now - player.actionAt < 0.45) clip = 'Punch'
     else if (airborne) clip = 'Jump'
     else if (player.speed < 0.35) clip = 'Idle'
@@ -236,7 +270,60 @@ function RiggedRobot({ path }: { path: string }) {
     if (a && clip === 'Walking') a.timeScale = Math.max(0.6, player.speed / 2.2)
     else if (a && clip === 'Running') a.timeScale = Math.max(0.8, player.speed / 6)
     else if (a) a.timeScale = 1
+
+    applyPoses(delta)
   })
+
+  /** Trepar (manos y pies alternos contra la pared) y aguantar el viento. */
+  function applyPoses(delta: number) {
+    const pw = poseW.current
+    const dt = Math.min(delta, 0.05)
+    const k = 1 - Math.exp(-8 * dt)
+    pw.climb += ((player.climbing ? 1 : 0) - pw.climb) * k
+    pw.brace += ((player.bracing && !player.climbing ? 1 : 0) - pw.brace) * k
+    if (pw.climb < 0.01 && pw.brace < 0.01) return
+    const root = outer.current
+    const b = setup.bones
+    if (!root) return
+    root.updateWorldMatrix(true, true)
+    root.getWorldQuaternion(_rootQ)
+    // ¿Hacia qué lado (x local) queda el brazo "L"?
+    const shoulder = b.UpperArmL
+    if (shoulder) {
+      shoulder.getWorldPosition(_a)
+      pw.side = root.worldToLocal(_a).x >= 0 ? 1 : -1
+    }
+    const L = pw.side
+    const R = -pw.side
+    if (pw.climb > 0.01) {
+      // El ciclo avanza al moverse; quieto, se queda agarrado.
+      pw.phase += dt * Math.min(1, player.speed / 1.2) * 6
+      const w = pw.climb
+      for (const [sfx, side, off] of [['L', L, 0], ['R', R, Math.PI]] as const) {
+        const a = Math.sin(pw.phase + off)
+        const reach = 0.5 + 0.5 * a
+        aimBone(b[`UpperArm${sfx}`], b[`LowerArm${sfx}`], [side * 0.35, 0.55 + 0.45 * reach, 0.55], w)
+        aimBone(b[`LowerArm${sfx}`], b[`Palm2${sfx}`], [side * 0.12, 0.7 + 0.3 * reach, 0.6 - 0.2 * reach], w)
+        const step = Math.max(0, -a)
+        aimBone(b[`UpperLeg${sfx}`], b[`LowerLeg${sfx}`], [side * 0.18, -0.85, 0.2 + 0.55 * step], w)
+        aimBone(b[`LowerLeg${sfx}`], b[`LowerLeg${sfx}_end`], [side * 0.08, -0.9, -0.15 + 0.25 * step], w)
+      }
+    }
+    if (pw.brace > 0.01) {
+      const w = pw.brace
+      const sway = Math.sin(performance.now() / 1000 * 15) * 0.04
+      // Brazo derecho delante de la cara, el izquierdo atrás para equilibrar.
+      aimBone(b.UpperArmR, b.LowerArmR, [R * 0.2, 0.4 + sway, 0.9], w)
+      aimBone(b.LowerArmR, b.Palm2R, [-R * 0.8, 0.75, 0.2], w)
+      aimBone(b.UpperArmL, b.LowerArmL, [L * 0.6, -0.65, -0.4 + sway], w)
+      aimBone(b.LowerArmL, b.Palm2L, [L * 0.3, -0.8, -0.35], w)
+      // Piernas abiertas: una adelantada y otra atrás, clavadas en la arena.
+      aimBone(b.UpperLegL, b.LowerLegL, [L * 0.3, -0.9, 0.38], w)
+      aimBone(b.LowerLegL, b.LowerLegL_end, [L * 0.1, -1, 0.05], w)
+      aimBone(b.UpperLegR, b.LowerLegR, [R * 0.3, -0.9, -0.4], w)
+      aimBone(b.LowerLegR, b.LowerLegR_end, [R * 0.1, -0.95, -0.35], w)
+    }
+  }
 
   // La mochila se queda en el suelo cuando el robot la ha soltado.
   const carrying = useGameStore((s) => s.droppedBoxes.length === 0)

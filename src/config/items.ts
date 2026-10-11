@@ -10,6 +10,8 @@ export type ItemId =
   | 'stone'
   | 'scrapMetal'
   | 'techParts'
+  | 'crystal'
+  | 'fulgurite'
   | 'cell'
   | 'cloth'
   | 'axe'
@@ -31,6 +33,8 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   stone: { id: 'stone', name: 'Piedra', icon: '🪨', stack: 50, kind: 'resource' },
   scrapMetal: { id: 'scrapMetal', name: 'Chatarra', icon: '🔩', stack: 30, kind: 'resource' },
   techParts: { id: 'techParts', name: 'Componentes', icon: '💾', stack: 20, kind: 'resource' },
+  crystal: { id: 'crystal', name: 'Cristal azul', icon: '🔹', stack: 30, kind: 'resource', description: 'Crece en la cueva de cristal. Guarda energía.' },
+  fulgurite: { id: 'fulgurite', name: 'Fulgurita', icon: '⚡', stack: 20, kind: 'resource', description: 'Arena fundida por un rayo. Conduce muy bien la energía.' },
   cell: {
     id: 'cell',
     name: 'Celda de energía',

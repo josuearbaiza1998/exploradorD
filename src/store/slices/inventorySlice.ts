@@ -10,6 +10,8 @@ export type DroppedBox = {
   items: Inventory
   /** Hora in-game total en que cayó (para mostrar "hace X días" en el futuro). */
   droppedAt: number
+  /** Golpes que faltan para desenterrarla (una tormenta de arena la cubre). */
+  buried?: number
 }
 
 export type InventorySlice = {
@@ -34,6 +36,12 @@ export type InventorySlice = {
   /** Vuelca TODO el inventario en una caja en esa posición. Devuelve la caja o null si no había nada. */
   dropInventoryBox: (position: [number, number, number]) => DroppedBox | null
   recoverBox: (id: string) => void
+  /** La arena cubre las cajas caídas (lejos del robot). */
+  buryBoxes: (exceptNear: [number, number], radius: number) => number
+  /** Quita recursos de una caja caída (los carroñeros). */
+  takeFromBox: (id: string, item: ItemId, n: number) => void
+  /** Un golpe para desenterrar una caja. Devuelve si ya está libre. */
+  digBox: (id: string) => boolean
   setNearbyBox: (id: string | null) => void
   /** Fabrica una receta si se cumplen materiales, estación y progresión. */
   craft: (recipe: Recipe, atWorkbench: boolean) => boolean
@@ -160,6 +168,39 @@ export const createInventorySlice: StateCreator<GameState, [], [], InventorySlic
       ? droppedBoxes.filter((b) => b.id !== id)
       : droppedBoxes.map((b) => (b.id === id ? { ...b, items: leftover } : b))
     set({ inventory: merged, droppedBoxes: remaining, nearbyBoxId: isEmpty(leftover) ? null : id })
+  },
+
+  buryBoxes: ([x, z], radius) => {
+    let n = 0
+    const droppedBoxes = get().droppedBoxes.map((b) => {
+      if (Math.hypot(b.position[0] - x, b.position[2] - z) < radius) return b
+      n++
+      return { ...b, buried: 3 }
+    })
+    if (n) set({ droppedBoxes })
+    return n
+  },
+
+  takeFromBox: (id, item, n) => {
+    const droppedBoxes = get().droppedBoxes.map((b) => {
+      if (b.id !== id) return b
+      const items = { ...b.items, [item]: Math.max(0, (b.items[item] ?? 0) - n) }
+      if (!items[item]) delete items[item]
+      return { ...b, items }
+    })
+    set({ droppedBoxes: droppedBoxes.filter((b) => !isEmpty(b.items)) })
+  },
+
+  digBox: (id) => {
+    let free = false
+    const droppedBoxes = get().droppedBoxes.map((b) => {
+      if (b.id !== id) return b
+      const left = Math.max(0, (b.buried ?? 0) - 1)
+      free = left === 0
+      return { ...b, buried: left || undefined }
+    })
+    set({ droppedBoxes })
+    return free
   },
 
   setNearbyBox: (nearbyBoxId) => {

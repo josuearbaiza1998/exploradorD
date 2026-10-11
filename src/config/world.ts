@@ -67,6 +67,23 @@ export const LANDMARK_HILLS: LandmarkHill[] = [
   { x: -150, z: -110, radius: 45, height: 26, ridge: 1.5 },
 ]
 
+/**
+ * Paredes de roca: dentro del radio, por encima de `minHeight`, las laderas
+ * más empinadas que `slope` solo se suben con las garras de escalada.
+ */
+export const CLIMB_WALLS: (Vec2 & { radius: number; minHeight: number; slope: number })[] = [
+  // La colina de la baliza (junto a la nave y el islote).
+  { x: 104, z: -158, radius: 52, minHeight: 8, slope: 0.6 },
+]
+
+/** ¿Este punto es pared de roca escalable? */
+export function isClimbWall(x: number, z: number, y: number, slope: number): boolean {
+  for (const w of CLIMB_WALLS) {
+    if (y > w.minHeight && slope > w.slope && (x - w.x) ** 2 + (z - w.z) ** 2 < w.radius * w.radius) return true
+  }
+  return false
+}
+
 /** Islotes separados de la isla por agua honda (se llega con el gancho). */
 export const ISLETS: (Vec2 & { radius: number; height: number })[] = [
   // Frente al pico de la baliza: allí cayó la antena.

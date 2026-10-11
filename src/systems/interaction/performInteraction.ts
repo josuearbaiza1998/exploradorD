@@ -1,3 +1,4 @@
+import { ecology } from '@/systems/ecology'
 import { emitFloatText, emitHit } from '@/systems/hitFx'
 import { upgradeEffects } from '@/config/upgrades'
 import { HARVEST } from '@/config/harvest'
@@ -7,6 +8,7 @@ import { player } from '@/systems/player'
 import { SALVAGE_NODES } from '@/config/world'
 import { POIS, type PoiId } from '@/config/pois'
 import { useUiStore } from '@/store/uiStore'
+import { knockScavenger } from '@/systems/scavengers'
 
 /** Energía (%) que cuesta cada golpe. */
 const HIT_COST = 0.25
@@ -79,7 +81,9 @@ export function performInteraction(): boolean {
   const gained: string[] = []
   let overflow = false
   for (const y of def.yields) {
-    const amount = randInt(y.min, y.max)
+    let amount = randInt(y.min, y.max)
+    // Las plantas dan más fibra con el suelo húmedo y menos en plena sequía.
+    if (y.item === 'fiber' && def.material === 'plant') amount += ecology.moisture > 0.65 ? 1 : ecology.moisture < 0.2 ? -1 : 0
     if (amount <= 0) continue
     const added = game.addItem(y.item, amount)
     if (added > 0) gained.push(`+${added} ${ITEMS[y.item].icon}`)
@@ -90,6 +94,19 @@ export function performInteraction(): boolean {
     emitFloatText({ text: gained.join('  '), x: tx, y: ty, z: tz })
   }
   if (overflow) game.notify('🎒 Mochila llena: guarda en la nave o mejora la mochila', 'warn')
+
+  // --- Carroñero: suelta lo que había robado y se apaga un rato ---
+  if (target.key.startsWith('scav|')) {
+    const loot = knockScavenger(Number(target.key.slice(5)))
+    const back: string[] = []
+    for (const [id, n] of Object.entries(loot) as [keyof typeof ITEMS, number][]) {
+      const added = game.addItem(id, n)
+      if (added > 0) back.push(`+${added} ${ITEMS[id].icon}`)
+    }
+    if (back.length) game.notify(`Recuperado del carroñero: ${back.join('  ')}`, 'gain')
+    game.resetHits(target.key)
+    return true
+  }
 
   // --- Hallazgos del clima: desaparecen al recogerlos ---
   if (target.key.startsWith('find|')) {

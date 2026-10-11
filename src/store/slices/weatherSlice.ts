@@ -10,6 +10,9 @@ export type WeatherSlice = {
   weatherSince: number
   /** Hora in-game total en que se elegirá el siguiente estado. */
   weatherUntil: number
+  /** Humedad del suelo 0..1 (ver systems/ecology.ts). */
+  moisture: number
+  setMoisture: (m: number) => void
   /** Hora in-game total en que llovió por última vez. */
   lastRainAt: number
   /** Comprueba si toca cambiar de clima. */
@@ -40,6 +43,8 @@ export const createWeatherSlice: StateCreator<GameState, [], [], WeatherSlice> =
   weatherSince: 0,
   weatherUntil: 8.5 + randomDuration('clear'),
   lastRainAt: 0,
+  moisture: 0.4,
+  setMoisture: (moisture) => set({ moisture }),
 
   tickWeather: () => {
     const { totalHours, weatherUntil, weather, lastRainAt } = get()
