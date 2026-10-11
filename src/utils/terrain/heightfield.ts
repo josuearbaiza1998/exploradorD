@@ -2,6 +2,7 @@ import {
   CRASH_SITE,
   FLAT_ZONES,
   ISLAND,
+  ISLETS,
   LANDMARK_HILLS,
   OASIS,
   WORLD_SEED,
@@ -90,6 +91,14 @@ function rawHeight(x: number, z: number): number {
     const wobble = fbm2D(x / 70, z / 70, WORLD_SEED + 99, 2) * 25
     const mask = 1 - smoothstep(ISLAND.radius - ISLAND.shoreWidth, ISLAND.radius, d + wobble)
     h = lerp(ISLAND.seaLevel - 6, h, mask)
+    // Islotes: montículos que asoman del mar.
+    for (const it of ISLETS) {
+      const id = Math.hypot(x - it.x, z - it.z)
+      if (id < it.radius * 1.6) {
+        const k = 1 - smoothstep(it.radius * 0.55, it.radius * 1.6, id)
+        h = Math.max(h, ISLAND.seaLevel - 6 + (it.height + 6) * k + Math.sin(x * 0.8) * Math.cos(z * 0.6) * 0.25 * k)
+      }
+    }
   }
   return h
 }

@@ -7,8 +7,9 @@ import { energyStatus } from '@/systems/energyGrid'
 import { environment } from '@/systems/environmentState'
 import { ambientTemperature } from '@/systems/worldClock'
 import { useTicker } from './useTicker'
+import { thermal } from '@/systems/thermal'
 
-const WEATHER_ICON = { clear: '☀️', windy: '💨', sandstorm: '🌪️', rain: '🌧️' } as const
+const WEATHER_ICON = { clear: '☀️', windy: '💨', sandstorm: '🌪️', drizzle: '🌦️', rain: '🌧️', storm: '⛈️' } as const
 
 /** Tendencia de la batería: % por segundo real, medida sobre los últimos segundos. */
 function useBatteryTrend() {
@@ -73,8 +74,16 @@ export function StatusPanel() {
         <span className={`hud-chip ${clean < 40 ? 'bad' : clean < 75 ? 'warn' : ''}`} title="Limpieza de sensores">
           🥽 {clean}%
         </span>
-        <span className={`hud-chip ${temp < 0 ? 'cold' : ''}`} title="Temperatura">
-          🌡️ {temp}°
+        <span
+          className={`hud-chip ${thermal.overheated ? 'bad' : thermal.heat > 0.5 ? 'warn' : thermal.cold > 1 ? 'cold' : ''}`}
+          title="Temperatura"
+        >
+          {thermal.overheated ? '🔥' : thermal.cold > 1.2 ? '❄️' : '🌡️'} {temp}°
+          {thermal.heat > 0.05 && (
+            <i className="heat-bar">
+              <i style={{ width: `${thermal.heat * 100}%` }} />
+            </i>
+          )}
         </span>
         <span className="hud-chip" title={WEATHER[weather].label}>
           {weather === 'clear' && environment.palette.daylight < 0.3 ? '🌙' : WEATHER_ICON[weather]} {environment.sheltered ? '🛡️' : ''}

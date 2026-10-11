@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { createThrottledStorage } from './throttledStorage'
+import { createThrottledStorage, freezeStorage } from './throttledStorage'
 import { createClockSlice, type ClockSlice } from './slices/clockSlice'
 import { createInventorySlice, type InventorySlice } from './slices/inventorySlice'
 import { createRobotSlice, type RobotSlice } from './slices/robotSlice'
@@ -53,6 +53,7 @@ export const useGameStore = create<GameState>()(
         battery: s.battery,
         sensorDirt: s.sensorDirt,
         inventory: s.inventory,
+        storage: s.storage,
         droppedBoxes: s.droppedBoxes,
         lastPosition: s.lastPosition,
         harvested: s.harvested,
@@ -61,6 +62,7 @@ export const useGameStore = create<GameState>()(
         previousWeather: s.previousWeather,
         weatherSince: s.weatherSince,
         weatherUntil: s.weatherUntil,
+        lastRainAt: s.lastRainAt,
         structures: s.structures,
         bankCharge: s.bankCharge,
         upgrades: s.upgrades,
@@ -69,6 +71,8 @@ export const useGameStore = create<GameState>()(
         repairs: s.repairs,
         shipRepairedSeen: s.shipRepairedSeen,
         finds: s.finds,
+        notesRead: s.notesRead,
+        journal: s.journal,
       }),
       // Si se cerró la partida en mitad de una emergencia, al volver se arranca
       // en la nave con la batería mínima para no quedar bloqueado.
@@ -83,3 +87,10 @@ export const useGameStore = create<GameState>()(
 )
 
 export const getGame = useGameStore.getState
+
+/** Borra la partida guardada y empieza de cero (los ajustes se conservan). */
+export function restartGame() {
+  freezeStorage()
+  useGameStore.persist.clearStorage()
+  location.reload()
+}

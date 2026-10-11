@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { carriedLoad, withStorage } from '@/store/slices/inventorySlice'
+import { upgradeEffects } from '@/config/upgrades'
 import { ITEMS, type ItemId } from '@/config/items'
 import { RECIPES, WORKBENCH_RADIUS, type Recipe } from '@/config/recipes'
 import { CHARGING_PAD } from '@/config/world'
@@ -13,6 +15,23 @@ import { POIS } from '@/config/pois'
 
 const nearWorkbench = () =>
   Math.hypot(player.position.x - CHARGING_PAD.x, player.position.z - CHARGING_PAD.z) < WORKBENCH_RADIUS
+
+/** ¿Está junto al banco de la nave? (se revisa cada medio segundo). */
+function useAtBench() {
+  const [atBench, setAtBench] = useState(nearWorkbench)
+  useEffect(() => {
+    const id = window.setInterval(() => setAtBench(nearWorkbench()), 500)
+    return () => window.clearInterval(id)
+  }, [])
+  return atBench
+}
+
+/** Materiales disponibles: junto a la nave cuenta también el almacén. */
+function useHave(atBench: boolean) {
+  const inventory = useGameStore((s) => s.inventory)
+  const storage = useGameStore((s) => s.storage)
+  return useMemo(() => (atBench ? withStorage(inventory, storage) : inventory), [atBench, inventory, storage])
+}
 
 /** Panel de mochila: inventario, fabricación, construcción y mejoras (lo abre la botonera del HUD). */
 export function InventoryPanel() {
@@ -101,19 +120,26 @@ function BuildTab({ onClose }: { onClose: () => void }) {
 function ItemsTab() {
   const inventory = useGameStore((s) => s.inventory)
   const sensorDirt = useGameStore((s) => s.sensorDirt)
-  const [atBench, setAtBench] = useState(nearWorkbench)
-
-  useEffect(() => {
-    const id = window.setInterval(() => setAtBench(nearWorkbench()), 500)
-    return () => window.clearInterval(id)
-  }, [])
+  const atBench = useAtBench()
+  const storage = useGameStore((s) => s.storage)
+  const carry = useGameStore((s) => upgradeEffects(s.upgrades, !!s.inventory.drone).carry)
+  const load = carriedLoad(inventory)
 
   const items = (Object.entries(inventory) as [ItemId, number][]).filter(([, n]) => n > 0)
+  const stored = (Object.entries(storage) as [ItemId, number][]).filter(([, n]) => n > 0)
 
   return (
     <div className="inv-columns">
       <section>
-        <h3>Inventario</h3>
+        <h3>
+          Inventario{' '}
+          <span className={`carry ${load >= carry ? 'full' : ''}`}>
+            <i style={{ width: `${Math.min(100, (load / carry) * 100)}%` }} />
+            <b>
+              Carga {load}/{carry}
+            </b>
+          </span>
+        </h3>
         {items.length === 0 && (
           <p className="inv-empty">Vacío. Rompe árboles pequeños y arbustos, o desmonta escombros de la nave.</p>
         )}
@@ -153,6 +179,39 @@ function ItemsTab() {
             </li>
           ))}
         </ul>
+        {atBench && (
+          <div className="storage">
+            <h3>
+              Almacén de la nave{' '}
+              <button
+                className="inv-use"
+                disabled={load === 0}
+                onClick={() => {
+                  const n = getGame().storeAll()
+                  if (n) getGame().notify(`📦 ${n} guardados en la nave`, 'info')
+                }}
+              >
+                Guardar todo
+              </button>
+            </h3>
+            {stored.length === 0 ? (
+              <p className="inv-empty">Vacío. Lo guardado aquí se usa al fabricar, mejorar y reparar junto a la nave.</p>
+            ) : (
+              <ul className="inv-grid">
+                {stored.map(([id, n]) => (
+                  <li key={id} title={ITEMS[id].name}>
+                    <span className="inv-icon">{ITEMS[id].icon}</span>
+                    <span className="inv-count">{n}</span>
+                    <span className="inv-name">{ITEMS[id].name}</span>
+                    <button className="inv-use" disabled={load >= carry} onClick={() => getGame().takeFromStorage(id, 5)}>
+                      Sacar 5
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </section>
       <section>
         <h3>
@@ -170,7 +229,7 @@ function ItemsTab() {
 }
 
 function RecipeRow({ recipe, atBench }: { recipe: Recipe; atBench: boolean }) {
-  const inventory = useGameStore((s) => s.inventory)
+  const inventory = useHave(atBench)
   const out = ITEMS[recipe.output]
   const owned = out.kind === 'tool' && !!inventory[recipe.output]
   const missingTool = recipe.requires && !inventory[recipe.requires]
@@ -212,13 +271,9 @@ function RecipeRow({ recipe, atBench }: { recipe: Recipe; atBench: boolean }) {
 
 /** Mejoras de las partes del robot: solo en el banco de la nave. */
 function UpgradesTab() {
-  const inventory = useGameStore((s) => s.inventory)
   const upgrades = useGameStore((s) => s.upgrades)
-  const [atBench, setAtBench] = useState(nearWorkbench)
-  useEffect(() => {
-    const id = window.setInterval(() => setAtBench(nearWorkbench()), 500)
-    return () => window.clearInterval(id)
-  }, [])
+  const atBench = useAtBench()
+  const inventory = useHave(atBench)
   return (
     <>
       <p className="inv-hint">
@@ -280,14 +335,10 @@ function UpgradesTab() {
 
 /** Objetivo principal: reparar los sistemas de la nave con piezas únicas de los lugares por descubrir. */
 function ShipTab() {
-  const inventory = useGameStore((s) => s.inventory)
   const repairs = useGameStore((s) => s.repairs)
   const discovered = useGameStore((s) => s.discovered)
-  const [atBench, setAtBench] = useState(nearWorkbench)
-  useEffect(() => {
-    const id = window.setInterval(() => setAtBench(nearWorkbench()), 500)
-    return () => window.clearInterval(id)
-  }, [])
+  const atBench = useAtBench()
+  const inventory = useHave(atBench)
   const done = REPAIRS.filter((r) => repairs[r.id]).length
   return (
     <>

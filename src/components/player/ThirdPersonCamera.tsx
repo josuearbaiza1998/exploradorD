@@ -8,6 +8,7 @@ import { player } from '@/systems/player'
 import { hitFx } from '@/systems/hitFx'
 import { clamp } from '@/utils/math'
 import { getHeight } from '@/utils/terrain/heightfield'
+import { cave, caveContains } from '@/config/cave'
 
 const TARGET_HEIGHT = 1.7
 const MIN_GROUND_CLEARANCE = 0.6
@@ -20,6 +21,7 @@ const obstacles: Obstacle[] = []
 /** Rocas, troncos y la nave cerca del brazo de la cámara, con su altura absoluta. */
 function gatherObstacles(x: number, z: number, reach: number) {
   obstacles.length = 0
+  if (cave.active) return
   for (const c of queryColliders(x, z, reach)) {
     if (Math.hypot(c.x - x, c.z - z) > reach + c.r) continue
     obstacles.push({ x: c.x, z: c.z, r: c.r + CAMERA_RADIUS, top: getHeight(c.x, c.z) + c.h })
@@ -27,6 +29,8 @@ function gatherObstacles(x: number, z: number, reach: number) {
 }
 
 function blocked(x: number, y: number, z: number): boolean {
+  // Dentro de la cueva la cámara no puede atravesar paredes ni techo.
+  if (cave.active) return !caveContains(x, y, z, 0.45)
   if (y < getHeight(x, z) + MIN_GROUND_CLEARANCE) return true
   for (const o of obstacles) {
     if (y < o.top && (x - o.x) ** 2 + (z - o.z) ** 2 < o.r * o.r) return true
@@ -80,7 +84,7 @@ export function ThirdPersonCamera() {
     }
 
     desired.set(target.x + dirX * dist, target.y + dirY * dist, target.z + dirZ * dist)
-    desired.y = Math.max(desired.y, getHeight(desired.x, desired.z) + MIN_GROUND_CLEARANCE)
+    if (!cave.active) desired.y = Math.max(desired.y, getHeight(desired.x, desired.z) + MIN_GROUND_CLEARANCE)
     camera.position.copy(desired)
     camera.lookAt(target)
     // Temblor breve al golpear (más fuerte al romper algo).

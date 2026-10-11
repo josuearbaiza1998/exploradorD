@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { CRASH_SITE } from '@/config/world'
 import { POIS } from '@/config/pois'
+import { cave, CAVE_OUTSIDE } from '@/config/cave'
 import { useGameStore } from '@/store/gameStore'
 import { cameraRig } from '@/systems/cameraRig'
 import { player } from '@/systems/player'
@@ -42,11 +43,14 @@ export function Compass() {
       if (!el) return
       // La cámara mira hacia -forward del yaw: forward = (-sin, -cos).
       const heading = bearing(-Math.sin(cameraRig.yaw), -Math.cos(cameraRig.yaw))
+      // Dentro de la cueva las distancias se miden desde su entrada.
+      const px = cave.active ? CAVE_OUTSIDE.x : player.position.x
+      const pz = cave.active ? CAVE_OUTSIDE.z : player.position.z
       el.querySelectorAll<HTMLElement>('[data-bearing]').forEach((node) => {
         let b = Number(node.dataset.bearing)
         if (node.dataset.x) {
-          const dx = Number(node.dataset.x) - player.position.x
-          const dz = Number(node.dataset.z) - player.position.z
+          const dx = Number(node.dataset.x) - px
+          const dz = Number(node.dataset.z) - pz
           b = bearing(dx, dz)
           const dist = node.querySelector<HTMLElement>('.cmp-dist')
           if (dist) dist.textContent = `${Math.round(Math.hypot(dx, dz))} m`

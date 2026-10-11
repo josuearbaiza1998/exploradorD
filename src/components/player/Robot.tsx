@@ -4,6 +4,8 @@ import type { Group } from 'three'
 import { CHARGING_PAD } from '@/config/world'
 import { MATERIALS } from '@/materials/toonMaterials'
 import { PALETTE } from '@/config/palette'
+import { thermal } from '@/systems/thermal'
+import { grapple, stepGrapple } from '@/systems/grapple'
 import { getGame } from '@/store/gameStore'
 import { cameraAxes } from '@/systems/cameraRig'
 import { focus } from '@/systems/focus'
@@ -73,7 +75,7 @@ export function Robot() {
       player.sprinting = player.sprintCharge >= 1
       MOTOR_CONFIG.jumpSpeed = BASE_JUMP * fx.jump
       // Con la batería casi agotada el robot cojea y va más lento.
-      const limp = getGame().battery < LIMP_BELOW ? 0.7 : 1
+      const limp = (getGame().battery < LIMP_BELOW ? 0.7 : 1) * (thermal.overheated ? 0.6 : 1)
       const speed = limp * RUN_SPEED * fx.speed * (player.sprinting ? fx.sprint : 1) * (environment.sheltered ? 1 : weatherState.speed) * (1 - headwind * storm * 0.35)
       targetX = dirX * speed
       targetZ = dirZ * speed
@@ -102,11 +104,15 @@ export function Robot() {
     wish.current.x += (targetX + pushX - wish.current.x) * k
     wish.current.z += (targetZ + pushZ - wish.current.z) * k
 
-    simpleMotor.step(player, wish.current.x, wish.current.z, jump, dt)
+    // Con el gancho el robot vuela en arco; si no, el motor normal.
+    if (stepGrapple(dt)) {
+      wish.current.x = 0
+      wish.current.z = 0
+    } else simpleMotor.step(player, wish.current.x, wish.current.z, jump, dt)
     player.speed = Math.hypot(player.velocity.x, player.velocity.z)
 
     // Girar el modelo hacia donde se mueve.
-    if (Math.hypot(targetX, targetZ) > 0.3) {
+    if (!grapple.active && Math.hypot(targetX, targetZ) > 0.3) {
       const targetHeading = Math.atan2(targetX, targetZ)
       player.heading += angleDelta(player.heading, targetHeading) * (1 - Math.exp(-TURN_SPEED * dt))
     }

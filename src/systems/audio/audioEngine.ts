@@ -232,20 +232,37 @@ export function chirp() {
   }
 }
 
-/** Trueno lejano: retumbo grave que crece y se apaga. */
-export function thunder() {
+/**
+ * Trueno: retumbo grave que crece y se apaga. `near` 0..1 = rayo cercano
+ * (más fuerte, con chasquido agudo); `delay` en segundos (la luz llega antes).
+ */
+export function thunder(near = 0, delay = 0) {
   if (!engine) return
   const { ctx, master } = engine
-  const t = ctx.currentTime
+  const t = ctx.currentTime + delay
   const src = ctx.createBufferSource()
   src.buffer = engine.noise
   const f = ctx.createBiquadFilter()
   f.type = 'lowpass'
-  f.frequency.value = 160
+  f.frequency.value = 160 + near * 500
   const g = ctx.createGain()
   g.gain.setValueAtTime(0.0001, t)
-  g.gain.exponentialRampToValueAtTime(0.9, t + 0.25)
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 3.5)
+  g.gain.exponentialRampToValueAtTime(0.9 + near * 0.6, t + 0.25 - near * 0.2)
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 3.5 + near)
   src.connect(f).connect(g).connect(master)
-  src.start(t, Math.random(), 3.6)
+  src.start(t, Math.random(), 4.6)
+  if (near > 0.5) {
+    // Chasquido seco del rayo al caer cerca.
+    const c = ctx.createBufferSource()
+    c.buffer = engine.noise
+    const hf = ctx.createBiquadFilter()
+    hf.type = 'highpass'
+    hf.frequency.value = 1200
+    const cg = ctx.createGain()
+    cg.gain.setValueAtTime(0.0001, t)
+    cg.gain.exponentialRampToValueAtTime(0.7 * near, t + 0.01)
+    cg.gain.exponentialRampToValueAtTime(0.0001, t + 0.35)
+    c.connect(hf).connect(cg).connect(master)
+    c.start(t, Math.random(), 0.4)
+  }
 }

@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import type { WeatherId } from '@/config/weather'
+import { RAINY, type WeatherId } from '@/config/weather'
 import { OASIS } from '@/config/world'
 import { getGame } from '@/store/gameStore'
 import type { Find } from '@/store/slices/explorationSlice'
@@ -22,6 +22,9 @@ export function WeatherRewards() {
     const game = getGame()
     const w = game.weather
     if (prev.current && prev.current !== w) {
+      // Avisos al empezar la lluvia fuerte (el cielo ya se nota venir).
+      if (w === 'storm') game.notify('⛈️ Tormenta eléctrica: rachas fuertes y rayos. Mejor ponerse a cubierto.', 'warn')
+      else if (w === 'rain' && prev.current !== 'storm') game.notify('🌧️ Llega un aguacero: el oasis lo agradecerá.', 'info')
       if (prev.current === 'sandstorm') {
         const finds: Find[] = []
         for (let i = 0; i < 3; i++) {
@@ -32,7 +35,7 @@ export function WeatherRewards() {
           game.addFinds(finds)
           game.notify('⛏️ La tormenta desenterró restos cerca. Míralos en la brújula.', 'info')
         }
-      } else if (prev.current === 'rain') {
+      } else if (RAINY.includes(prev.current) && !RAINY.includes(w)) {
         const finds: Find[] = []
         for (let i = 0; i < 9; i++) {
           const a = (i / 9) * Math.PI * 2 + Math.random() * 0.4

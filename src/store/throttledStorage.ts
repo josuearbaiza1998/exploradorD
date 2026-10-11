@@ -5,6 +5,13 @@ import type { StateStorage } from 'zustand/middleware'
  * frame y no queremos serializar a disco 60 veces por segundo.
  * Guarda como máximo cada `intervalMs` y siempre al ocultar/cerrar la página.
  */
+let frozen = false
+
+/** Deja de guardar (para reiniciar la partida sin que se vuelva a escribir antes de recargar). */
+export function freezeStorage() {
+  frozen = true
+}
+
 export function createThrottledStorage(intervalMs = 2000): StateStorage {
   const pending = new Map<string, string>()
   let timer: number | null = null
@@ -47,6 +54,7 @@ export function createThrottledStorage(intervalMs = 2000): StateStorage {
       }
     },
     setItem: (key, value) => {
+      if (frozen) return
       pending.set(key, value)
       if (timer === null) timer = window.setTimeout(flush, intervalMs)
     },

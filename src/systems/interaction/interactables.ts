@@ -4,6 +4,8 @@ import type { InteractionTarget } from '@/store/slices/worldSlice'
 import { getLayerChunk } from '@/systems/propPlacement'
 import { getHeight } from '@/utils/terrain/heightfield'
 import { STRUCTURES } from '@/config/structures'
+import { NOTES } from '@/config/notes'
+import { CAVE_CACHE, caveFloor } from '@/config/cave'
 import { POIS, poiLocalToWorld, type PoiId } from '@/config/pois'
 import type { PlacedStructure } from '@/store/slices/structuresSlice'
 import type { Find } from '@/store/slices/explorationSlice'
@@ -20,9 +22,14 @@ export const propKey = (layerId: string, cx: number, cz: number, index: number) 
 export const salvageKey = (id: string) => `ship|${id}`
 export const cacheKey = (id: PoiId) => `poi|${id}`
 export const findKey = (id: string) => `find|${id}`
+export const noteKey = (id: string) => `note|${id}`
+
+export const NOTE_WORLD = NOTES.map((n) => ({ ...n, key: noteKey(n.id), y: getHeight(n.x, n.z) }))
 
 export const POI_CACHES = POIS.map((poi) => {
-  const w = poiLocalToWorld(poi, poi.cache[0], poi.cache[1])
+  // El contenedor de la cueva está al fondo de su interior.
+  if (poi.id === 'cave') return { id: poi.id, key: cacheKey(poi.id), x: CAVE_CACHE.x, z: CAVE_CACHE.z, y: caveFloor(CAVE_CACHE.x, CAVE_CACHE.z) }
+  const w = poi.cacheWorld ?? poiLocalToWorld(poi, poi.cache[0], poi.cache[1])
   return { id: poi.id, key: cacheKey(poi.id), x: w.x, z: w.z, y: getHeight(w.x, w.z) }
 })
 
@@ -99,6 +106,12 @@ export function findTarget(
   for (const c of POI_CACHES) {
     if (looted[c.id] || Math.abs(c.x - px) > reach + 2 || Math.abs(c.z - pz) > reach + 2) continue
     consider(c.key, 'cache', c.x, c.y, c.z, 0.9)
+  }
+
+  // Registros sueltos (se pueden releer).
+  for (const n of NOTE_WORLD) {
+    if (Math.abs(n.x - px) > reach || Math.abs(n.z - pz) > reach) continue
+    consider(n.key, 'note', n.x, n.y, n.z, 0.5)
   }
 
   // Hallazgos del clima.

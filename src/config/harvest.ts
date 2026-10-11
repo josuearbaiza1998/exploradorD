@@ -5,7 +5,7 @@ import type { ItemId, ToolId } from './items'
  * Progresión escalonada: manos → hacha → martillo. El metal NO sale de las
  * rocas: solo de la nave (scavenging).
  */
-export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel' | 'structure' | 'cache' | 'buried' | 'bloom'
+export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel' | 'structure' | 'cache' | 'buried' | 'bloom' | 'note'
 
 export type HarvestDef = {
   label: string
@@ -120,6 +120,16 @@ export const HARVEST: Record<HarvestKind, HarvestDef> = {
       { item: 'fiber', min: 2, max: 3 },
       { item: 'cloth', min: 0, max: 1 },
     ],
+    regrowHours: null,
+  },
+  // Registro de la expedición anterior: se lee (se puede releer).
+  note: {
+    material: 'metal',
+    label: 'Registro',
+    verb: 'Leer',
+    icon: '📜',
+    hits: 1,
+    yields: [],
     regrowHours: null,
   },
   cache: {

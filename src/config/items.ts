@@ -3,6 +3,8 @@
  * materiales y tecnología (regla de supervivencia robótica).
  */
 export type ItemId =
+  | 'hook'
+  | 'drone'
   | 'wood'
   | 'fiber'
   | 'stone'
@@ -60,6 +62,22 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     stack: 1,
     kind: 'tool',
     description: 'Rompe rocas para obtener piedra.',
+  },
+  drone: {
+    id: 'drone',
+    name: 'Dron compañero',
+    icon: '🛸',
+    stack: 1,
+    kind: 'tool',
+    description: 'Te sigue, alumbra de noche y lleva 10 de carga extra.',
+  },
+  hook: {
+    id: 'hook',
+    name: 'Gancho',
+    icon: '🪝',
+    stack: 1,
+    kind: 'tool',
+    description: 'Se engancha a los postes de anclaje y te lanza hasta ellos, incluso sobre el agua.',
   },
   sonicCleaner: {
     id: 'sonicCleaner',

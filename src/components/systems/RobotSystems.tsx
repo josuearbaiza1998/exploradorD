@@ -14,8 +14,12 @@ import { player, teleportPlayer } from '@/systems/player'
 import { isSheltered } from '@/systems/shelter'
 import { energyStatus, updateEnergyGrid } from '@/systems/energyGrid'
 import { weatherState } from '@/systems/weatherState'
+import { RAINY } from '@/config/weather'
 import { wind } from '@/systems/wind'
 import { ambientTemperature } from '@/systems/worldClock'
+import { tallCoverNear, thermal, updateThermal } from '@/systems/thermal'
+import { cave, CAVE_OUTSIDE, inCave } from '@/config/cave'
+import { getHeight } from '@/utils/terrain/heightfield'
 
 /** Duración (s reales) de cada etapa de la secuencia de emergencia. */
 export const EMERGENCY_TIMING = {
@@ -44,6 +48,8 @@ export function RobotSystems() {
   const saveTimer = useRef(0)
   const lastGrounded = useRef(true)
   const sweepTimer = useRef(0)
+  const shadeTimer = useRef(0)
+  const coverNear = useRef(false)
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.1)
@@ -84,7 +90,20 @@ export function RobotSystems() {
         let drain = ROBOT.drain.idle + ROBOT.drain.moving * effort * fx.movingDrain
         if (game.nightVisionOn) drain += ROBOT.drain.nightVision
         if (player.sprinting) drain += ROBOT.drain.sprint * fx.movingDrain
-        if (ambientTemperature(hour) < 0 && !sheltered) drain *= ROBOT.drain.coldMultiplier
+        // --- Temperatura: sol del mediodía y frío nocturno ---
+        if ((shadeTimer.current -= dt) <= 0) {
+          shadeTimer.current = 0.4
+          coverNear.current = tallCoverNear(player.position.x, player.position.z)
+        }
+        const temp = ambientTemperature(hour) - (RAINY.includes(game.weather) ? (game.weather === 'drizzle' ? 3 : 6) : 0)
+        const shade = sheltered || coverNear.current || inCave(player.position.x, player.position.z) || weatherState.sun < 0.5
+        const wasHot = thermal.overheated
+        const warm = thermal.heat
+        updateThermal(temp, shade, effort, player.sprinting, gameHours)
+        if (!wasHot && thermal.overheated) game.notify('🔥 ¡Sobrecalentado! Busca sombra: rocas altas, la nave o un refugio', 'warn')
+        else if (warm < 0.7 && thermal.heat >= 0.7) game.notify('🌡️ El robot se está calentando', 'warn')
+        if (thermal.overheated) drain *= 1.6
+        if (!sheltered) drain *= thermal.cold
         if (!sheltered) drain *= weatherState.drain
         // Más capacidad = el mismo consumo baja menos el porcentaje.
         drain /= fx.capacity
@@ -116,6 +135,7 @@ export function RobotSystems() {
         // El movimiento automático lo hace <Robot/>; aquí solo el final del trayecto.
         if (game.modeTime >= EMERGENCY_TIMING.autopilot) {
           const faceShip = Math.atan2(CRASH_SITE.x - CHARGING_PAD.x, CRASH_SITE.z - CHARGING_PAD.z)
+          cave.active = false
           teleportPlayer(CHARGING_PAD.x, CHARGING_PAD.z, faceShip)
           game.startRecharge()
         }
@@ -187,8 +207,12 @@ export function RobotSystems() {
     saveTimer.current += dt
     if (saveTimer.current > 2 && game.mode === 'active') {
       saveTimer.current = 0
-      const p = player.position
-      game.savePosition([p.x, p.y, p.z])
+      // Dentro de la cueva se guarda la entrada: al volver se aparece fuera.
+      if (cave.active) game.savePosition([CAVE_OUTSIDE.x, getHeight(CAVE_OUTSIDE.x, CAVE_OUTSIDE.z), CAVE_OUTSIDE.z])
+      else {
+        const p = player.position
+        game.savePosition([p.x, p.y, p.z])
+      }
     }
   })
 

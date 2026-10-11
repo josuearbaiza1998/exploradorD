@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
 import { useGameStore, getGame } from '@/store/gameStore'
 import { useUiStore } from '@/store/uiStore'
 import { cleanSensorsWithBestTool } from '@/systems/sensorCleaning'
-import { isMuted, onMuteChange, playClick, setMuted, unlockAudio } from '@/systems/audio/audioEngine'
-import { InstallButton } from './InstallButton'
+import { playClick } from '@/systems/audio/audioEngine'
+import { carriedLoad } from '@/store/slices/inventorySlice'
+import { upgradeEffects } from '@/config/upgrades'
 
-/** Botonera superior derecha: mochila, limpiar, visión nocturna, sonido e instalar. */
+/** Botonera superior derecha: mochila, limpiar, visión nocturna y menú. */
 export function HudButtons() {
   const openInventory = useUiStore((s) => s.openInventory)
   const cleanTool = useGameStore((s) => (s.inventory.sonicCleaner ? 'sonic' : (s.inventory.cloth ?? 0) > 0 ? 'cloth' : null))
@@ -13,9 +13,8 @@ export function HudButtons() {
   const dirty = useGameStore((s) => s.sensorDirt > 0.25)
   const hasNv = useGameStore((s) => !!s.upgrades.nightVision)
   const nvOn = useGameStore((s) => s.nightVisionOn)
-  const items = useGameStore((s) => Object.values(s.inventory).reduce((a, n) => a + (n ?? 0), 0))
-  const [muted, setMutedState] = useState(isMuted)
-  useEffect(() => onMuteChange(setMutedState), [])
+  const load = useGameStore((s) => carriedLoad(s.inventory))
+  const carry = useGameStore((s) => upgradeEffects(s.upgrades, !!s.inventory.drone).carry)
 
   return (
     <div className="hud-buttons">
@@ -28,7 +27,7 @@ export function HudButtons() {
         }}
       >
         🎒<span className="hud-btn-label">Mochila</span>
-        {items > 0 && <span className="hud-badge">{items}</span>}
+        {load > 0 && <span className={`hud-badge ${load >= carry ? 'full' : ''}`}>{load >= carry ? 'llena' : load}</span>}
       </button>
       {cleanTool && (
         <button className={`hud-btn ${dirty ? 'attention' : ''}`} aria-label="Limpiar sensores" onClick={cleanSensorsWithBestTool}>
@@ -50,15 +49,14 @@ export function HudButtons() {
       )}
       <button
         className="hud-btn"
-        aria-label={muted ? 'Activar sonido' : 'Silenciar'}
+        aria-label="Menú"
         onClick={() => {
-          unlockAudio()
-          setMuted(!muted)
+          playClick()
+          useUiStore.getState().openMenu()
         }}
       >
-        {muted ? '🔇' : '🔊'}
+        ☰
       </button>
-      <InstallButton />
     </div>
   )
 }

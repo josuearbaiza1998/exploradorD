@@ -28,7 +28,7 @@ function nextObjective(s: GameState): Objective {
   const repaired = REPAIRS.filter((r) => s.repairs[r.id]).length
   if (repaired < REPAIRS.length) {
     // Primero lo que ya se puede reparar; si no, explorar hacia el lugar más cercano sin abrir.
-    const ready = REPAIRS.find((r) => !s.repairs[r.id] && s.hasItems(r.cost))
+    const ready = REPAIRS.find((r) => !s.repairs[r.id] && s.hasItems(r.cost, true))
     if (ready) return { title: `Repara: ${ready.icon} ${ready.name}`, detail: 'Mochila › Nave, junto a la nave.', cost: ready.cost }
     const missing = POIS.filter((p) => !s.looted[p.id] && !s.inventory[p.part])
     if (missing.length && Object.keys(s.upgrades).length > 0) {

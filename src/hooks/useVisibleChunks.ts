@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { CHUNK_SIZE, CHUNK_VIEW_RADIUS, ISLAND } from '@/config/world'
+import { CHUNK_SIZE, ISLAND } from '@/config/world'
+import { getQuality, useSettings, qualityLevel } from '@/store/settingsStore'
 import { focus } from '@/systems/focus'
 
 export type ChunkCoord = { cx: number; cz: number; key: string }
@@ -17,9 +18,10 @@ function chunkHasLand(cx: number, cz: number): boolean {
 
 function computeChunks(centerX: number, centerZ: number): ChunkCoord[] {
   const list: ChunkCoord[] = []
-  for (let dz = -CHUNK_VIEW_RADIUS; dz <= CHUNK_VIEW_RADIUS; dz++) {
-    for (let dx = -CHUNK_VIEW_RADIUS; dx <= CHUNK_VIEW_RADIUS; dx++) {
-      if (dx * dx + dz * dz > CHUNK_VIEW_RADIUS * CHUNK_VIEW_RADIUS + 1) continue
+  const radius = getQuality().viewRadius
+  for (let dz = -radius; dz <= radius; dz++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      if (dx * dx + dz * dz > radius * radius + 1) continue
       const cx = centerX + dx
       const cz = centerZ + dz
       if (chunkHasLand(cx, cz)) list.push({ cx, cz, key: `${cx}:${cz}` })
@@ -36,6 +38,9 @@ export function useVisibleChunks(): ChunkCoord[] {
   const toChunk = (v: number) => Math.floor(v / CHUNK_SIZE)
   const current = useRef({ x: toChunk(focus.x), z: toChunk(focus.z) })
   const [chunks, setChunks] = useState(() => computeChunks(current.current.x, current.current.z))
+  // Al cambiar la calidad cambia la distancia de dibujado.
+  const level = useSettings(qualityLevel)
+  useEffect(() => setChunks(computeChunks(current.current.x, current.current.z)), [level])
 
   useFrame(() => {
     const x = toChunk(focus.x)

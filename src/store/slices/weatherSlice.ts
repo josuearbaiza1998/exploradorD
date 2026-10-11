@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand'
-import { WEATHER, WEATHER_TRANSITION_HOURS, weatherWeights, type WeatherId } from '@/config/weather'
+import { RAINY, WEATHER, WEATHER_TRANSITION_HOURS, weatherWeights, type WeatherId } from '@/config/weather'
 import type { GameState } from '../gameStore'
 
 export type WeatherSlice = {
@@ -10,14 +10,16 @@ export type WeatherSlice = {
   weatherSince: number
   /** Hora in-game total en que se elegirá el siguiente estado. */
   weatherUntil: number
+  /** Hora in-game total en que llovió por última vez. */
+  lastRainAt: number
   /** Comprueba si toca cambiar de clima. */
   tickWeather: () => void
   /** Fuerza un estado (panel de pruebas). */
   setWeather: (id: WeatherId) => void
 }
 
-function pickNext(hour: number, current: WeatherId): WeatherId {
-  const weights = weatherWeights(hour, current)
+function pickNext(hour: number, current: WeatherId, dryHours: number): WeatherId {
+  const weights = weatherWeights(hour, current, dryHours)
   const total = Object.values(weights).reduce((a, b) => a + b, 0)
   let roll = Math.random() * total
   for (const [id, w] of Object.entries(weights) as [WeatherId, number][]) {
@@ -37,12 +39,15 @@ export const createWeatherSlice: StateCreator<GameState, [], [], WeatherSlice> =
   previousWeather: 'clear',
   weatherSince: 0,
   weatherUntil: 8.5 + randomDuration('clear'),
+  lastRainAt: 0,
 
   tickWeather: () => {
-    const { totalHours, weatherUntil, weather } = get()
+    const { totalHours, weatherUntil, weather, lastRainAt } = get()
     if (totalHours < weatherUntil) return
-    const next = pickNext(totalHours % 24, weather)
+    const wet = RAINY.includes(weather)
+    const next = pickNext(totalHours % 24, weather, wet ? 0 : totalHours - lastRainAt)
     set({
+      lastRainAt: wet || RAINY.includes(next) ? totalHours : lastRainAt,
       previousWeather: weather,
       weather: next,
       weatherSince: totalHours,

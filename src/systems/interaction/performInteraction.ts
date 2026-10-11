@@ -6,6 +6,7 @@ import { getGame } from '@/store/gameStore'
 import { player } from '@/systems/player'
 import { SALVAGE_NODES } from '@/config/world'
 import { POIS, type PoiId } from '@/config/pois'
+import { useUiStore } from '@/store/uiStore'
 
 /** Energía (%) que cuesta cada golpe. */
 const HIT_COST = 0.25
@@ -44,6 +45,15 @@ export function performInteraction(): boolean {
   emitHit({ material: def.material, x: tx, y: ty, z: tz, final: hits >= def.hits })
   if (hits < def.hits) return true
 
+  // --- Registro: se abre para leerlo ---
+  if (target.kind === 'note') {
+    const id = target.key.slice(5)
+    game.readNote(id)
+    useUiStore.getState().openNote(id)
+    game.resetHits(target.key)
+    return true
+  }
+
   // --- Contenedor de un lugar por descubrir: pieza única + botín ---
   if (target.kind === 'cache') {
     const id = target.key.replace('poi|', '') as PoiId
@@ -79,7 +89,7 @@ export function performInteraction(): boolean {
     game.notify(gained.join('  '), 'gain')
     emitFloatText({ text: gained.join('  '), x: tx, y: ty, z: tz })
   }
-  if (overflow) game.notify('Inventario lleno para ese recurso', 'warn')
+  if (overflow) game.notify('🎒 Mochila llena: guarda en la nave o mejora la mochila', 'warn')
 
   // --- Hallazgos del clima: desaparecen al recogerlos ---
   if (target.key.startsWith('find|')) {

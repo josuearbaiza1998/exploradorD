@@ -1,6 +1,8 @@
 import type { StateCreator } from 'zustand'
 import type { Inventory, ItemId } from '@/config/items'
 import { POIS, type PoiId } from '@/config/pois'
+import { NOTES } from '@/config/notes'
+import { ITEMS } from '@/config/items'
 import { REPAIRS, type RepairId } from '@/config/repairs'
 import type { GameState } from '../gameStore'
 
@@ -15,6 +17,10 @@ export type ExplorationSlice = {
   shipRepairedSeen: boolean
   /** Hallazgos del clima: restos que desentierra una tormenta y flores tras la lluvia. */
   finds: Find[]
+  /** Registros leídos. */
+  notesRead: Record<string, true>
+  /** Bitácora: lo que el robot ha ido encontrando, mejorando y reparando. */
+  journal: JournalEntry[]
 
   discover: (id: PoiId) => void
   clearDiscovery: () => void
@@ -22,11 +28,16 @@ export type ExplorationSlice = {
   lootPoi: (id: PoiId) => Inventory
   repair: (id: RepairId, atShip: boolean) => boolean
   markShipRepairedSeen: () => void
+  readNote: (id: string) => void
+  logJournal: (entry: Omit<JournalEntry, 'id' | 'at'>) => void
   addFinds: (finds: Find[]) => void
   removeFind: (id: string) => void
   /** Quita los hallazgos caducados (las flores se marchitan). */
   expireFinds: (totalHours: number) => void
 }
+
+export type JournalKind = 'place' | 'part' | 'upgrade' | 'repair' | 'tool' | 'note'
+export type JournalEntry = { id: number; at: number; kind: JournalKind; icon: string; title: string; text?: string }
 
 export type Find = { id: string; kind: 'buried' | 'bloom'; x: number; z: number; until: number }
 
@@ -40,11 +51,23 @@ export const createExplorationSlice: StateCreator<GameState, [], [], Exploration
   lastDiscovery: null,
   shipRepairedSeen: false,
   finds: [],
+  notesRead: {},
+  journal: [],
 
   discover: (id) => {
     if (get().discovered[id]) return
     set((s) => ({ discovered: { ...s.discovered, [id]: true }, lastDiscovery: id }))
+    const poi = POIS.find((p) => p.id === id)
+    if (poi) get().logJournal({ kind: 'place', icon: poi.icon, title: poi.name, text: poi.log })
   },
+  readNote: (id) => {
+    if (get().notesRead[id]) return
+    set((s) => ({ notesRead: { ...s.notesRead, [id]: true } }))
+    const note = NOTES.find((n) => n.id === id)
+    if (note) get().logJournal({ kind: 'note', icon: '📜', title: note.title, text: note.text })
+  },
+  logJournal: (entry) =>
+    set((s) => ({ journal: [...s.journal, { ...entry, id: (s.journal.at(-1)?.id ?? 0) + 1, at: s.totalHours }] })),
   clearDiscovery: () => set({ lastDiscovery: null }),
   lootPoi: (id) => {
     const s = get()
@@ -57,15 +80,16 @@ export const createExplorationSlice: StateCreator<GameState, [], [], Exploration
       if (added > 0) got[item] = added
     }
     set((st) => ({ looted: { ...st.looted, [id]: true } }))
+    const part = ITEMS[poi.part]
+    get().logJournal({ kind: 'part', icon: part.icon, title: part.name, text: `Encontrada en ${poi.name}. Sirve para reparar la nave.` })
     return got
   },
   repair: (id, atShip) => {
     const s = get()
     const def = REPAIRS.find((r) => r.id === id)
-    if (!def || !atShip || s.repairs[id] || !s.hasItems(def.cost)) return false
-    const inventory: Inventory = { ...s.inventory }
-    for (const [item, n] of Object.entries(def.cost) as [ItemId, number][]) inventory[item] = (inventory[item] ?? 0) - n
-    set({ inventory, repairs: { ...s.repairs, [id]: true } })
+    if (!def || !atShip || s.repairs[id] || !s.pay(def.cost, true)) return false
+    set({ repairs: { ...s.repairs, [id]: true } })
+    get().logJournal({ kind: 'repair', icon: def.icon, title: `Reparado: ${def.name}`, text: def.description })
     return true
   },
   markShipRepairedSeen: () => set({ shipRepairedSeen: true }),

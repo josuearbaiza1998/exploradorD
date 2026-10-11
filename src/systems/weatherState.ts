@@ -24,12 +24,15 @@ export const weatherState = {
   speed: 1,
   dust: WEATHER.clear.dust,
   rain: 0,
+  lightning: 0,
+  /** Destello de rayo 0..1 (lo pone <Lightning/>, lo leen luces y cielo). */
+  flash: 0,
 }
 
 const tintA = new Color()
 const tintB = new Color()
 const NUMERIC: (keyof WeatherDef & keyof typeof weatherState)[] = [
-  'wind', 'fogNear', 'fogFar', 'sun', 'solar', 'dirtPerHour', 'washPerHour', 'drain', 'speed', 'dust', 'rain',
+  'wind', 'fogNear', 'fogFar', 'sun', 'solar', 'dirtPerHour', 'washPerHour', 'drain', 'speed', 'dust', 'rain', 'lightning',
 ]
 
 export function updateWeatherState(previous: WeatherId, current: WeatherId, since: number, totalHours: number) {

@@ -2,6 +2,10 @@ import type { Vector3 } from 'three'
 import { ISLAND, OASIS } from '@/config/world'
 import { getHeight, getSlope, OASIS_WATER_LEVEL } from '@/utils/terrain/heightfield'
 import { queryColliders } from './staticColliders'
+import { cave, caveCanEnter, caveFloor } from '@/config/cave'
+
+/** Suelo bajo el robot: el terreno o, dentro de la cueva, su propio suelo. */
+export const groundAt = (x: number, z: number) => (cave.active ? caveFloor(x, z) : getHeight(x, z))
 
 /**
  * Motor de personaje "cinemático" ligero (sin motor de físicas).
@@ -44,6 +48,7 @@ function waterDepth(x: number, z: number, ground: number): number {
 }
 
 function canEnter(x: number, z: number, fromY: number): boolean {
+  if (cave.active) return caveCanEnter(x, z, MOTOR_CONFIG.radius)
   const ground = getHeight(x, z)
   if (waterDepth(x, z, ground) > MOTOR_CONFIG.maxWaterDepth) return false
   // Cuesta arriba demasiado empinada: bloquea. Cuesta abajo siempre se puede.
@@ -52,6 +57,7 @@ function canEnter(x: number, z: number, fromY: number): boolean {
 }
 
 function resolveCollisions(pos: Vector3) {
+  if (cave.active) return
   const r = MOTOR_CONFIG.radius
   for (let iter = 0; iter < 2; iter++) {
     for (const c of queryColliders(pos.x, pos.z, r)) {
@@ -69,12 +75,12 @@ function resolveCollisions(pos: Vector3) {
 }
 
 export const simpleMotor: CharacterMotor = {
-  groundHeight: getHeight,
+  groundHeight: groundAt,
 
   step(body, wishX, wishZ, jump, dt) {
     const p = body.position
-    const ground0 = getHeight(p.x, p.z)
-    body.inWater = waterDepth(p.x, p.z, ground0) > 0.15
+    const ground0 = groundAt(p.x, p.z)
+    body.inWater = !cave.active && waterDepth(p.x, p.z, ground0) > 0.15
     const factor = body.inWater ? MOTOR_CONFIG.waterSpeedFactor : 1
 
     // --- Horizontal: intento completo, si no deslizar por cada eje ---
@@ -102,7 +108,7 @@ export const simpleMotor: CharacterMotor = {
     body.velocity.z = wishZ * factor
 
     // --- Vertical: gravedad, salto y anclaje al suelo ---
-    const ground = getHeight(p.x, p.z)
+    const ground = groundAt(p.x, p.z)
     if (body.grounded && jump) {
       body.velocity.y = MOTOR_CONFIG.jumpSpeed
       body.grounded = false

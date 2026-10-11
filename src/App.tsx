@@ -6,6 +6,8 @@ import { EmergencyOverlay } from '@/components/ui/EmergencyOverlay'
 import { SensorOverlay } from '@/components/ui/SensorOverlay'
 import { NoticeToast } from '@/components/ui/NoticeToast'
 import { InventoryPanel } from '@/components/ui/inventory/InventoryPanel'
+import { FadeOverlay } from '@/components/ui/FadeOverlay'
+import { GameMenu, NoteModal } from '@/components/ui/menu/GameMenu'
 import { Hud, NightVisionOverlay } from '@/components/ui/hud/Hud'
 
 // Panel de pruebas: solo en desarrollo o con ?debug en la URL.
@@ -16,12 +18,15 @@ export default function App() {
     <div className="app">
       <GameCanvas />
       <NightVisionOverlay />
+      <FadeOverlay />
       <SensorOverlay />
       <EmergencyOverlay />
       <TouchControls />
       <Hud />
       <NoticeToast />
       <InventoryPanel />
+      <GameMenu />
+      <NoteModal />
       {SHOW_DEBUG && <DebugPanel />}
       <RotateDeviceHint />
     </div>

@@ -256,6 +256,7 @@ html, body, #root, .app {
 .inv-backdrop {
   position: absolute;
   inset: 0;
+  z-index: 6;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -670,3 +671,83 @@ html, body, #root, .app {
 .cmp-marker.poi.done {
   opacity: 0.55;
 }
+
+/* ---------- Carga de la mochila y almacén ---------- */
+.carry {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  width: 120px;
+  height: 16px;
+  margin-left: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 600;
+}
+.carry i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #7ee08a, #ffc457);
+}
+.carry.full i {
+  background: #ff6b5a;
+}
+.carry b {
+  position: relative;
+  display: block;
+  text-align: center;
+  line-height: 16px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.storage {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.2);
+}
+.hud-badge.full { background: #ff4d3d; }
+
+/* ---------- Menú y bitácora ---------- */
+.menu-panel { max-width: 640px; }
+.menu-list { display: flex; flex-direction: column; gap: 8px; }
+.menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.menu-row > span { display: flex; flex-direction: column; font-weight: 600; }
+.menu-hint { font-style: normal; font-size: 11px; font-weight: 400; opacity: 0.7; }
+.menu-buttons { display: flex; gap: 6px; }
+.menu-buttons .hud-btn { position: static; }
+.menu-row.danger { background: rgba(255, 77, 61, 0.1); }
+.inv-use.danger { background: #d9412f; color: #fff; }
+.seg { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.seg button {
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+}
+.seg button.active { background: #ff9f43; border-color: #ff9f43; color: #22140a; font-weight: 700; }
+.journal-filters { margin-bottom: 8px; }
+.journal-filters .menu-hint { margin-left: 8px; }
+.journal { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.journal li { display: flex; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.06); }
+.journal strong { font-size: 14px; }
+.journal-day { margin-left: 8px; font-size: 11px; opacity: 0.6; }
+.journal p { margin: 3px 0 0; font-size: 12px; opacity: 0.85; }
+.note-card p { font-style: italic; }
+.heat-bar { display: inline-block; vertical-align: middle; width: 28px; height: 5px; margin-left: 4px; border-radius: 3px; background: rgba(255, 255, 255, 0.2); overflow: hidden; }
+.heat-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffc457, #ff4d3d); }
+.fade-overlay { position: absolute; inset: 0; background: #000; pointer-events: none; animation: fade-out 0.9s ease-in forwards; z-index: 3; }
+@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+.grapple-btn { border-color: rgba(255, 180, 80, 0.9); background: rgba(130, 70, 20, 0.75); box-shadow: 0 0 12px rgba(255, 160, 60, 0.5); }

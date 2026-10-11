@@ -14,8 +14,7 @@ export const WORLD_SEED = 1337
 export const CHUNK_SIZE = 64
 export const CHUNK_RESOLUTION = 32
 
-/** Radio (en chunks) alrededor del foco que se mantiene cargado. */
-export const CHUNK_VIEW_RADIUS = 5
+// El radio de chunks visibles depende de la calidad: store/settingsStore.ts.
 
 /**
  * Modo isla: el terreno cae al mar más allá de ISLAND_RADIUS.
@@ -66,6 +65,12 @@ export const LANDMARK_HILLS: LandmarkHill[] = [
   { x: -20, z: 15, radius: 18, height: 6, ridge: 1.2 },
   { x: 28, z: 60, radius: 16, height: 5, ridge: 1.2 },
   { x: -150, z: -110, radius: 45, height: 26, ridge: 1.5 },
+]
+
+/** Islotes separados de la isla por agua honda (se llega con el gancho). */
+export const ISLETS: (Vec2 & { radius: number; height: number })[] = [
+  // Frente al pico de la baliza: allí cayó la antena.
+  { x: 122, z: -186, radius: 9, height: 3.2 },
 ]
 
 /** Zona plana alrededor del spawn y de la nave para que se puedan pisar cómodamente. */

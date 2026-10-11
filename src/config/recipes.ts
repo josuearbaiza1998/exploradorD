@@ -32,6 +32,8 @@ export const RECIPES: Recipe[] = [
     cost: { scrapMetal: 2, techParts: 2, fiber: 2 },
     station: 'ship',
   },
+  { id: 'drone', output: 'drone', amount: 1, cost: { scrapMetal: 4, techParts: 3, fiber: 2 }, station: 'ship' },
+  { id: 'hook', output: 'hook', amount: 1, cost: { scrapMetal: 3, fiber: 4, techParts: 1 }, station: 'ship' },
   { id: 'cell', output: 'cell', amount: 1, cost: { scrapMetal: 2, techParts: 1 }, station: 'ship' },
 ]
 

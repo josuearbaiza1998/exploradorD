@@ -5,6 +5,8 @@ import { getGame } from '@/store/gameStore'
 import { environment } from '@/systems/environmentState'
 import { weatherState } from '@/systems/weatherState'
 
+const FLASH = new Color('#e6ecff')
+
 /**
  * Cúpula de cielo estilizada: degradado de dos colores con un disco de
  * sol/luna de borde duro (coherente con el cell-shading). Un único draw call
@@ -118,6 +120,11 @@ export function SkyDome() {
     const amount = weatherState.tintAmount
     ;(u.uTop.value as Color).copy(p.skyTop).lerp(environment.weatherTint, amount * 0.85)
     ;(u.uHorizon.value as Color).copy(p.skyHorizon).lerp(environment.weatherTint, amount)
+    // Rayo: el cielo entero se ilumina un instante.
+    if (weatherState.flash > 0.01) {
+      ;(u.uTop.value as Color).lerp(FLASH, weatherState.flash * 0.7)
+      ;(u.uHorizon.value as Color).lerp(FLASH, weatherState.flash * 0.8)
+    }
     ;(u.uSunColor.value as Color).copy(p.sunColor)
     u.uSunDir.value.copy(environment.lightDir)
     u.uIsDay.value = environment.isDay ? 1 : 0

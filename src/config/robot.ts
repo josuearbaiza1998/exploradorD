@@ -20,8 +20,6 @@ export const ROBOT = {
     sprint: 1.8,
     /** Visión nocturna encendida (%/h). */
     nightVision: 0.5,
-    /** Multiplicador cuando la temperatura baja de 0 °C (frío nocturno). */
-    coldMultiplier: 1.6,
   },
 
   /** Panel solar integrado: carga pasiva a pleno sol (%/h). */

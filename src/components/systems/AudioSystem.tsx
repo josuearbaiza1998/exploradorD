@@ -88,7 +88,9 @@ export function AudioSystem() {
         t.chirp = 0.25 + Math.random() * 1.1
       }
     }
-    if (weatherState.rain > 0.7) {
+    // Truenos lejanos sin rayo visible solo con aguacero sin rayos cercanos
+    // (los de los rayos los lanza <Lightning/>).
+    if (weatherState.rain > 0.7 && weatherState.lightning < 0.5) {
       t.thunder -= dt
       if (t.thunder <= 0) {
         thunder()

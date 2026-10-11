@@ -2,6 +2,7 @@ import { Vector3 } from 'three'
 import { CRASH_SITE, SPAWN } from '@/config/world'
 import { getGame } from '@/store/gameStore'
 import { getHeight } from '@/utils/terrain/heightfield'
+import { groundAt } from '@/systems/physics/characterMotor'
 
 /**
  * Estado físico del robot (posición, velocidad, orientación).
@@ -30,7 +31,7 @@ export const player = {
 }
 
 export function teleportPlayer(x: number, z: number, heading?: number) {
-  player.position.set(x, getHeight(x, z), z)
+  player.position.set(x, groundAt(x, z), z)
   player.velocity.set(0, 0, 0)
   if (heading !== undefined) player.heading = heading
   player.teleportId++

@@ -18,6 +18,8 @@ export type PoiDef = Vec2 & {
   rotation: number
   /** Contenedor: posición local (antes de girar). */
   cache: [number, number]
+  /** Si el contenedor está en otro sitio del mundo (p. ej. un islote). */
+  cacheWorld?: Vec2
   part: ItemId
   loot: Inventory
   /** Colisionadores locales (x, z, radio, alto). */
@@ -76,8 +78,9 @@ export const POIS: PoiDef[] = [
     x: 104,
     z: -158,
     rotation: 0,
-    log: 'Registro: una baliza de otra expedición sigue emitiendo. Su antena de largo alcance podría devolver la voz a la nave.',
+    log: 'Registro: una baliza de otra expedición sigue emitiendo. La tormenta tiró su antena al islote de enfrente: hará falta un gancho para cruzar.',
     cache: [2.2, 0],
+    cacheWorld: { x: 123.5, z: -187.5 },
     part: 'antenna',
     loot: { scrapMetal: 3, techParts: 2 },
     colliders: [[0, 0, 1.4, 8]],

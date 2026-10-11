@@ -7,7 +7,9 @@ import { focus } from '@/systems/focus'
 import { weatherState } from '@/systems/weatherState'
 import { getGame } from '@/store/gameStore'
 import { Color } from 'three'
+import { useQuality } from '@/store/settingsStore'
 
+const CAVE_AMBIENT = new Color('#6f86c8')
 const MIST_COLOR = new Color('#9fb0d8')
 
 const SHADOW_DISTANCE = 120
@@ -22,6 +24,7 @@ const LIGHT_DISTANCE = 150
  */
 export function Lighting() {
   const sun = useRef<DirectionalLight>(null)
+  const q = useQuality()
   const ambient = useRef<AmbientLight>(null)
   const hemi = useRef<HemisphereLight>(null)
   const scene = useThree((s) => s.scene)
@@ -56,11 +59,14 @@ export function Lighting() {
       light.target.position.copy(focus)
       light.target.updateMatrixWorld()
     }
-    if (ambient.current) ambient.current.intensity = p.ambient + nv.current * 1.1
+    if (ambient.current) {
+      ambient.current.intensity = p.ambient + nv.current * 1.1 + weatherState.flash * 2.2
+      ambient.current.color.set('#ffffff')
+    }
     if (hemi.current) {
       hemi.current.color.copy(p.hemiSky)
       hemi.current.groundColor.copy(p.hemiGround)
-      hemi.current.intensity = p.ambient * 1.4 + nv.current * 0.6
+      hemi.current.intensity = p.ambient * 1.4 + nv.current * 0.6 + weatherState.flash * 1.6
     }
     if (scene.fog instanceof Fog) {
       // La niebla se cierra con tormentas/lluvia y toma el color del clima.
@@ -75,14 +81,30 @@ export function Lighting() {
         scene.fog.far *= 1 - mist * 0.55
       }
     }
+    // Dentro de la cueva: casi sin sol, penumbra azulada (la luz la ponen los cristales).
+    if (environment.inCave) {
+      const night = nv.current
+      if (light) light.intensity *= 0.04
+      if (ambient.current) {
+        ambient.current.color.set(CAVE_AMBIENT)
+        ambient.current.intensity = 0.35 + night * 0.6
+      }
+      if (hemi.current) hemi.current.intensity = 0.15 + night * 0.5
+      if (scene.fog instanceof Fog) {
+        scene.fog.color.set('#0b1020')
+        scene.fog.near = 6
+        scene.fog.far = 48 + night * 30
+      }
+    }
   })
 
   return (
     <>
       <directionalLight
         ref={sun}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
+        castShadow={q.shadows}
+        key={q.shadowMap}
+        shadow-mapSize={[q.shadowMap, q.shadowMap]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.6}
         shadow-camera-left={-SHADOW_DISTANCE}

@@ -18,6 +18,8 @@ export const environment = {
   mist: 0,
   /** Visión nocturna efectiva 0..1 (encendida y de noche). */
   nightVision: 0,
+  /** El robot está dentro de la cueva (luz tenue, sin clima). */
+  inCave: false,
 }
 
 /** Intensidad de la bruma según la hora: crece de noche, máxima al amanecer. */

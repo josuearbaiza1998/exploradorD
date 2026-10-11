@@ -5,7 +5,12 @@ import type { Inventory } from './items'
  * más; el metal escasea (solo sale de la nave), así que los primeros niveles
  * tiran sobre todo de madera, fibra y piedra.
  */
-export type UpgradeId = 'battery' | 'legs' | 'solar' | 'sensors' | 'arms' | 'nightVision'
+/** Carga base de la mochila. */
+export const CARRY_BASE = 30
+/** Carga extra que lleva el dron. */
+export const DRONE_CARRY = 10
+
+export type UpgradeId = 'battery' | 'legs' | 'solar' | 'sensors' | 'arms' | 'nightVision' | 'backpack'
 
 export type UpgradeDef = {
   id: UpgradeId
@@ -61,6 +66,16 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
       { description: 'Cada golpe cuenta doble en árboles y rocas', cost: { wood: 6, stone: 3 } },
     ],
   },
+  backpack: {
+    id: 'backpack',
+    name: 'Mochila',
+    icon: '🎒',
+    levels: [
+      { description: `Carga ${CARRY_BASE + 15} (antes ${CARRY_BASE})`, cost: { fiber: 6, wood: 4 } },
+      { description: `Carga ${CARRY_BASE + 35}`, cost: { fiber: 6, scrapMetal: 2, techParts: 1 } },
+      { description: `Carga ${CARRY_BASE + 60}`, cost: { stone: 6, scrapMetal: 3, techParts: 2 } },
+    ],
+  },
   nightVision: {
     id: 'nightVision',
     name: 'Visión nocturna',
@@ -74,7 +89,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
 export type UpgradeLevels = Partial<Record<UpgradeId, number>>
 
 /** Efectos numéricos según los niveles comprados (lo consultan los sistemas por frame). */
-export function upgradeEffects(u: UpgradeLevels) {
+export function upgradeEffects(u: UpgradeLevels, drone = false) {
   const lv = (id: UpgradeId) => u[id] ?? 0
   return {
     /** Divide todo el consumo (más capacidad con la misma carga en %). */
@@ -88,5 +103,7 @@ export function upgradeEffects(u: UpgradeLevels) {
     dirt: 1 - [0, 0.35, 0.65][lv('sensors')],
     hitPower: lv('arms') > 0 ? 2 : 1,
     nightVision: lv('nightVision') > 0,
+    /** Carga máxima de la mochila (recursos y consumibles; herramientas y piezas no ocupan). */
+    carry: CARRY_BASE + [0, 15, 35, 60][lv('backpack')] + (drone ? DRONE_CARRY : 0),
   }
 }

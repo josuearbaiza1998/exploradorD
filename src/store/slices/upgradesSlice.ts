@@ -1,5 +1,4 @@
 import type { StateCreator } from 'zustand'
-import type { Inventory, ItemId } from '@/config/items'
 import { UPGRADES, type UpgradeId, type UpgradeLevels } from '@/config/upgrades'
 import type { GameState } from '../gameStore'
 
@@ -19,10 +18,10 @@ export const createUpgradesSlice: StateCreator<GameState, [], [], UpgradesSlice>
     const s = get()
     const level = s.upgrades[id] ?? 0
     const next = UPGRADES[id].levels[level]
-    if (!atWorkbench || !next || !s.hasItems(next.cost)) return false
-    const inventory: Inventory = { ...s.inventory }
-    for (const [item, n] of Object.entries(next.cost) as [ItemId, number][]) inventory[item] = (inventory[item] ?? 0) - n
-    set({ inventory, upgrades: { ...s.upgrades, [id]: level + 1 } })
+    if (!atWorkbench || !next || !s.pay(next.cost, true)) return false
+    set({ upgrades: { ...s.upgrades, [id]: level + 1 } })
+    const def = UPGRADES[id]
+    get().logJournal({ kind: 'upgrade', icon: def.icon, title: `${def.name} · nivel ${level + 1}`, text: next.description })
     return true
   },
   toggleNightVision: () => {
