@@ -4,6 +4,7 @@ import type { InteractionTarget } from '@/store/slices/worldSlice'
 import { getLayerChunk } from '@/systems/propPlacement'
 import { getHeight } from '@/utils/terrain/heightfield'
 import { STRUCTURES } from '@/config/structures'
+import { POIS, poiLocalToWorld, type PoiId } from '@/config/pois'
 import type { PlacedStructure } from '@/store/slices/structuresSlice'
 
 /** Alcance de interacción (m) medido desde el borde del objeto. */
@@ -16,6 +17,12 @@ const REACH_RADIUS: Record<string, number> = { palms: 0.5, smallTrees: 0.5, rock
 
 export const propKey = (layerId: string, cx: number, cz: number, index: number) => `${layerId}|${cx}:${cz}|${index}`
 export const salvageKey = (id: string) => `ship|${id}`
+export const cacheKey = (id: PoiId) => `poi|${id}`
+
+export const POI_CACHES = POIS.map((poi) => {
+  const w = poiLocalToWorld(poi, poi.cache[0], poi.cache[1])
+  return { id: poi.id, key: cacheKey(poi.id), x: w.x, z: w.z, y: getHeight(w.x, w.z) }
+})
 
 const groundShip = getHeight(CRASH_SITE.x, CRASH_SITE.z)
 export const SALVAGE_WORLD = SALVAGE_NODES.map((n) => {
@@ -33,6 +40,7 @@ export function findTarget(
   heading: number,
   harvested: Record<string, number>,
   structures: PlacedStructure[] = [],
+  looted: Partial<Record<PoiId, true>> = {},
 ): InteractionTarget | null {
   const fx = Math.sin(heading)
   const fz = Math.cos(heading)
@@ -82,6 +90,12 @@ export function findTarget(
   for (const n of SALVAGE_WORLD) {
     if (Math.abs(n.x - px) > reach + 4 || Math.abs(n.z - pz) > reach + 4) continue
     consider(n.key, n.kind, n.x, n.y, n.z, n.kind === 'hullPanel' ? 3.6 : 0.8)
+  }
+
+  // Contenedores de los lugares por descubrir (se abren una vez).
+  for (const c of POI_CACHES) {
+    if (looted[c.id] || Math.abs(c.x - px) > reach + 2 || Math.abs(c.z - pz) > reach + 2) continue
+    consider(c.key, 'cache', c.x, c.y, c.z, 0.9)
   }
 
   return best

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { CRASH_SITE } from '@/config/world'
+import { POIS } from '@/config/pois'
 import { useGameStore } from '@/store/gameStore'
 import { cameraRig } from '@/systems/cameraRig'
 import { player } from '@/systems/player'
@@ -29,6 +30,8 @@ const bearing = (dx: number, dz: number) => Math.atan2(dx, -dz)
 export function Compass() {
   const strip = useRef<HTMLDivElement>(null)
   const boxes = useGameStore((s) => s.droppedBoxes)
+  const discovered = useGameStore((s) => s.discovered)
+  const looted = useGameStore((s) => s.looted)
 
   useEffect(() => {
     let raf = 0
@@ -73,6 +76,12 @@ export function Compass() {
         <span className="cmp-icon">🚀</span>
         <span className="cmp-dist" />
       </span>
+      {POIS.filter((p) => discovered[p.id]).map((p) => (
+        <span key={p.id} className={`cmp-marker poi ${looted[p.id] ? 'done' : ''}`} data-bearing="0" data-x={p.x} data-z={p.z}>
+          <span className="cmp-icon">{p.icon}</span>
+          <span className="cmp-dist" />
+        </span>
+      ))}
       {boxes.map((b) => (
         <span key={b.id} className="cmp-marker box" data-bearing="0" data-x={b.position[0]} data-z={b.position[2]}>
           <span className="cmp-icon">🎒</span>

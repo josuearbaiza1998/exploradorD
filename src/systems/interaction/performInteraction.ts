@@ -1,9 +1,11 @@
+import { emitFloatText, emitHit } from '@/systems/hitFx'
 import { upgradeEffects } from '@/config/upgrades'
 import { HARVEST } from '@/config/harvest'
 import { ITEMS } from '@/config/items'
 import { getGame } from '@/store/gameStore'
 import { player } from '@/systems/player'
 import { SALVAGE_NODES } from '@/config/world'
+import { POIS, type PoiId } from '@/config/pois'
 
 /** Energía (%) que cuesta cada golpe. */
 const HIT_COST = 0.25
@@ -38,7 +40,21 @@ export function performInteraction(): boolean {
   // Los brazos mejorados rinden doble en recursos naturales (no en la nave ni en estructuras).
   const natural = target.kind === 'smallTree' || target.kind === 'palm' || target.kind === 'rock' || target.kind === 'shrub'
   const hits = game.addHit(target.key, natural ? fx.hitPower : 1)
+  const [tx, ty, tz] = target.position
+  emitHit({ material: def.material, x: tx, y: ty, z: tz, final: hits >= def.hits })
   if (hits < def.hits) return true
+
+  // --- Contenedor de un lugar por descubrir: pieza única + botín ---
+  if (target.kind === 'cache') {
+    const id = target.key.replace('poi|', '') as PoiId
+    const got = game.lootPoi(id)
+    const text = (Object.entries(got) as [keyof typeof ITEMS, number][]).map(([i, n]) => `+${n} ${ITEMS[i].icon}`).join('  ')
+    const part = POIS.find((p) => p.id === id)?.part
+    if (part) game.notify(`Pieza encontrada: ${ITEMS[part].icon} ${ITEMS[part].name}`, 'gain')
+    if (text) emitFloatText({ text, x: tx, y: ty, z: tz })
+    game.resetHits(target.key)
+    return true
+  }
 
   // --- Estructura propia: desmontar y recuperar la mitad ---
   if (target.kind === 'structure') {
@@ -59,7 +75,10 @@ export function performInteraction(): boolean {
     if (added > 0) gained.push(`+${added} ${ITEMS[y.item].icon}`)
     if (added < amount) overflow = true
   }
-  if (gained.length) game.notify(gained.join('  '), 'gain')
+  if (gained.length) {
+    game.notify(gained.join('  '), 'gain')
+    emitFloatText({ text: gained.join('  '), x: tx, y: ty, z: tz })
+  }
   if (overflow) game.notify('Inventario lleno para ese recurso', 'warn')
 
   // --- Puntos de chatarra con usos limitados ---

@@ -5,6 +5,7 @@ import { cameraRig } from '@/systems/cameraRig'
 import { consumeLook } from '@/systems/input'
 import { queryColliders } from '@/systems/physics/staticColliders'
 import { player } from '@/systems/player'
+import { hitFx } from '@/systems/hitFx'
 import { clamp } from '@/utils/math'
 import { getHeight } from '@/utils/terrain/heightfield'
 
@@ -82,6 +83,13 @@ export function ThirdPersonCamera() {
     desired.y = Math.max(desired.y, getHeight(desired.x, desired.z) + MIN_GROUND_CLEARANCE)
     camera.position.copy(desired)
     camera.lookAt(target)
+    // Temblor breve al golpear (más fuerte al romper algo).
+    if (hitFx.shake > 0) {
+      const k = hitFx.shake * hitFx.shake * 0.12
+      camera.position.x += (Math.random() - 0.5) * k
+      camera.position.y += (Math.random() - 0.5) * k
+      camera.position.z += (Math.random() - 0.5) * k
+    }
   })
 
   return null

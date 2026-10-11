@@ -8,8 +8,9 @@ import { createWorldSlice, type WorldSlice } from './slices/worldSlice'
 import { createWeatherSlice, type WeatherSlice } from './slices/weatherSlice'
 import { createStructuresSlice, type StructuresSlice } from './slices/structuresSlice'
 import { createUpgradesSlice, type UpgradesSlice } from './slices/upgradesSlice'
+import { createExplorationSlice, type ExplorationSlice } from './slices/explorationSlice'
 
-export type GameState = ClockSlice & RobotSlice & InventorySlice & WorldSlice & WeatherSlice & StructuresSlice & UpgradesSlice
+export type GameState = ClockSlice & RobotSlice & InventorySlice & WorldSlice & WeatherSlice & StructuresSlice & UpgradesSlice & ExplorationSlice
 
 /**
  * Tienda global del juego (Zustand), dividida en slices:
@@ -18,6 +19,7 @@ export type GameState = ClockSlice & RobotSlice & InventorySlice & WorldSlice & 
  *  - inventory: inventario y cajas caídas con sus coordenadas.
  *  - weather: estado del clima y cuándo cambia.
  *  - structures: paneles solares, bancos de baterías y refugios construidos.
+ *  - exploration: lugares descubiertos, contenedores abiertos y reparación de la nave.
  *  - upgrades: mejoras de las partes del robot y visión nocturna.
  *  - world: recursos recolectados (y cuándo rebrotan) y puntos de chatarra.
  *
@@ -37,11 +39,12 @@ export const useGameStore = create<GameState>()(
       ...createWeatherSlice(...a),
       ...createStructuresSlice(...a),
       ...createUpgradesSlice(...a),
+      ...createExplorationSlice(...a),
     }),
     {
       name: 'exploradord-save',
-      version: 3,
-      // v1 → v2: recursos recolectados. v2 → v3: mejoras del robot. Campos
+      version: 4,
+      // v1 → v2: recursos recolectados. v2 → v3: mejoras del robot. v3 → v4: exploración y reparación. Campos
       // nuevos toman su valor inicial; el resto del guardado es compatible.
       migrate: (persisted) => persisted as GameState,
       storage: createJSONStorage(() => createThrottledStorage()),
@@ -61,6 +64,10 @@ export const useGameStore = create<GameState>()(
         structures: s.structures,
         bankCharge: s.bankCharge,
         upgrades: s.upgrades,
+        discovered: s.discovered,
+        looted: s.looted,
+        repairs: s.repairs,
+        shipRepairedSeen: s.shipRepairedSeen,
       }),
       // Si se cerró la partida en mitad de una emergencia, al volver se arranca
       // en la nave con la batería mínima para no quedar bloqueado.

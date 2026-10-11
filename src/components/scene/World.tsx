@@ -1,6 +1,8 @@
 import { DayNightCycle } from '@/components/environment/DayNightCycle'
 import { Lighting } from '@/components/environment/Lighting'
 import { AudioSystem } from '@/components/systems/AudioSystem'
+import { Pois } from '@/components/props/Pois'
+import { HitEffects } from '@/components/props/HitEffects'
 import { Clouds } from '@/components/environment/Clouds'
 import { SkyDome } from '@/components/environment/SkyDome'
 import { ChargingPad } from '@/components/props/ChargingPad'
@@ -39,6 +41,8 @@ export function World() {
       <DroppedBoxes />
       <SalvageNodes />
       <InteractionHighlight />
+      <HitEffects />
+      <Pois />
       <Structures />
       <BuildGhost />
       <Oasis />

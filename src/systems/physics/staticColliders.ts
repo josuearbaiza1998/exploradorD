@@ -1,4 +1,5 @@
 import { CHUNK_SIZE, CRASH_SITE } from '@/config/world'
+import { POIS, poiLocalToWorld } from '@/config/pois'
 import { COLLIDABLE_LAYERS, getLayerChunk } from '@/systems/propPlacement'
 import { propKey } from '@/systems/interaction/interactables'
 import { getGame } from '@/store/gameStore'
@@ -49,6 +50,11 @@ const SHIP_COLLIDERS: CircleCollider[] = (() => {
   }))
 })()
 
+/** Lugares por descubrir: pilares, rocas de la cueva, la baliza… */
+const POI_COLLIDERS: CircleCollider[] = POIS.flatMap((poi) =>
+  poi.colliders.map(([lx, lz, r, h]) => ({ ...poiLocalToWorld(poi, lx, lz), r, h })),
+)
+
 const result: CircleCollider[] = []
 
 /** Colisionadores cercanos a (x, z). Reutiliza el array de salida: no guardar la referencia. */
@@ -69,6 +75,7 @@ export function queryColliders(x: number, z: number, radius: number): CircleColl
     }
   }
   for (const c of SHIP_COLLIDERS) result.push(c)
+  for (const c of POI_COLLIDERS) if (Math.abs(c.x - x) < pad + c.r && Math.abs(c.z - z) < pad + c.r) result.push(c)
   // Estructuras construidas por el jugador (pocas: se recorren todas).
   for (const st of getGame().structures) {
     if (Math.abs(st.x - x) > pad + 4 || Math.abs(st.z - z) > pad + 4) continue

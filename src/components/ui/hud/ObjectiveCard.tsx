@@ -2,6 +2,13 @@ import { useState } from 'react'
 import { ITEMS, type Inventory, type ItemId } from '@/config/items'
 import { RECIPES } from '@/config/recipes'
 import { STRUCTURES } from '@/config/structures'
+import { REPAIRS } from '@/config/repairs'
+import { POIS } from '@/config/pois'
+import { player } from '@/systems/player'
+
+const CARDINALS = ['norte', 'noreste', 'este', 'sureste', 'sur', 'suroeste', 'oeste', 'noroeste']
+/** Dirección cardinal (norte = -Z) de un vector del mundo. */
+const cardinal = (dx: number, dz: number) => CARDINALS[Math.round(((Math.atan2(dx, -dz) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 4)) % 8]
 import { getGame, useGameStore, type GameState } from '@/store/gameStore'
 
 type Objective = { title: string; detail: string; cost?: Inventory }
@@ -18,6 +25,27 @@ function nextObjective(s: GameState): Objective {
     return { title: 'Fabrica el martillo', detail: 'Fuerza los paneles del casco con el hacha para sacar componentes.', cost: recipeCost('hammer') }
   if (!s.structures.some((st) => st.type === 'solarPanel'))
     return { title: 'Construye un panel solar', detail: 'Mochila › Construir. Te recarga de día si estás cerca.', cost: STRUCTURES.solarPanel.cost }
+  const repaired = REPAIRS.filter((r) => s.repairs[r.id]).length
+  if (repaired < REPAIRS.length) {
+    // Primero lo que ya se puede reparar; si no, explorar hacia el lugar más cercano sin abrir.
+    const ready = REPAIRS.find((r) => !s.repairs[r.id] && s.hasItems(r.cost))
+    if (ready) return { title: `Repara: ${ready.icon} ${ready.name}`, detail: 'Mochila › Nave, junto a la nave.', cost: ready.cost }
+    const missing = POIS.filter((p) => !s.looted[p.id] && !s.inventory[p.part])
+    if (missing.length && Object.keys(s.upgrades).length > 0) {
+      const near = missing.reduce((a, b) =>
+        Math.hypot(a.x - player.position.x, a.z - player.position.z) < Math.hypot(b.x - player.position.x, b.z - player.position.z) ? a : b,
+      )
+      const dir = cardinal(near.x - player.position.x, near.z - player.position.z)
+      return {
+        title: `Repara la nave (${repaired}/${REPAIRS.length})`,
+        detail: s.discovered[near.id] ? `Abre el contenedor de ${near.name} (${dir}).` : `Faltan piezas. Explora hacia el ${dir}: algo destaca en el horizonte.`,
+      }
+    }
+    if (!missing.length) {
+      const next = REPAIRS.find((r) => !s.repairs[r.id])!
+      return { title: `Repara: ${next.icon} ${next.name}`, detail: 'Reúne los materiales y repárala en la nave.', cost: next.cost }
+    }
+  }
   if (Object.keys(s.upgrades).length === 0)
     return { title: 'Mejora tu robot', detail: 'Mochila › Mejoras, junto a la nave.' }
   if (!s.upgrades.nightVision)

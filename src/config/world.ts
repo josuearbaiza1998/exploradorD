@@ -4,6 +4,8 @@
  * para poder iterar sin tocar componentes.
  */
 
+import { POIS } from './pois'
+
 export type Vec2 = { x: number; z: number }
 
 export const WORLD_SEED = 1337
@@ -70,6 +72,8 @@ export const LANDMARK_HILLS: LandmarkHill[] = [
 export const FLAT_ZONES: (Vec2 & { radius: number })[] = [
   { ...SPAWN, radius: 10 },
   { x: CRASH_SITE.x, z: CRASH_SITE.z, radius: 22 },
+  // Lugares por descubrir: suelo llano y sin vegetación encima.
+  ...POIS.map((p) => ({ x: p.x, z: p.z, radius: p.clearRadius })),
 ]
 
 /**

@@ -8,6 +8,8 @@ import { PALETTE } from '@/config/palette'
 import { MATERIALS, sharedToon } from '@/materials/toonMaterials'
 import { getHeight } from '@/utils/terrain/heightfield'
 import { SmokeColumn } from './SmokeColumn'
+import { useGameStore } from '@/store/gameStore'
+import type { RepairId } from '@/config/repairs'
 import { finGeometry, fuselageGeometry, wingGeometry } from './shipGeometry'
 
 const groundY = getHeight(CRASH_SITE.x, CRASH_SITE.z)
@@ -42,6 +44,81 @@ function EngineFire() {
   )
 }
 
+/** Tobera reparada: resplandor azul que late despacio. */
+function EngineGlow() {
+  const ref = useRef<Group>(null)
+  const mat = sharedToon('#7fe3ff', { emissive: '#3ad0ff', emissiveIntensity: 1.4 })
+  useFrame(({ clock }) => {
+    if (ref.current) ref.current.scale.setScalar(0.9 + Math.sin(clock.elapsedTime * 3) * 0.08)
+  })
+  return (
+    <group ref={ref}>
+      <mesh material={mat} rotation-x={Math.PI / 2} userData={{ noOutline: true }}>
+        <cylinderGeometry args={[0.7, 0.4, 0.5, 8]} />
+      </mesh>
+    </group>
+  )
+}
+
+/** Luz de navegación parpadeante (verde) en la punta del ala. */
+function NavLight({ position }: { position: [number, number, number] }) {
+  const ref = useRef<Group>(null)
+  useFrame(({ clock }) => {
+    if (ref.current) ref.current.visible = Math.sin(clock.elapsedTime * 4) > -0.2
+  })
+  const mat = sharedToon('#7dff8a', { emissive: '#3dff5a', emissiveIntensity: 2 })
+  return (
+    <group ref={ref} position={position}>
+      <mesh material={mat} userData={{ noOutline: true }}>
+        <icosahedronGeometry args={[0.28, 0]} />
+      </mesh>
+    </group>
+  )
+}
+
+/** Piezas nuevas que aparecen en la nave a medida que se reparan sus sistemas. */
+function ShipRepairs({ repairs }: { repairs: Partial<Record<RepairId, true>> }) {
+  const metal = sharedToon('#c9ced4')
+  const pipe = sharedToon('#4fb3d9', { emissive: '#1f7fa8', emissiveIntensity: 0.3 })
+  return (
+    <>
+      {repairs.comms && (
+        <group position={[0, 4.4, -1.5]}>
+          {/* Mástil y plato de la antena */}
+          <mesh material={metal} position-y={1.2} castShadow>
+            <cylinderGeometry args={[0.08, 0.12, 2.4, 6]} />
+          </mesh>
+          <mesh material={metal} position={[0, 2.3, 0]} rotation-x={-0.9} castShadow>
+            <coneGeometry args={[0.9, 0.35, 10, 1, true]} />
+          </mesh>
+          <mesh material={MATERIALS.shipAccent} position-y={2.5}>
+            <icosahedronGeometry args={[0.14, 0]} />
+          </mesh>
+        </group>
+      )}
+      {repairs.navigation && (
+        <>
+          <NavLight position={[11.2, 1.1, -5.2]} />
+          <NavLight position={[0, 4.7, 6.4]} />
+        </>
+      )}
+      {repairs.cooling &&
+        [-1, 1].map((side) => (
+          <group key={side} position={[side * 2.35, 2.2, -5]}>
+            <mesh material={pipe} rotation-x={Math.PI / 2} castShadow>
+              <cylinderGeometry args={[0.18, 0.18, 7, 6]} />
+            </mesh>
+            {[-2.5, 0, 2.5].map((z) => (
+              <mesh key={z} material={metal} position-z={z} rotation-x={Math.PI / 2}>
+                <cylinderGeometry args={[0.26, 0.26, 0.25, 6]} />
+              </mesh>
+            ))}
+          </group>
+        ))}
+    </>
+  )
+}
+
 /**
  * Caza estrellado (procedural lowpoly, inspirado en el concept): fuselaje
  * afilado, alas en flecha (una partida y clavada en la arena), derivas,
@@ -49,6 +126,7 @@ function EngineFire() {
  * escombros de config/world.ts.
  */
 function ShipPlaceholder() {
+  const repairs = useGameStore((s) => s.repairs)
   const geo = useMemo(
     () => ({ fuselage: fuselageGeometry(), wing: wingGeometry(), broken: wingGeometry(true, -1), fin: finGeometry() }),
     [],
@@ -87,9 +165,9 @@ function ShipPlaceholder() {
             <cylinderGeometry args={[0.85, 1.05, 1.6, 8]} />
           </mesh>
         ))}
-        <group position={[0.9, 2.3, -10.9]}>
-          <EngineFire />
-        </group>
+        <group position={[0.9, 2.3, -10.9]}>{repairs.engine ? <EngineGlow /> : <EngineFire />}</group>
+        <group position={[-0.9, 2.3, -10.9]}>{repairs.engine && <EngineGlow />}</group>
+        <ShipRepairs repairs={repairs} />
         {/* Toma de aire bajo la cabina */}
         <mesh material={MATERIALS.shipDark} position={[0, 1.15, 3]} castShadow>
           <boxGeometry args={[2.4, 0.7, 4]} />
@@ -113,12 +191,13 @@ function ShipPlaceholder() {
 
 /** Nave estrellada: base de recarga del robot y faro de humo visible desde el spawn. */
 export function CrashedShip() {
+  const engineFixed = useGameStore((s) => !!s.repairs.engine)
   return (
     <group name="crashed-ship">
       <group position={[CRASH_SITE.x, groundY - 0.6, CRASH_SITE.z]} rotation-y={-CRASH_SITE.rotation}>
         <ModelSlot id="crashedShip" placeholder={<ShipPlaceholder />} />
       </group>
-      <SmokeColumn position={[engine.x, engine.y, engine.z]} />
+      <SmokeColumn position={[engine.x, engine.y, engine.z]} clean={engineFixed} />
     </group>
   )
 }

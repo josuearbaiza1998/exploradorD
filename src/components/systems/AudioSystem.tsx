@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { ROBOT } from '@/config/robot'
 import { CRASH_SITE } from '@/config/world'
-import type { HarvestKind } from '@/config/harvest'
+import { HARVEST, type HarvestKind } from '@/config/harvest'
 import { getGame, useGameStore } from '@/store/gameStore'
 import { environment } from '@/systems/environmentState'
 import { player } from '@/systems/player'
@@ -21,16 +21,6 @@ import {
 } from '@/systems/audio/audioEngine'
 
 const STEP_LENGTH = 1.25
-
-const HIT_MATERIAL: Record<HarvestKind, Parameters<typeof playHit>[0]> = {
-  smallTree: 'wood',
-  palm: 'wood',
-  shrub: 'plant',
-  rock: 'stone',
-  debris: 'metal',
-  hullPanel: 'metal',
-  structure: 'metal',
-}
 
 /**
  * Paisaje sonoro: lee el estado del mundo cada frame y ajusta el motor de
@@ -124,7 +114,7 @@ export function AudioSystem() {
     if (game.target) lastKind.current = game.target.kind
     if (player.actionAt !== lastAction.current) {
       lastAction.current = player.actionAt
-      if (lastKind.current) playHit(HIT_MATERIAL[lastKind.current])
+      if (lastKind.current) playHit(HARVEST[lastKind.current].material)
     }
 
     // --- Batería baja: pitido periódico ---

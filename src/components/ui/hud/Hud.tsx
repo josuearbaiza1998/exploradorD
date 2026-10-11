@@ -3,6 +3,7 @@ import { Compass } from './Compass'
 import { HudButtons } from './HudButtons'
 import { ObjectiveCard } from './ObjectiveCard'
 import { StatusPanel } from './StatusPanel'
+import { DiscoveryBanner, ShipRepairedModal } from './DiscoveryBanner'
 
 /** Interfaz superior: estado + objetivo (izq.), brújula (centro), botones (der.). */
 export function Hud() {
@@ -15,6 +16,8 @@ export function Hud() {
       </div>
       <Compass />
       <HudButtons />
+      <DiscoveryBanner />
+      <ShipRepairedModal />
     </div>
   )
 }

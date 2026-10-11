@@ -16,7 +16,7 @@ const RISE_SPEED = 0.04 // ciclos por segundo
  * - Se inclina con el viento global.
  * - Puffs instanciados: 1 draw call.
  */
-export function SmokeColumn({ position }: { position: [number, number, number] }) {
+export function SmokeColumn({ position, clean = false }: { position: [number, number, number]; clean?: boolean }) {
   const ref = useRef<InstancedMesh>(null)
   const dummy = useMemo(() => new Object3D(), [])
   const geometry = useMemo(() => new IcosahedronGeometry(1, 1), [])
@@ -35,8 +35,9 @@ export function SmokeColumn({ position }: { position: [number, number, number] }
     [],
   )
   // Humo denso de combustible: casi negro abajo, pardo grisáceo arriba (como el concept).
-  const dark = useMemo(() => new Color(PALETTE.smokeDark), [])
-  const light = useMemo(() => new Color('#8a7d72'), [])
+  // Con el motor reparado sale vapor blanco y fino en lugar de humo negro.
+  const dark = useMemo(() => new Color(clean ? '#dfe9ef' : PALETTE.smokeDark), [clean])
+  const light = useMemo(() => new Color(clean ? '#ffffff' : '#8a7d72'), [clean])
   const tmp = useMemo(() => new Color(), [])
 
   useLayoutEffect(() => {
@@ -54,7 +55,7 @@ export function SmokeColumn({ position }: { position: [number, number, number] }
     for (let i = 0; i < PUFFS; i++) {
       const s = seeds[i]
       const life = (t * RISE_SPEED + s.phase) % 1
-      const y = life * MAX_HEIGHT
+      const y = life * MAX_HEIGHT * (clean ? 0.45 : 1)
       const drift = life * life * 40 * (0.4 + wind.strength)
       // Ondulación lenta: el humo "hierve" en lugar de subir en línea recta.
       const billow = Math.sin(t * 0.7 + i * 1.7) * (0.5 + life * 3)
@@ -63,7 +64,7 @@ export function SmokeColumn({ position }: { position: [number, number, number] }
         y,
         s.jz * (1 + life * 7) + wind.dirZ * drift + Math.cos(t * 0.6 + i) * life * 2,
       )
-      const grow = (1.8 + life * 12) * s.size
+      const grow = (1.8 + life * 12) * s.size * (clean ? 0.45 : 1)
       const fade = life > 0.85 ? 1 - (life - 0.85) / 0.15 : Math.min(1, life * 8)
       dummy.scale.setScalar(grow * fade)
       dummy.rotation.set(life * 3 + i, life * 2, i)

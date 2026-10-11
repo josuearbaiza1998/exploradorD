@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { Color } from 'three'
 import { ROBOT } from '@/config/robot'
 import { upgradeEffects } from '@/config/upgrades'
+import { DISCOVER_RADIUS, POIS } from '@/config/pois'
 import { CHARGING_PAD, CRASH_SITE } from '@/config/world'
 import { robotBatteryMaterial } from '@/materials/toonMaterials'
 import { getGame, useGameStore } from '@/store/gameStore'
@@ -148,9 +149,18 @@ export function RobotSystems() {
     // --- Objetivo de recolección (lo que el robot tiene delante) ---
     game.setTarget(
       game.mode === 'active' && !nearest && !game.build
-        ? findTarget(player.position.x, player.position.z, player.heading, game.harvested, game.structures)
+        ? findTarget(player.position.x, player.position.z, player.heading, game.harvested, game.structures, game.looted)
         : null,
     )
+
+    // --- Lugares por descubrir: se descubren al acercarse ---
+    if (game.mode === 'active') {
+      for (const poi of POIS) {
+        if (!game.discovered[poi.id] && Math.hypot(poi.x - player.position.x, poi.z - player.position.z) < DISCOVER_RADIUS) {
+          game.discover(poi.id)
+        }
+      }
+    }
 
     // --- Rebrote de recursos (cada pocos segundos basta) ---
     sweepTimer.current += dt

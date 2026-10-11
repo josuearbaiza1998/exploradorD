@@ -8,6 +8,8 @@ import { STRUCTURES, type StructureType } from '@/config/structures'
 import { CELL_CHARGE } from '@/config/robot'
 import { UPGRADES, type UpgradeId } from '@/config/upgrades'
 import { useUiStore, type InventoryTab } from '@/store/uiStore'
+import { REPAIRS } from '@/config/repairs'
+import { POIS } from '@/config/pois'
 
 const nearWorkbench = () =>
   Math.hypot(player.position.x - CHARGING_PAD.x, player.position.z - CHARGING_PAD.z) < WORKBENCH_RADIUS
@@ -36,12 +38,23 @@ function Panel({ tab }: { tab: InventoryTab }) {
             <button className={tab === 'upgrades' ? 'active' : ''} onClick={() => setTab('upgrades')}>
               Mejoras
             </button>
+            <button className={tab === 'ship' ? 'active' : ''} onClick={() => setTab('ship')}>
+              Nave
+            </button>
           </div>
           <button className="inv-close" onClick={onClose} aria-label="Cerrar">
             ✕
           </button>
         </header>
-        {tab === 'items' ? <ItemsTab /> : tab === 'build' ? <BuildTab onClose={onClose} /> : <UpgradesTab />}
+        {tab === 'items' ? (
+          <ItemsTab />
+        ) : tab === 'build' ? (
+          <BuildTab onClose={onClose} />
+        ) : tab === 'ship' ? (
+          <ShipTab />
+        ) : (
+          <UpgradesTab />
+        )}
       </div>
     </div>
   )
@@ -256,6 +269,77 @@ function UpgradesTab() {
                 }}
               >
                 {reason || 'Instalar'}
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </>
+  )
+}
+
+/** Objetivo principal: reparar los sistemas de la nave con piezas únicas de los lugares por descubrir. */
+function ShipTab() {
+  const inventory = useGameStore((s) => s.inventory)
+  const repairs = useGameStore((s) => s.repairs)
+  const discovered = useGameStore((s) => s.discovered)
+  const [atBench, setAtBench] = useState(nearWorkbench)
+  useEffect(() => {
+    const id = window.setInterval(() => setAtBench(nearWorkbench()), 500)
+    return () => window.clearInterval(id)
+  }, [])
+  const done = REPAIRS.filter((r) => repairs[r.id]).length
+  return (
+    <>
+      <p className="inv-hint">
+        <span className="repair-progress">
+          <i style={{ width: `${(done / REPAIRS.length) * 100}%` }} />
+        </span>
+        Nave reparada: {done}/{REPAIRS.length}
+        {' · '}
+        {atBench ? <em className="inv-bench on">junto a la nave</em> : <em className="inv-bench">acércate a la nave para reparar</em>}
+      </p>
+      <ul className="recipe-list upgrade-list">
+        {REPAIRS.map((r) => {
+          const fixed = !!repairs[r.id]
+          const affordable = (Object.entries(r.cost) as [ItemId, number][]).every(([i, n]) => (inventory[i] ?? 0) >= n)
+          const part = (Object.keys(r.cost) as ItemId[]).find((i) => ITEMS[i].kind === 'part')
+          const source = POIS.find((p) => p.part === part)
+          let reason = ''
+          if (fixed) reason = 'Reparado ✓'
+          else if (!atBench) reason = 'En la nave'
+          else if (!affordable) reason = 'Faltan piezas'
+          return (
+            <li key={r.id} className={`recipe ${reason ? 'disabled' : ''} ${fixed ? 'fixed' : ''}`}>
+              <span className="inv-icon">{r.icon}</span>
+              <div className="recipe-info">
+                <strong>{r.name}</strong>
+                <span className="recipe-desc">{r.description}</span>
+                {!fixed && (
+                  <>
+                    <span className="recipe-cost">
+                      {(Object.entries(r.cost) as [ItemId, number][]).map(([i, n]) => (
+                        <span key={i} className={(inventory[i] ?? 0) >= n ? 'have' : 'lack'}>
+                          {ITEMS[i].icon}
+                          {inventory[i] ?? 0}/{n}
+                        </span>
+                      ))}
+                    </span>
+                    {part && !inventory[part] && source && (
+                      <span className="recipe-desc">
+                        {ITEMS[part].name}: {discovered[source.id] ? `en ${source.name}` : 'en algún lugar sin descubrir'}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+              <button
+                disabled={!!reason}
+                onClick={() => {
+                  if (getGame().repair(r.id, atBench)) getGame().notify(`Sistema reparado: ${r.icon} ${r.name}`, 'info')
+                }}
+              >
+                {reason || 'Reparar'}
               </button>
             </li>
           )

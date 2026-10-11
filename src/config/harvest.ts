@@ -5,7 +5,7 @@ import type { ItemId, ToolId } from './items'
  * Progresión escalonada: manos → hacha → martillo. El metal NO sale de las
  * rocas: solo de la nave (scavenging).
  */
-export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel' | 'structure'
+export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel' | 'structure' | 'cache'
 
 export type HarvestDef = {
   label: string
@@ -21,10 +21,13 @@ export type HarvestDef = {
   regrowHours: number | null
   /** Usos antes de agotarse (escombros/paneles de la nave). */
   uses?: number
+  /** Material para el sonido y las partículas del golpe. */
+  material: 'wood' | 'stone' | 'metal' | 'plant'
 }
 
 export const HARVEST: Record<HarvestKind, HarvestDef> = {
   smallTree: {
+    material: 'wood',
     label: 'Árbol pequeño',
     verb: 'Romper',
     icon: '✊',
@@ -36,6 +39,7 @@ export const HARVEST: Record<HarvestKind, HarvestDef> = {
     regrowHours: 48,
   },
   shrub: {
+    material: 'plant',
     label: 'Arbusto',
     verb: 'Arrancar',
     icon: '✊',
@@ -44,6 +48,7 @@ export const HARVEST: Record<HarvestKind, HarvestDef> = {
     regrowHours: 24,
   },
   palm: {
+    material: 'wood',
     label: 'Tronco grueso',
     verb: 'Talar',
     icon: '🪓',
@@ -56,6 +61,7 @@ export const HARVEST: Record<HarvestKind, HarvestDef> = {
     regrowHours: 96,
   },
   rock: {
+    material: 'stone',
     label: 'Roca',
     verb: 'Picar',
     icon: '🔨',
@@ -65,6 +71,7 @@ export const HARVEST: Record<HarvestKind, HarvestDef> = {
     regrowHours: null,
   },
   debris: {
+    material: 'metal',
     label: 'Escombro de la nave',
     verb: 'Desmontar',
     icon: '✊',
@@ -74,6 +81,7 @@ export const HARVEST: Record<HarvestKind, HarvestDef> = {
     uses: 3,
   },
   hullPanel: {
+    material: 'metal',
     label: 'Panel del casco',
     verb: 'Forzar',
     icon: '🪓',
@@ -86,8 +94,19 @@ export const HARVEST: Record<HarvestKind, HarvestDef> = {
     regrowHours: null,
     uses: 4,
   },
+  // Contenedor de un lugar por descubrir: se abre una sola vez (botín en config/pois.ts).
+  cache: {
+    material: 'metal',
+    label: 'Contenedor',
+    verb: 'Abrir',
+    icon: '🔓',
+    hits: 3,
+    yields: [],
+    regrowHours: null,
+  },
   // Estructuras propias: desmontarlas devuelve la mitad de los materiales.
   structure: {
+    material: 'metal',
     label: 'Estructura',
     verb: 'Desmontar',
     icon: '🔧',

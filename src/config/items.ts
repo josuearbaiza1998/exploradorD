@@ -13,8 +13,13 @@ export type ItemId =
   | 'axe'
   | 'hammer'
   | 'sonicCleaner'
+  // Piezas únicas para reparar la nave (una en cada lugar por descubrir).
+  | 'antenna'
+  | 'navChip'
+  | 'coolant'
+  | 'energyCrystal'
 
-export type ItemKind = 'resource' | 'tool' | 'consumable'
+export type ItemKind = 'resource' | 'tool' | 'consumable' | 'part'
 
 export type ItemDef = { id: ItemId; name: string; icon: string; stack: number; kind: ItemKind; description?: string }
 
@@ -64,6 +69,10 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     kind: 'tool',
     description: 'Sacude el polvo de los sensores con vibración. Reutilizable, gasta batería.',
   },
+  antenna: { id: 'antenna', name: 'Antena de largo alcance', icon: '📡', stack: 1, kind: 'part', description: 'Pieza para reparar la nave.' },
+  navChip: { id: 'navChip', name: 'Chip de navegación', icon: '🧭', stack: 1, kind: 'part', description: 'Pieza para reparar la nave.' },
+  coolant: { id: 'coolant', name: 'Bomba de refrigerante', icon: '🧊', stack: 1, kind: 'part', description: 'Pieza para reparar la nave.' },
+  energyCrystal: { id: 'energyCrystal', name: 'Cristal de energía', icon: '💎', stack: 1, kind: 'part', description: 'Pieza para reparar la nave.' },
 }
 
 export type Inventory = Partial<Record<ItemId, number>>
