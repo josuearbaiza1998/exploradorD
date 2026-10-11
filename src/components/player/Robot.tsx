@@ -1,6 +1,9 @@
 import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { Group } from 'three'
+import { CHARGING_PAD } from '@/config/world'
+import { MATERIALS } from '@/materials/toonMaterials'
+import { getGame } from '@/store/gameStore'
 import { cameraAxes } from '@/systems/cameraRig'
 import { focus } from '@/systems/focus'
 import { consumeJump, getMoveVector } from '@/systems/input'
@@ -9,6 +12,8 @@ import { player } from '@/systems/player'
 import { RobotModel } from './RobotModel'
 
 const RUN_SPEED = 6.5
+/** Velocidad del piloto automático en modo emergencia (renqueante). */
+const AUTOPILOT_SPEED = 2.4
 const ACCELERATION = 10
 const TURN_SPEED = 10
 
@@ -27,17 +32,35 @@ export function Robot() {
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05)
-    const move = getMoveVector()
-    const axes = cameraAxes()
+    const mode = getGame().mode
+    let targetX = 0
+    let targetZ = 0
+    let jump = false
 
-    // Dirección deseada relativa a la cámara (joystick analógico => velocidad analógica).
-    const targetX = (axes.rightX * move.x + axes.forwardX * move.y) * RUN_SPEED
-    const targetZ = (axes.rightZ * move.x + axes.forwardZ * move.y) * RUN_SPEED
+    if (mode === 'active') {
+      // Dirección deseada relativa a la cámara (joystick analógico => velocidad analógica).
+      const move = getMoveVector()
+      const axes = cameraAxes()
+      targetX = (axes.rightX * move.x + axes.forwardX * move.y) * RUN_SPEED
+      targetZ = (axes.rightZ * move.x + axes.forwardZ * move.y) * RUN_SPEED
+      jump = consumeJump()
+    } else {
+      consumeJump() // descartar pulsaciones durante la emergencia
+      if (mode === 'returning') {
+        // Piloto automático: se dirige a la plataforma de recarga de la nave.
+        const dx = CHARGING_PAD.x - player.position.x
+        const dz = CHARGING_PAD.z - player.position.z
+        const len = Math.hypot(dx, dz) || 1
+        targetX = (dx / len) * AUTOPILOT_SPEED
+        targetZ = (dz / len) * AUTOPILOT_SPEED
+      }
+    }
+
     const k = 1 - Math.exp(-ACCELERATION * dt)
     wish.current.x += (targetX - wish.current.x) * k
     wish.current.z += (targetZ - wish.current.z) * k
 
-    simpleMotor.step(player, wish.current.x, wish.current.z, consumeJump(), dt)
+    simpleMotor.step(player, wish.current.x, wish.current.z, jump, dt)
     player.speed = Math.hypot(player.velocity.x, player.velocity.z)
 
     // Girar el modelo hacia donde se mueve.
@@ -56,10 +79,16 @@ export function Robot() {
     if (body.current) {
       const t = state.clock.elapsedTime
       const run = Math.min(player.speed / RUN_SPEED, 1)
-      body.current.rotation.x = run * 0.18
+      // Emergencia/recarga: el robot se encorva ("modo reposo").
+      const slump = mode === 'active' ? 0 : mode === 'recharging' ? 0.35 : 0.5
+      const kk = 1 - Math.exp(-6 * dt)
+      body.current.rotation.x += (run * 0.18 + slump - body.current.rotation.x) * kk
       body.current.position.y = player.grounded ? Math.abs(Math.sin(t * 9)) * 0.08 * run : 0
       body.current.rotation.z = Math.sin(t * 9) * 0.04 * run
     }
+    // Visor: se apaga en emergencia y parpadea durante la recarga.
+    MATERIALS.robotAccent.emissiveIntensity =
+      mode === 'active' ? 0.6 : mode === 'recharging' ? 0.25 + Math.sin(state.clock.elapsedTime * 2) * 0.2 : 0.05
   })
 
   return (

@@ -1,7 +1,8 @@
 import { CHUNK_SIZE, CRASH_SITE } from '@/config/world'
 import { COLLIDABLE_LAYERS, getLayerChunk } from '@/systems/propPlacement'
 
-export type CircleCollider = { x: number; z: number; r: number }
+/** Círculo en XZ con altura sobre el suelo `h` (para la cámara). */
+export type CircleCollider = { x: number; z: number; r: number; h: number }
 
 const chunkCache = new Map<string, CircleCollider[]>()
 
@@ -15,7 +16,7 @@ function chunkColliders(cx: number, cz: number): CircleCollider[] {
     for (const m of getLayerChunk(layer, cx, cz)) {
       const e = m.elements
       const scale = Math.hypot(e[0], e[1], e[2])
-      list.push({ x: e[12], z: e[14], r: (layer.colliderRadius ?? 0) * scale })
+      list.push({ x: e[12], z: e[14], r: (layer.colliderRadius ?? 0) * scale, h: (layer.colliderHeight ?? 2) * scale })
     }
   }
   chunkCache.set(key, list)
@@ -35,6 +36,7 @@ const SHIP_COLLIDERS: CircleCollider[] = (() => {
     x: CRASH_SITE.x + x * cos + z * sin,
     z: CRASH_SITE.z - x * sin + z * cos,
     r,
+    h: 5,
   }))
 })()
 

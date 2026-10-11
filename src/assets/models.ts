@@ -13,6 +13,7 @@ export const MODEL_PATHS = {
   smallTree: null,
   cactus: null,
   rock: null,
+  inventoryBox: null,
 } satisfies Record<string, string | null>
 
 export type ModelId = keyof typeof MODEL_PATHS

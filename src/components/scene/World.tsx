@@ -1,6 +1,9 @@
 import { DayNightCycle } from '@/components/environment/DayNightCycle'
 import { Lighting } from '@/components/environment/Lighting'
 import { SkyDome } from '@/components/environment/SkyDome'
+import { ChargingPad } from '@/components/props/ChargingPad'
+import { DroppedBoxes } from '@/components/props/DroppedBoxes'
+import { RobotSystems } from '@/components/systems/RobotSystems'
 import { CrashedShip } from '@/components/props/CrashedShip'
 import { Oasis } from '@/components/props/Oasis'
 import { Vegetation } from '@/components/props/Vegetation'
@@ -14,6 +17,7 @@ export function World() {
   return (
     <>
       <DayNightCycle />
+      <RobotSystems />
       <SkyDome />
       <Lighting />
 
@@ -21,6 +25,8 @@ export function World() {
       <Sea />
 
       <CrashedShip />
+      <ChargingPad />
+      <DroppedBoxes />
       <Oasis />
       <Vegetation />
       <Robot />

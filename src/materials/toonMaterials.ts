@@ -55,3 +55,6 @@ export const MATERIALS = {
   robot: createToonMaterial({ color: PALETTE.robot }),
   robotAccent: createToonMaterial({ color: PALETTE.robotAccent, emissive: PALETTE.robotAccent, emissiveIntensity: 0.6 }),
 }
+
+/** Barra de batería en la espalda del robot (su color lo actualiza RobotSystems). */
+export const robotBatteryMaterial = createToonMaterial({ color: '#3dff7a', emissive: '#3dff7a', emissiveIntensity: 0.8 })

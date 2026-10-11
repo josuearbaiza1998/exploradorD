@@ -15,6 +15,8 @@ export type PropLayer = {
   rule: ScatterRule
   /** Radio de colisión en unidades del modelo (se multiplica por la escala). Sin valor = se atraviesa. */
   colliderRadius?: number
+  /** Altura del colisionador en unidades del modelo (para que la cámara no lo atraviese). */
+  colliderHeight?: number
 }
 
 export const PROP_LAYERS: PropLayer[] = [
@@ -31,6 +33,7 @@ export const PROP_LAYERS: PropLayer[] = [
       tilt: 0.12,
     },
     colliderRadius: 0.4,
+    colliderHeight: 8,
   },
   {
     id: 'oasisShrubs',
@@ -70,6 +73,7 @@ export const PROP_LAYERS: PropLayer[] = [
       tilt: 0.1,
     },
     colliderRadius: 0.25,
+    colliderHeight: 2.6,
   },
   {
     id: 'cacti',
@@ -82,6 +86,7 @@ export const PROP_LAYERS: PropLayer[] = [
       scale: [0.8, 1.5],
     },
     colliderRadius: 0.45,
+    colliderHeight: 2.6,
   },
   {
     // Rocas: en la Fase 4 requerirán herramientas para minarse.
@@ -96,5 +101,6 @@ export const PROP_LAYERS: PropLayer[] = [
       tilt: 0.4,
     },
     colliderRadius: 1.05,
+    colliderHeight: 1.25,
   },
 ]

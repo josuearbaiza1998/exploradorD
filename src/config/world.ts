@@ -67,3 +67,13 @@ export const FLAT_ZONES: (Vec2 & { radius: number })[] = [
   { ...SPAWN, radius: 10 },
   { x: CRASH_SITE.x, z: CRASH_SITE.z, radius: 22 },
 ]
+
+/**
+ * Plataforma de recarga junto al morro de la nave (coordenadas locales de la
+ * nave rotadas a mundo). Aquí vuelve el robot en modo de emergencia.
+ */
+export const CHARGING_PAD: Vec2 = (() => {
+  const localZ = 13
+  const rot = -CRASH_SITE.rotation
+  return { x: CRASH_SITE.x + localZ * Math.sin(rot), z: CRASH_SITE.z + localZ * Math.cos(rot) }
+})()

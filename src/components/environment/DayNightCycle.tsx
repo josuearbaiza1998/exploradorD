@@ -1,5 +1,6 @@
 import { useFrame } from '@react-three/fiber'
-import { advanceClock, worldClock } from '@/systems/worldClock'
+import { getGame } from '@/store/gameStore'
+import { hourOfDay } from '@/store/slices/clockSlice'
 import { celestialDirection, handoverFade, sampleDayNight } from '@/systems/dayNightPalette'
 import { environment } from '@/systems/environmentState'
 import { updateWind, wind } from '@/systems/wind'
@@ -13,14 +14,15 @@ import { windUniforms } from '@/materials/windSway'
 export function DayNightCycle() {
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.1)
-    advanceClock(dt)
+    getGame().advanceClock(dt)
+    const hour = hourOfDay(getGame().totalHours)
     updateWind(dt)
     windUniforms.uTime.value = wind.time
     windUniforms.uWindDir.value.set(wind.dirX, wind.dirZ)
     windUniforms.uWindStrength.value = wind.strength
-    sampleDayNight(worldClock.hour, environment.palette)
-    environment.isDay = celestialDirection(worldClock.hour, environment.lightDir)
-    environment.palette.sunIntensity *= handoverFade(worldClock.hour)
+    sampleDayNight(hour, environment.palette)
+    environment.isDay = celestialDirection(hour, environment.lightDir)
+    environment.palette.sunIntensity *= handoverFade(hour)
   }, -1)
   return null
 }

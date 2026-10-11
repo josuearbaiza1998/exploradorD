@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Vector3 } from 'three'
 import { cameraRig } from '@/systems/cameraRig'
 import { consumeLook } from '@/systems/input'
+import { queryColliders } from '@/systems/physics/staticColliders'
 import { player } from '@/systems/player'
 import { clamp } from '@/utils/math'
 import { getHeight } from '@/utils/terrain/heightfield'
@@ -10,10 +11,31 @@ import { getHeight } from '@/utils/terrain/heightfield'
 const TARGET_HEIGHT = 1.7
 const MIN_GROUND_CLEARANCE = 0.6
 const FOLLOW_SHARPNESS = 14
+const CAMERA_RADIUS = 0.35
+
+type Obstacle = { x: number; z: number; r: number; top: number }
+const obstacles: Obstacle[] = []
+
+/** Rocas, troncos y la nave cerca del brazo de la cámara, con su altura absoluta. */
+function gatherObstacles(x: number, z: number, reach: number) {
+  obstacles.length = 0
+  for (const c of queryColliders(x, z, reach)) {
+    if (Math.hypot(c.x - x, c.z - z) > reach + c.r) continue
+    obstacles.push({ x: c.x, z: c.z, r: c.r + CAMERA_RADIUS, top: getHeight(c.x, c.z) + c.h })
+  }
+}
+
+function blocked(x: number, y: number, z: number): boolean {
+  if (y < getHeight(x, z) + MIN_GROUND_CLEARANCE) return true
+  for (const o of obstacles) {
+    if (y < o.top && (x - o.x) ** 2 + (z - o.z) ** 2 < o.r * o.r) return true
+  }
+  return false
+}
 
 /**
  * Cámara en tercera persona: orbita con el arrastre del lado derecho de la
- * pantalla y evita meterse dentro de las dunas acercándose al robot.
+ * pantalla y se acerca al robot si una duna, roca o tronco se interpone.
  */
 export function ThirdPersonCamera() {
   const camera = useThree((s) => s.camera)
@@ -21,8 +43,16 @@ export function ThirdPersonCamera() {
   const desired = useMemo(() => new Vector3(), [])
   const smoothed = useMemo(() => new Vector3().copy(player.position), [])
 
+  const lastTeleport = useRef(player.teleportId)
+
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05)
+    // Tras un teletransporte (regreso a la nave) la cámara salta sin suavizado.
+    if (lastTeleport.current !== player.teleportId) {
+      lastTeleport.current = player.teleportId
+      smoothed.copy(player.position)
+      cameraRig.yaw = player.heading + Math.PI
+    }
     const look = consumeLook()
     cameraRig.yaw -= look.x * cameraRig.sensitivity
     cameraRig.pitch = clamp(cameraRig.pitch + look.y * cameraRig.sensitivity, cameraRig.minPitch, cameraRig.maxPitch)
@@ -36,16 +66,14 @@ export function ThirdPersonCamera() {
     const dirY = Math.sin(cameraRig.pitch)
     const dirZ = Math.cos(cameraRig.yaw) * cosP
 
-    // Si el terreno se interpone, acercamos la cámara (muestreo a lo largo del brazo).
+    // Si una duna, roca o tronco se interpone, acercamos la cámara (muestreo del brazo).
+    gatherObstacles(target.x, target.z, cameraRig.distance)
     let dist = cameraRig.distance
-    const SAMPLES = 8
+    const SAMPLES = 10
     for (let i = 1; i <= SAMPLES; i++) {
       const d = (cameraRig.distance * i) / SAMPLES
-      const x = target.x + dirX * d
-      const y = target.y + dirY * d
-      const z = target.z + dirZ * d
-      if (y < getHeight(x, z) + MIN_GROUND_CLEARANCE) {
-        dist = Math.max(1.5, d - cameraRig.distance / SAMPLES)
+      if (blocked(target.x + dirX * d, target.y + dirY * d, target.z + dirZ * d)) {
+        dist = Math.max(1.2, d - cameraRig.distance / SAMPLES)
         break
       }
     }
