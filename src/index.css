@@ -72,3 +72,69 @@ html, body, #root, .app {
 @media (orientation: portrait) and (max-width: 900px) {
   .rotate-hint { display: flex; }
 }
+
+/* ---------- Controles táctiles ---------- */
+.controls { position: absolute; inset: 0; pointer-events: none; }
+
+.look-pad {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 60%;
+  pointer-events: auto;
+}
+
+.joystick-zone {
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 40%;
+  height: 75%;
+  pointer-events: auto;
+}
+
+.joystick-base {
+  position: absolute;
+  /* Posición de reposo (visible pero tenue) */
+  left: calc(max(24px, env(safe-area-inset-left)) + 64px);
+  top: calc(100% - 64px - max(24px, env(safe-area-inset-bottom)));
+  width: 128px;
+  height: 128px;
+  margin: -64px 0 0 -64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  opacity: 0.35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
+}
+
+.joystick-knob {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.action-buttons {
+  position: absolute;
+  right: max(24px, env(safe-area-inset-right));
+  bottom: max(24px, env(safe-area-inset-bottom));
+  display: flex;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.action-btn {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 28px;
+  touch-action: none;
+}
+
+.action-btn:active { background: rgba(255, 255, 255, 0.35); }
