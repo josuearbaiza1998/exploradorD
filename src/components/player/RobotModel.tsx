@@ -376,8 +376,8 @@ function RiggedRobot({ path }: { path: string }) {
       const shoulderY = 1.25
       for (const [sfx, side] of [['L', L], ['R', R]] as const) {
         const a = (side > 0 ? 0 : Math.PI) + turn * 0.6
-        const hx = Math.cos(a) * 0.36
-        const hy = 1.2 + Math.sin(a) * 0.36
+        const hx = Math.cos(a) * 0.52
+        const hy = 1.2 + Math.sin(a) * 0.52
         const dx = hx - side * 0.33
         const dy = hy - shoulderY
         aimBone(b[`UpperArm${sfx}`], b[`LowerArm${sfx}`], [dx * 0.5 + side * 0.3, dy - 0.35, 0.45], w)
