@@ -1,4 +1,4 @@
-import { Color, DoubleSide, MeshToonMaterial, type MeshToonMaterialParameters } from 'three'
+import { Color, DoubleSide, MeshToonMaterial, type MeshToonMaterialParameters, type Side } from 'three'
 import { PALETTE } from '@/config/palette'
 import { toonGradient2, toonGradient3 } from './gradientMap'
 
@@ -24,13 +24,18 @@ export function createToonMaterial(
 const cache = new Map<string, MeshToonMaterial>()
 
 /** Material toon compartido por color (evita duplicados al instanciar props). */
-export function sharedToon(color: string, opts: { bands?: 2 | 3; emissive?: string; emissiveIntensity?: number } = {}) {
-  const key = `${color}|${opts.bands ?? 3}|${opts.emissive ?? ''}|${opts.emissiveIntensity ?? 0}`
+export function sharedToon(
+  color: string,
+  opts: { bands?: 2 | 3; emissive?: string; emissiveIntensity?: number; side?: Side; flatShading?: boolean } = {},
+) {
+  const key = `${color}|${opts.bands ?? 3}|${opts.emissive ?? ''}|${opts.emissiveIntensity ?? 0}|${opts.side ?? 0}|${opts.flatShading ? 1 : 0}`
   let mat = cache.get(key)
   if (!mat) {
     mat = createToonMaterial({
       color: new Color(color),
       bands: opts.bands,
+      flatShading: opts.flatShading,
+      ...(opts.side !== undefined ? { side: opts.side } : {}),
       // Solo claves definidas: three avisa si se le pasan valores undefined.
       ...(opts.emissive ? { emissive: new Color(opts.emissive), emissiveIntensity: opts.emissiveIntensity ?? 1 } : {}),
     })

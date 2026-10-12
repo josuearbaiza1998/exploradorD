@@ -142,6 +142,9 @@ function RiggedRobot({ path }: { path: string }) {
   const [rig, setRig] = useState<{
     /** Centro de cada gafa, apoyado sobre la superficie de la cara. */
     eyes: Vector3[]
+    /** Punto de la frente (sobre las gafas) y de la sien derecha, en la superficie de la cabeza. */
+    brow: Vector3
+    temple: Vector3
     back: Vector3
     headTop: number
     legs: Limb[]
@@ -199,6 +202,17 @@ function RiggedRobot({ path }: { path: string }) {
       const z = hit ? root.worldToLocal(hit.point.clone()).z : head.max.z - 0.1
       return new Vector3(local.x, eyeY, z - 0.04)
     })
+    // Frente y sien: las piezas de la cabeza se apoyan en la superficie real.
+    const surface = (from: Vector3, dir: Vector3, fallback: Vector3) => {
+      ray.set(root.localToWorld(from.clone()), dir.clone().transformDirection(root.matrixWorld))
+      const hit = ray.intersectObjects(headMeshes, false)[0]
+      return hit ? root.worldToLocal(hit.point.clone()) : fallback
+    }
+    const browY = eyeY + (head.max.y - head.min.y) * 0.16
+    const brow = surface(new Vector3(cx, browY, head.max.z + 1), new Vector3(0, 0, -1), new Vector3(cx, browY, head.max.z - 0.1))
+    const cz = (head.min.z + head.max.z) / 2
+    const templeY = eyeY + (head.max.y - head.min.y) * 0.08
+    const temple = surface(new Vector3(head.max.x + 1, templeY, cz + 0.05), new Vector3(-1, 0, 0), new Vector3(head.max.x, templeY, cz))
     // Tramos de piernas y antebrazos para las piezas de las mejoras.
     const at = (o: Object3D | undefined) => o && new Vector3().setFromMatrixPosition(boneInRoot(o, root))
     const limb = (from: string, to: string) => {
@@ -211,6 +225,8 @@ function RiggedRobot({ path }: { path: string }) {
     const arms = [limb('LowerArmL', 'Palm2L'), limb('LowerArmR', 'Palm2R')].filter((l): l is Limb => !!l)
     setRig({
       eyes: lenses,
+      brow,
+      temple,
       headTop: head.max.y,
       legs,
       arms,
@@ -391,7 +407,7 @@ function RiggedRobot({ path }: { path: string }) {
                 </mesh>
               </group>
             ))}
-            <HeadUpgrades eyes={rig.eyes} top={rig.headTop} />
+            <HeadUpgrades eyes={rig.eyes} brow={rig.brow} temple={rig.temple} />
           </BoneAttachment>
           <LimbUpgrades legs={rig.legs} arms={rig.arms} />
           {carrying && (

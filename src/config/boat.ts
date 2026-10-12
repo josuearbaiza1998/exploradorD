@@ -30,7 +30,7 @@ export const BOAT = {
   /** Giro (rad/s) a toda máquina. */
   turn: 0.9,
   /** Distancia del centro a proa y a popa (m). */
-  halfLength: 10,
+  halfLength: 11.5,
   /** Profundidad mínima para que el casco no toque fondo. */
   minDepth: 1.7,
   /** Más allá de este radio (desde el centro de la isla) el oleaje no deja pasar todavía. */

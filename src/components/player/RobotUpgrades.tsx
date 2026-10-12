@@ -26,24 +26,24 @@ const accent = () => sharedToon(PALETTE.shipAccent)
 const dark = () => sharedToon(PALETTE.robotDark)
 const thrust = () => sharedToon('#7fe3ff', { emissive: '#3ad0ff', emissiveIntensity: 1.2 })
 
-/** Piernas: espinilleras naranjas (nivel 1) y propulsores en la pantorrilla (nivel 2). */
+/** Piernas: espinilleras naranjas que envuelven la pantorrilla (nivel 1) y propulsores pegados detrás (nivel 2). */
 function LegParts({ limb, level }: { limb: Limb; level: number }) {
   return (
     <BoneAttachment bone={limb.bone} rest={limb.rest}>
       <group position={limb.mid} quaternion={limb.quat}>
-        <mesh material={accent()} position-z={0.13} castShadow>
-          <boxGeometry args={[0.2, limb.len * 0.75, 0.06]} />
+        <mesh material={accent()} castShadow>
+          <cylinderGeometry args={[0.1, 0.085, limb.len * 0.7, 8]} />
         </mesh>
-        <mesh material={dark()} position-z={0.15} position-y={limb.len * 0.25}>
-          <boxGeometry args={[0.22, 0.05, 0.05]} />
+        <mesh material={dark()} position-y={limb.len * 0.25}>
+          <cylinderGeometry args={[0.108, 0.108, 0.05, 8]} />
         </mesh>
         {level >= 2 && (
-          <group position={[0, -limb.len * 0.1, -0.15]}>
+          <group position={[0, -limb.len * 0.05, -0.12]}>
             <mesh material={dark()} castShadow>
-              <cylinderGeometry args={[0.07, 0.09, limb.len * 0.5, 8]} />
+              <cylinderGeometry args={[0.06, 0.075, limb.len * 0.45, 8]} />
             </mesh>
-            <mesh material={thrust()} position-y={-limb.len * 0.27} userData={{ noOutline: true }}>
-              <cylinderGeometry args={[0.06, 0.03, 0.06, 8]} />
+            <mesh material={thrust()} position-y={-limb.len * 0.245} userData={{ noOutline: true }}>
+              <cylinderGeometry args={[0.05, 0.03, 0.05, 8]} />
             </mesh>
           </group>
         )}
@@ -105,12 +105,10 @@ export function LimbUpgrades({ legs, arms }: { legs: Limb[]; arms: Limb[] }) {
  * Piezas de cabeza: aro naranja en las gafas (sensores 1), parasol de polvo
  * (sensores 2) y sensor nocturno verde que brilla al encenderlo.
  */
-export function HeadUpgrades({ eyes, top }: { eyes: Vector3[]; top: number }) {
+export function HeadUpgrades({ eyes, brow, temple }: { eyes: Vector3[]; brow: Vector3; temple: Vector3 }) {
   const sensors = useGameStore((s) => s.upgrades.sensors ?? 0)
   const night = useGameStore((s) => (s.upgrades.nightVision ?? 0) > 0)
   const nightOn = useGameStore((s) => s.nightVisionOn)
-  const cx = (eyes[0].x + eyes[1].x) / 2
-  const ez = Math.max(eyes[0].z, eyes[1].z)
   const nv = nightOn
     ? sharedToon('#7dff8a', { emissive: '#3dff5a', emissiveIntensity: 2.2 })
     : sharedToon('#2f6b3a', { emissive: '#3dff5a', emissiveIntensity: 0.2 })
@@ -122,22 +120,26 @@ export function HeadUpgrades({ eyes, top }: { eyes: Vector3[]; top: number }) {
             <torusGeometry args={[0.12, 0.022, 6, 14]} />
           </mesh>
         ))}
+      {/* Parasol de polvo: atornillado a la frente, justo sobre las gafas. */}
       {sensors >= 2 && (
-        <mesh material={dark()} position={[cx, eyes[0].y + 0.17, ez + 0.06]} rotation-x={0.35} castShadow>
-          <boxGeometry args={[0.62, 0.04, 0.22]} />
+        <mesh material={dark()} position={[brow.x, brow.y, brow.z + 0.08]} rotation-x={0.3} castShadow>
+          <boxGeometry args={[0.62, 0.04, 0.2]} />
         </mesh>
       )}
+      {/* Sensor nocturno: pegado a la sien derecha, mirando al frente. */}
       {night && (
-        <group position={[eyes[1].x + 0.2, top - 0.08, ez - 0.12]}>
-          <mesh material={dark()} rotation-x={Math.PI / 2} castShadow>
-            <cylinderGeometry args={[0.07, 0.07, 0.18, 8]} />
+        <group position={[temple.x + 0.05, temple.y, temple.z]}>
+          <mesh material={dark()} position-x={-0.02}>
+            <boxGeometry args={[0.06, 0.12, 0.16]} />
           </mesh>
-          <mesh material={nv} position-z={0.095} rotation-x={Math.PI / 2} userData={{ noOutline: true }}>
-            <cylinderGeometry args={[0.055, 0.055, 0.02, 8]} />
+          <mesh material={dark()} position={[0.03, 0, 0.06]} rotation-x={Math.PI / 2} castShadow>
+            <cylinderGeometry args={[0.065, 0.065, 0.2, 8]} />
+          </mesh>
+          <mesh material={nv} position={[0.03, 0, 0.165]} rotation-x={Math.PI / 2} userData={{ noOutline: true }}>
+            <cylinderGeometry args={[0.05, 0.05, 0.02, 8]} />
           </mesh>
         </group>
       )}
     </>
   )
 }
-
