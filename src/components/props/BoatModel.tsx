@@ -27,7 +27,7 @@ import { Outlined } from '@/components/common/Outlined'
 import { BOAT } from '@/config/boat'
 import { PALETTE } from '@/config/palette'
 import { MATERIALS, sharedToon, createToonMaterial } from '@/materials/toonMaterials'
-import { boat, boatLamp } from '@/systems/boat'
+import { boat } from '@/systems/boat'
 import type { RepairId } from '@/config/repairs'
 import {
   deckGeometry,
@@ -57,6 +57,8 @@ const WHEEL = { y: DECK + 1.2, z: 0.35, r: 0.52 }
 /** Mástil algo torcido hacia popa y babor: se nota que lo plantó el robot. */
 const MAST = { base: new Vector3(0, DECK, -1.45), tilt: new Euler(-0.07, 0, 0.05), h: 4.5 }
 const MAST_TOP = new Vector3(0, MAST.h, 0).applyEuler(MAST.tilt).add(MAST.base)
+/** Farol del mástil (donde cuelga el dron), en coordenadas del barco. */
+export const LAMP_LOCAL = new Vector3(0, MAST.h - 0.55, 0.9).applyEuler(MAST.tilt).add(MAST.base)
 const ENGINE = { y: DECK + 0.95, z: -3.35 }
 /** Engranajes en el espejo de popa: corona en la tobera → piñón en el eje de la hélice. */
 const GEAR_Z = HULL.stern - 0.15
@@ -66,7 +68,6 @@ const PROP = { y: DRIVE.y, z: HULL.stern - 0.55, r: 0.72 }
 const RUDDER = { z: HULL.stern - 1.05 }
 const STACK_TOP = new Vector3(-1.3, DECK + 2.3, -2.05)
 
-const _lamp = new Vector3()
 const rnd = (i: number) => {
   const x = Math.sin(i * 12.9898 + 4.1) * 43758.5453
   return x - Math.floor(x)
@@ -549,7 +550,6 @@ export function BoatModel({ afloat = false, parts }: { afloat?: boolean; parts?:
   const gears = useRef<(Mesh | null)[]>([])
   const flags = useRef<(Group | null)[]>([])
   const pennant = useRef<Group>(null)
-  const lamp = useRef<Group>(null)
   const leds = useRef<(Mesh | null)[]>([])
   const glowRef = useRef<Mesh>(null)
   const spin = useRef(0)
@@ -577,13 +577,6 @@ export function BoatModel({ afloat = false, parts }: { afloat?: boolean; parts?:
       if (l) l.visible = Math.sin(t * 3 + i * 2.2) > 0
     })
     if (glowRef.current) glowRef.current.scale.setScalar(0.9 + Math.sin(t * 3) * 0.08 + Math.min(0.2, boat.speed * 0.02))
-    if (afloat && lamp.current) {
-      lamp.current.getWorldPosition(_lamp)
-      boatLamp.x = _lamp.x
-      boatLamp.y = _lamp.y
-      boatLamp.z = _lamp.z
-      boatLamp.valid = true
-    }
   })
 
   return (
@@ -606,7 +599,6 @@ export function BoatModel({ afloat = false, parts }: { afloat?: boolean; parts?:
               <KitMeshes kit={kits.comms} shadow={false} />
               <group position={MAST.base} rotation={MAST.tilt}>
                 <KitMeshes kit={kits.mast} />
-                <group ref={lamp} position={[0, MAST.h - 0.55, 0.9]} />
                 {[
                   { y: MAST.h - 0.8, c: PALETTE.shipAccent },
                   { y: MAST.h - 1.3, c: '#f2a23a' },

@@ -1,6 +1,7 @@
 import { boat } from '@/systems/boat'
 import { useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
+import { BOAT } from '@/config/boat'
 import { Vector3 } from 'three'
 import { cameraRig } from '@/systems/cameraRig'
 import { consumeLook } from '@/systems/input'
@@ -66,7 +67,16 @@ export function ThirdPersonCamera() {
     cameraRig.pitch = clamp(cameraRig.pitch + look.y * cameraRig.sensitivity, cameraRig.minPitch, cameraRig.maxPitch)
 
     // Seguimiento suave del objetivo (evita tirones al saltar o bajar dunas).
-    smoothed.lerp(player.position, 1 - Math.exp(-FOLLOW_SHARPNESS * dt))
+    if (boat.boating) {
+      // A bordo: sigue al barco sin retraso en horizontal (si no, a toda marcha
+      // el retraso varía con cada frame y todo parece vibrar) y filtra en
+      // vertical el cabeceo y el oleaje, para que la cámara no se maree.
+      const s = Math.sin(boat.heading)
+      const c = Math.cos(boat.heading)
+      smoothed.x = boat.x + BOAT.deck.x * c + BOAT.deck.z * s
+      smoothed.z = boat.z - BOAT.deck.x * s + BOAT.deck.z * c
+      smoothed.y += (boat.y - BOAT.draft + BOAT.deck.y - smoothed.y) * (1 - Math.exp(-2.5 * dt))
+    } else smoothed.lerp(player.position, 1 - Math.exp(-FOLLOW_SHARPNESS * dt))
     target.set(smoothed.x, smoothed.y + TARGET_HEIGHT, smoothed.z)
 
     const cosP = Math.cos(cameraRig.pitch)

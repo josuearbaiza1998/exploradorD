@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { CircleGeometry, Euler, InstancedMesh, MeshBasicMaterial, Object3D, type Group } from 'three'
+import { CircleGeometry, Euler, InstancedMesh, MeshBasicMaterial, Object3D, Vector3, type Group } from 'three'
 import { BOAT, BOAT_MOOR, PIER, PIER_HEADING } from '@/config/boat'
 import { ISLAND } from '@/config/world'
 import { MATERIALS, sharedToon } from '@/materials/toonMaterials'
-import { useGameStore } from '@/store/gameStore'
+import { getGame, useGameStore } from '@/store/gameStore'
 import { isShipRepaired } from '@/store/slices/explorationSlice'
-import { boat, floatBoat } from '@/systems/boat'
+import { boat, boatLamp, floatBoat, stepBoat } from '@/systems/boat'
+import { cameraAxes } from '@/systems/cameraRig'
+import { getMoveVector } from '@/systems/input'
 import { seaState } from '@/systems/sea'
 import { getHeight } from '@/utils/terrain/heightfield'
-import { BoatModel } from './BoatModel'
+import { BoatModel, LAMP_LOCAL } from './BoatModel'
+
+const _lamp = new Vector3()
 
 /** Muelle de tablones sobre postes, de la playa al amarre. */
 function Pier() {
@@ -109,12 +113,24 @@ export function Boat() {
     const g = group.current
     if (!g || !launched) return
     const dt = Math.min(delta, 0.05)
-    if (!boat.boating) {
-      floatBoat(seaState.time, dt)
-    }
+    // El barco se mueve aquí, antes que el robot y la cámara: si se moviera
+    // después, el casco se pintaría con la posición del frame anterior y
+    // temblaría respecto al robot a toda marcha.
+    if (boat.boating && getGame().mode === 'active') {
+      const move = getMoveVector()
+      const axes = cameraAxes()
+      stepBoat(dt, axes.rightX * move.x + axes.forwardX * move.y, axes.rightZ * move.x + axes.forwardZ * move.y, seaState.time)
+    } else floatBoat(seaState.time, dt)
     g.position.set(boat.x, boat.y - BOAT.draft, boat.z)
     euler.set(boat.pitch, boat.heading, boat.roll)
     g.rotation.copy(euler)
+    // Farol del mástil en el mundo, con la pose de este mismo frame (el dron va ahí).
+    g.updateMatrixWorld()
+    g.localToWorld(_lamp.copy(LAMP_LOCAL))
+    boatLamp.x = _lamp.x
+    boatLamp.y = _lamp.y
+    boatLamp.z = _lamp.z
+    boatLamp.valid = true
   })
 
   // El muelle está desde el principio; el barco aparece amarrado al botarlo.

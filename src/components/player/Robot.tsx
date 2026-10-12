@@ -17,8 +17,7 @@ import { player } from '@/systems/player'
 import { environment } from '@/systems/environmentState'
 import { weatherState } from '@/systems/weatherState'
 import { wind } from '@/systems/wind'
-import { boat, deckPosition, stepBoat } from '@/systems/boat'
-import { seaState } from '@/systems/sea'
+import { boat, deckPosition } from '@/systems/boat'
 import { ROBOT_RIGGED, RobotModel } from './RobotModel'
 
 const RUN_SPEED = 6.5
@@ -60,10 +59,8 @@ export function Robot() {
     let pushZ = 0
 
     if (mode === 'active' && boat.boating) {
-      // A bordo: el stick pilota el barco (relativo a la cámara) y el robot va en cubierta.
-      const move = getMoveVector()
-      const axes = cameraAxes()
-      stepBoat(dt, axes.rightX * move.x + axes.forwardX * move.y, axes.rightZ * move.x + axes.forwardZ * move.y, seaState.time)
+      // A bordo: el barco ya se movió este frame en <Boat/> (antes que el robot,
+      // para que casco, robot y cámara usen la misma posición); aquí solo cubierta.
       consumeJump()
       player.sprintCharge = 0
       player.sprinting = false

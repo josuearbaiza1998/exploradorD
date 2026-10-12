@@ -76,7 +76,9 @@ function DroneBody() {
     const dx = (aboard ? boatLamp.x : tx) - g.position.x
     const dz = (aboard ? boatLamp.z : tz) - g.position.z
     if (aboard) {
-      g.position.set(g.position.x + dx * k, boatLamp.y + Math.sin(t * 3) * 0.03, g.position.z + dz * k)
+      // Ya colgado del farol: pegado exacto, para que no tiemble respecto al mástil.
+      const snap = Math.hypot(dx, dz) < 1 ? 1 : k
+      g.position.set(g.position.x + dx * snap, boatLamp.y + Math.sin(t * 3) * 0.03, g.position.z + dz * snap)
       g.rotation.y = boat.heading
       g.rotation.x = Math.sin(t * 1.7) * 0.06 - boat.pitch * 0.5
       g.rotation.z = Math.sin(t * 1.3) * 0.08 - boat.roll * 0.5

@@ -1,3 +1,4 @@
+import { Euler, Vector3 } from 'three'
 import { BOAT, BOAT_MOOR, PIER, pierDeck } from '@/config/boat'
 import { ISLAND } from '@/config/world'
 import { BUOYS, ROUTE_HALF_WIDTH, routeCoords, routePoint, STORM_AT } from '@/config/currents'
@@ -182,13 +183,15 @@ export function floatBoat(t: number, dt = 1 / 60) {
 
 /** Posición de la cubierta en el mundo (donde va el robot). */
 export function deckPosition(out: { x: number; y: number; z: number }) {
-  const s = Math.sin(boat.heading)
-  const c = Math.cos(boat.heading)
-  out.x = boat.x + BOAT.deck.x * c + BOAT.deck.z * s
-  out.z = boat.z - BOAT.deck.x * s + BOAT.deck.z * c
-  out.y = boat.y - BOAT.draft + BOAT.deck.y
+  // Mismo giro que el casco (cabeceo y alabeo incluidos): el robot va pegado a la cubierta.
+  _deck.set(BOAT.deck.x, BOAT.deck.y, BOAT.deck.z).applyEuler(_euler.set(boat.pitch, boat.heading, boat.roll, 'YXZ'))
+  out.x = boat.x + _deck.x
+  out.z = boat.z + _deck.z
+  out.y = boat.y - BOAT.draft + _deck.y
   return out
 }
+const _deck = new Vector3()
+const _euler = new Euler()
 
 /** Punto del casco más cercano a (x, z) y su distancia (para subir a bordo). */
 export function nearestHullPoint(x: number, z: number) {
