@@ -46,6 +46,9 @@ function nextObjective(s: GameState): Objective {
       return { title: `Adapta: ${next.icon} ${next.name}`, detail: 'Reúne los materiales y móntalo en la nave.', cost: next.cost }
     }
   }
+  // Barco listo y aún sin estrenar.
+  if (repaired === REPAIRS.length && !s.boatPos)
+    return { title: 'Prueba el barco', detail: 'Está amarrado en el muelle de la playa este (⛵ en la brújula). Súbete desde el final del muelle.' }
   if (Object.keys(s.upgrades).length === 0)
     return { title: 'Mejora tu robot', detail: 'Mochila › Mejoras, junto a la nave.' }
   if (!s.upgrades.nightVision)

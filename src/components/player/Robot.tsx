@@ -17,6 +17,8 @@ import { player } from '@/systems/player'
 import { environment } from '@/systems/environmentState'
 import { weatherState } from '@/systems/weatherState'
 import { wind } from '@/systems/wind'
+import { boat, deckPosition, stepBoat } from '@/systems/boat'
+import { seaState } from '@/systems/sea'
 import { ROBOT_RIGGED, RobotModel } from './RobotModel'
 
 const RUN_SPEED = 6.5
@@ -57,7 +59,17 @@ export function Robot() {
     let pushX = 0
     let pushZ = 0
 
-    if (mode === 'active') {
+    if (mode === 'active' && boat.boating) {
+      // A bordo: el stick pilota el barco (relativo a la cámara) y el robot va en cubierta.
+      const move = getMoveVector()
+      const axes = cameraAxes()
+      stepBoat(dt, axes.rightX * move.x + axes.forwardX * move.y, axes.rightZ * move.x + axes.forwardZ * move.y, seaState.time)
+      consumeJump()
+      player.sprintCharge = 0
+      player.sprinting = false
+      player.bracing = false
+      player.headwind = 0
+    } else if (mode === 'active') {
       // Dirección deseada relativa a la cámara (joystick analógico => velocidad analógica).
       const move = getMoveVector()
       const axes = cameraAxes()
@@ -128,8 +140,18 @@ export function Robot() {
     wish.current.x += (targetX + pushX - wish.current.x) * k
     wish.current.z += (targetZ + pushZ - wish.current.z) * k
 
-    // Con el gancho el robot vuela en arco; si no, el motor normal.
-    if (stepGrapple(dt)) {
+    // A bordo va pegado a la cubierta; con el gancho vuela en arco; si no, el motor normal.
+    if (boat.boating) {
+      deckPosition(player.position)
+      player.velocity.set(0, 0, 0)
+      player.grounded = true
+      player.inWater = false
+      player.underwater = false
+      player.climbing = false
+      player.heading = boat.heading
+      wish.current.x = 0
+      wish.current.z = 0
+    } else if (stepGrapple(dt)) {
       wish.current.x = 0
       wish.current.z = 0
     } else simpleMotor.step(player, wish.current.x, wish.current.z, jump, dt)
@@ -144,7 +166,7 @@ export function Robot() {
       face = Math.atan2(getHeight(px + 0.6, pz) - getHeight(px - 0.6, pz), getHeight(px, pz + 0.6) - getHeight(px, pz - 0.6))
     } else if (player.bracing) face = Math.atan2(-wind.dirX, -wind.dirZ)
     else if (Math.hypot(targetX, targetZ) > 0.3) face = Math.atan2(targetX, targetZ)
-    if (!grapple.active && face !== null) {
+    if (!grapple.active && !boat.boating && face !== null) {
       player.heading += angleDelta(player.heading, face) * (1 - Math.exp(-(player.bracing ? 4 : TURN_SPEED) * dt))
     }
     // Inclinación del cuerpo: hacia la pared al trepar, hacia delante contra el viento.
@@ -165,6 +187,11 @@ export function Robot() {
         sway = Math.sin(ph) * 0.09
         up = 0.32 + Math.abs(Math.sin(ph)) * 0.1
         back = -0.5 - want * 0.25
+      }
+      // En el barco el cuerpo se mece con las olas.
+      if (boat.boating) {
+        want = boat.pitch
+        sway = boat.roll
       }
       lean.current.rotation.x += (want - lean.current.rotation.x) * kk
       lean.current.rotation.z += (sway - lean.current.rotation.z) * kk

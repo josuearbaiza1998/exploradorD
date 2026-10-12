@@ -5,7 +5,7 @@ import type { ItemId, ToolId } from './items'
  * Progresión escalonada: manos → hacha → martillo. El metal NO sale de las
  * rocas: solo de la nave (scavenging).
  */
-export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel' | 'structure' | 'cache' | 'buried' | 'bloom' | 'note' | 'crystal' | 'fulgurite' | 'meteorite' | 'sunken' | 'scavenger' | 'panelClean' | 'collector'
+export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel' | 'structure' | 'cache' | 'buried' | 'bloom' | 'note' | 'crystal' | 'fulgurite' | 'meteorite' | 'sunken' | 'boat' | 'disembark' | 'scavenger' | 'panelClean' | 'collector'
 
 export type HarvestDef = {
   label: string
@@ -199,6 +199,9 @@ export const HARVEST: Record<HarvestKind, HarvestDef> = {
     ],
     regrowHours: null,
   },
+  // El barco: subir a bordo y bajar a tierra.
+  boat: { material: 'wood', label: 'Barco', verb: 'Subir a bordo', icon: '⛵', hits: 1, yields: [], regrowHours: null },
+  disembark: { material: 'wood', label: 'Tierra', verb: 'Desembarcar', icon: '🏝️', hits: 1, yields: [], regrowHours: null },
   // Registro de la expedición anterior: se lee (se puede releer).
   note: {
     material: 'metal',

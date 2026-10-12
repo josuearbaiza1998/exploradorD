@@ -2,6 +2,7 @@ import { CHUNK_SIZE, CRASH_SITE } from '@/config/world'
 import { POIS, poiLocalToWorld } from '@/config/pois'
 import { COLLIDABLE_LAYERS, getLayerChunk } from '@/systems/propPlacement'
 import { propKey } from '@/systems/interaction/interactables'
+import { isShipRepaired } from '@/store/slices/explorationSlice'
 import { getGame } from '@/store/gameStore'
 import { STRUCTURES } from '@/config/structures'
 
@@ -74,7 +75,8 @@ export function queryColliders(x: number, z: number, radius: number): CircleColl
       }
     }
   }
-  for (const c of SHIP_COLLIDERS) result.push(c)
+  // La nave ya no está aquí cuando se convierte en barco (está en el muelle).
+  if (!isShipRepaired(getGame())) for (const c of SHIP_COLLIDERS) result.push(c)
   for (const c of POI_COLLIDERS) if (Math.abs(c.x - x) < pad + c.r && Math.abs(c.z - z) < pad + c.r) result.push(c)
   // Estructuras construidas por el jugador (pocas: se recorren todas).
   for (const st of getGame().structures) {

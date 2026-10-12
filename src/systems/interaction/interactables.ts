@@ -7,6 +7,7 @@ import { COLLECTOR_USE, PANEL_DIRTY, STRUCTURES } from '@/config/structures'
 import { getGame } from '@/store/gameStore'
 import { NOTES } from '@/config/notes'
 import { SUNKEN_CRATES } from '@/config/sunken'
+import { boat, nearestHullPoint } from '@/systems/boat'
 import { CAVE_CACHE, CAVE_CRYSTALS, CAVE_ORIGIN, caveFloor } from '@/config/cave'
 import { POIS, poiLocalToWorld, type PoiId } from '@/config/pois'
 import type { PlacedStructure } from '@/store/slices/structuresSlice'
@@ -130,6 +131,12 @@ export function findTarget(
   for (const n of NOTE_WORLD) {
     if (Math.abs(n.x - px) > reach || Math.abs(n.z - pz) > reach) continue
     consider(n.key, 'note', n.x, n.y, n.z, 0.5)
+  }
+
+  // El barco: se sube desde el muelle o desde la orilla donde se dejó.
+  if (boat.launched && !boat.boating) {
+    const hull = nearestHullPoint(px, pz)
+    if (hull.d < 7) consider('boat|', 'boat', hull.x, boat.y + 1, hull.z, Math.max(0.5, hull.d - 1.2))
   }
 
   // Cargamento hundido (solo se llega buceando).

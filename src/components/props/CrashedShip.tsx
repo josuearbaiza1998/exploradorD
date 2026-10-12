@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Vector3, type Group } from 'three'
+import { Vector3, type BufferGeometry, type Group, type Material } from 'three'
 import { ModelSlot } from '@/components/common/ModelSlot'
 import { Outlined } from '@/components/common/Outlined'
 import { CRASH_SITE } from '@/config/world'
@@ -9,6 +9,7 @@ import { MATERIALS, sharedToon } from '@/materials/toonMaterials'
 import { getHeight } from '@/utils/terrain/heightfield'
 import { SmokeColumn } from './SmokeColumn'
 import { useGameStore } from '@/store/gameStore'
+import { isShipRepaired } from '@/store/slices/explorationSlice'
 import type { RepairId } from '@/config/repairs'
 import { finGeometry, fuselageGeometry, wingGeometry } from './shipGeometry'
 
@@ -151,8 +152,9 @@ function ShipRepairs({ repairs }: { repairs: Partial<Record<RepairId, true>> }) 
  * toberas dobles y cabina. Huella compatible con los colisionadores y los
  * escombros de config/world.ts.
  */
-function ShipPlaceholder() {
+export function ShipPlaceholder({ variant = 'crashed' }: { variant?: 'crashed' | 'afloat' | 'scar' }) {
   const repairs = useGameStore((s) => s.repairs)
+  const tilt: [number, number, number] = variant === 'afloat' ? [0, 0, 0] : [0.1, 0, -0.16]
   const geo = useMemo(
     () => ({ fuselage: fuselageGeometry(), wing: wingGeometry(), broken: wingGeometry(true, -1), fin: finGeometry() }),
     [],
@@ -161,7 +163,7 @@ function ShipPlaceholder() {
   const scorch = sharedToon('#3b2a22')
   return (
     <Outlined thickness={0.07}>
-      <group rotation={[0.1, 0, -0.16]}>
+      <group rotation={tilt} visible={variant !== 'scar'}>
         {/* Fuselaje */}
         <mesh geometry={geo.fuselage} material={MATERIALS.shipHull} position={[0, 2.3, 0]} castShadow receiveShadow />
         {/* Franjas naranjas */}
@@ -199,8 +201,17 @@ function ShipPlaceholder() {
           <boxGeometry args={[2.4, 0.7, 4]} />
         </mesh>
       </group>
+      {variant !== 'afloat' && <CrashScar wing={geo.wing} scorch={scorch} />}
+    </Outlined>
+  )
+}
+
+/** Lo que queda en la arena: el ala arrancada y el surco del impacto. */
+function CrashScar({ wing, scorch }: { wing: BufferGeometry; scorch: Material }) {
+  return (
+    <>
       {/* Ala izquierda arrancada, clavada en la arena */}
-      <mesh geometry={geo.wing} material={MATERIALS.shipHull} position={[-6.5, 0.2, 5]} rotation={[0.35, 0.9, 1.05]} scale={0.7} castShadow />
+      <mesh geometry={wing} material={MATERIALS.shipHull} position={[-6.5, 0.2, 5]} rotation={[0.35, 0.9, 1.05]} scale={0.7} castShadow />
       {/* Surco del impacto: arena removida y quemada detrás de la nave */}
       <mesh material={scorch} position={[0, 0.25, -17]} rotation-y={0.05} receiveShadow userData={{ noOutline: true }}>
         <boxGeometry args={[5, 0.5, 14]} />
@@ -211,13 +222,21 @@ function ShipPlaceholder() {
       <mesh material={sharedToon(PALETTE.sandDark)} position={[-3.4, 0.45, -16]} rotation={[0, 0.05, -0.25]} receiveShadow userData={{ noOutline: true }}>
         <boxGeometry args={[1.6, 0.9, 16]} />
       </mesh>
-    </Outlined>
+    </>
   )
 }
 
 /** Nave estrellada: base de recarga del robot y faro de humo visible desde el spawn. */
 export function CrashedShip() {
   const engineFixed = useGameStore((s) => !!s.repairs.engine)
+  // Adaptada como barco, la nave está en el muelle: aquí queda la huella del impacto.
+  const launched = useGameStore(isShipRepaired)
+  if (launched)
+    return (
+      <group name="crash-site" position={[CRASH_SITE.x, groundY - 0.6, CRASH_SITE.z]} rotation-y={-CRASH_SITE.rotation}>
+        <ShipPlaceholder variant="scar" />
+      </group>
+    )
   return (
     <group name="crashed-ship">
       <group position={[CRASH_SITE.x, groundY - 0.6, CRASH_SITE.z]} rotation-y={-CRASH_SITE.rotation}>

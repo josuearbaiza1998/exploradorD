@@ -1,3 +1,4 @@
+import { boat } from '@/systems/boat'
 import { useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Vector3 } from 'three'
@@ -75,7 +76,8 @@ export function ThirdPersonCamera() {
 
     // Si una duna, roca o tronco se interpone, acercamos la cámara (muestreo del brazo).
     // En la cueva la cámara va más cerca (el túnel no deja sitio para más).
-    const reach = cave.active ? Math.min(cameraRig.distance, CAVE_CAMERA_DISTANCE) : cameraRig.distance
+    // A bordo se aleja para ver el barco entero.
+    const reach = cave.active ? Math.min(cameraRig.distance, CAVE_CAMERA_DISTANCE) : boat.boating ? Math.max(cameraRig.distance, 18) : cameraRig.distance
     gatherObstacles(target.x, target.z, reach)
     let dist = reach
     const SAMPLES = 12

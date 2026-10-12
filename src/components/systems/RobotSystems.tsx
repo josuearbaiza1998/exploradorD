@@ -21,6 +21,7 @@ import { ambientTemperature } from '@/systems/worldClock'
 import { tallCoverNear, thermal, updateThermal } from '@/systems/thermal'
 import { cave, CAVE_OUTSIDE, inCave } from '@/config/cave'
 import { getHeight } from '@/utils/terrain/heightfield'
+import { boat, landingSpot } from '@/systems/boat'
 
 /** Duración (s reales) de cada etapa de la secuencia de emergencia. */
 export const EMERGENCY_TIMING = {
@@ -53,6 +54,7 @@ export function RobotSystems() {
   const coverNear = useRef(false)
   const mapTimer = useRef({ reveal: 0, flush: 0 })
   const wasUnder = useRef(false)
+  const landTimer = useRef(0)
   const underNoticeAt = useRef(-100)
 
   useFrame((state, delta) => {
@@ -194,11 +196,20 @@ export function RobotSystems() {
     game.setNearbyBox(nearest)
 
     // --- Objetivo de recolección (lo que el robot tiene delante) ---
-    game.setTarget(
-      game.mode === 'active' && !nearest && !game.build
-        ? findTarget(player.position.x, player.position.z, player.heading, game.harvested, game.structures, game.looted, game.finds)
-        : null,
-    )
+    // A bordo solo hay una acción: desembarcar cuando hay orilla cerca.
+    if (boat.boating) {
+      if (game.mode !== 'active') boat.boating = false
+      else if ((landTimer.current -= dt) <= 0) {
+        landTimer.current = 0.35
+        const spot = boat.speed < 2.5 ? landingSpot() : null
+        game.setTarget(spot ? { key: `disembark|${Math.round(spot.x)},${Math.round(spot.z)}`, kind: 'disembark', position: [spot.x, getHeight(spot.x, spot.z), spot.z], radius: 0.6 } : null)
+      }
+    } else
+      game.setTarget(
+        game.mode === 'active' && !nearest && !game.build
+          ? findTarget(player.position.x, player.position.z, player.heading, game.harvested, game.structures, game.looted, game.finds)
+          : null,
+      )
 
     // --- Lugares por descubrir: se descubren al acercarse ---
     if (game.mode === 'active') {
@@ -236,7 +247,12 @@ export function RobotSystems() {
       saveTimer.current = 0
       // Dentro de la cueva se guarda la entrada: al volver se aparece fuera.
       if (cave.active) game.savePosition([CAVE_OUTSIDE.x, getHeight(CAVE_OUTSIDE.x, CAVE_OUTSIDE.z), CAVE_OUTSIDE.z])
-      else {
+      else if (boat.boating) {
+        // A bordo se guarda el sitio de tierra desde donde subió (y dónde va el barco).
+        const f = boat.boardedFrom
+        game.savePosition([f.x, getHeight(f.x, f.z), f.z])
+        game.setBoatPos([boat.x, boat.z, boat.heading])
+      } else {
         const p = player.position
         game.savePosition([p.x, p.y, p.z])
       }

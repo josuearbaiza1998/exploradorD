@@ -73,6 +73,7 @@ export const useGameStore = create<GameState>()(
         looted: s.looted,
         repairs: s.repairs,
         shipRepairedSeen: s.shipRepairedSeen,
+        boatPos: s.boatPos,
         finds: s.finds,
         notesRead: s.notesRead,
         journal: s.journal,

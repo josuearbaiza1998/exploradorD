@@ -27,6 +27,7 @@ import { SalvageNodes } from '@/components/props/SalvageNodes'
 import { Structures } from '@/components/structures/Structures'
 import { BuildGhost } from '@/components/structures/BuildGhost'
 import { CrashedShip } from '@/components/props/CrashedShip'
+import { Boat } from '@/components/props/Boat'
 import { Oasis } from '@/components/props/Oasis'
 import { Vegetation } from '@/components/props/Vegetation'
 import { Weather } from '@/components/weather/Weather'
@@ -59,6 +60,7 @@ export function World() {
       <Sea />
 
       <CrashedShip />
+      <Boat />
       <ChargingPad />
       <DroppedBoxes />
       <SalvageNodes />

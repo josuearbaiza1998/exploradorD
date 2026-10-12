@@ -1,4 +1,5 @@
 import type { Vector3 } from 'three'
+import { pierDeck } from '@/config/boat'
 import { isClimbWall, ISLAND, OASIS } from '@/config/world'
 import { getHeight, getSlope } from '@/utils/terrain/heightfield'
 import { ecology } from '@/systems/ecology'
@@ -6,7 +7,19 @@ import { queryColliders } from './staticColliders'
 import { cave, caveCanEnter, caveFloor } from '@/config/cave'
 
 /** Suelo bajo el robot: el terreno o, dentro de la cueva, su propio suelo. */
-export const groundAt = (x: number, z: number) => (cave.active ? caveFloor(x, z) : getHeight(x, z))
+export const groundAt = (x: number, z: number) => {
+  if (cave.active) return caveFloor(x, z)
+  const h = getHeight(x, z)
+  // La tarima del muelle (cuando el barco ya existe) se pisa por encima del agua.
+  if (pier.on) {
+    const deck = pierDeck(x, z)
+    if (deck !== null && deck > h) return deck
+  }
+  return h
+}
+
+/** El muelle existe (lo activa <Boat/> al botar el barco). */
+export const pier = { on: false }
 
 /**
  * Motor de personaje "cinemático" ligero (sin motor de físicas).
@@ -73,7 +86,7 @@ function waterDepth(x: number, z: number, ground: number): number {
 
 function canEnter(x: number, z: number, fromY: number, fromGround: number): boolean {
   if (cave.active) return caveCanEnter(x, z, MOTOR_CONFIG.radius)
-  const ground = getHeight(x, z)
+  const ground = groundAt(x, z)
   if (!MOTOR_CONFIG.canDive && waterDepth(x, z, ground) > MOTOR_CONFIG.maxWaterDepth) {
     waterBlock.at = performance.now() / 1000
     return false

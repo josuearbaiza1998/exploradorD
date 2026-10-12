@@ -31,6 +31,9 @@ export type ExplorationSlice = {
   lootPoi: (id: PoiId) => Inventory
   repair: (id: RepairId, atShip: boolean) => boolean
   markShipRepairedSeen: () => void
+  /** Dónde quedó el barco: [x, z, rumbo] (null = amarrado en el muelle). */
+  boatPos: [number, number, number] | null
+  setBoatPos: (p: [number, number, number] | null) => void
   readNote: (id: string) => void
   logJournal: (entry: Omit<JournalEntry, 'id' | 'at'>) => void
   addFinds: (finds: Find[]) => void
@@ -98,6 +101,8 @@ export const createExplorationSlice: StateCreator<GameState, [], [], Exploration
     return true
   },
   markShipRepairedSeen: () => set({ shipRepairedSeen: true }),
+  boatPos: null,
+  setBoatPos: (boatPos) => set({ boatPos }),
   addFinds: (finds) => set((s) => ({ finds: [...s.finds, ...finds].slice(-MAX_FINDS) })),
   removeFind: (id) => set((s) => ({ finds: s.finds.filter((f) => f.id !== id) })),
   expireFinds: (h) => {

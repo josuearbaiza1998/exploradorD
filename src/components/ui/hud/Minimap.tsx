@@ -8,6 +8,7 @@ import { useSettings } from '@/store/settingsStore'
 import { cameraRig } from '@/systems/cameraRig'
 import { player } from '@/systems/player'
 import { scavengers } from '@/systems/scavengers'
+import { boat } from '@/systems/boat'
 import { explored, exploredVersion, MAP_EXTENT, MAP_GRID } from '@/systems/exploredMap'
 import { getHeight, getSlope, OASIS_WATER_LEVEL } from '@/utils/terrain/heightfield'
 import { terrainColor } from '@/utils/terrain/terrainColor'
@@ -137,6 +138,13 @@ function MapCanvas({ big, onClick }: { big: boolean; onClick: () => void }) {
       ctx.arc(toX(CRASH_SITE.x), toY(CRASH_SITE.z), r, 0, Math.PI * 2)
       ctx.fill()
       ctx.stroke()
+      // El barco (amarrado o donde se dejó).
+      if (boat.launched) {
+        ctx.font = `${r * 2.2}px system-ui`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText('⛵', toX(boat.x), toY(boat.z))
+      }
       // Lugares descubiertos.
       ctx.font = `${r * 2.2}px system-ui`
       ctx.textAlign = 'center'

@@ -1,3 +1,5 @@
+import { BOAT_MOOR } from '@/config/boat'
+import { isShipRepaired } from '@/store/slices/explorationSlice'
 import { useEffect, useRef } from 'react'
 import { CRASH_SITE } from '@/config/world'
 import { POIS } from '@/config/pois'
@@ -34,6 +36,8 @@ export function Compass() {
   const discovered = useGameStore((s) => s.discovered)
   const looted = useGameStore((s) => s.looted)
   const finds = useGameStore((s) => s.finds)
+  const launched = useGameStore(isShipRepaired)
+  const boatPos = useGameStore((s) => s.boatPos) ?? [BOAT_MOOR.x, BOAT_MOOR.z]
 
   useEffect(() => {
     let raf = 0
@@ -81,6 +85,12 @@ export function Compass() {
         <span className="cmp-icon">🚀</span>
         <span className="cmp-dist" />
       </span>
+      {launched && (
+        <span className="cmp-marker poi" data-bearing="0" data-x={boatPos[0]} data-z={boatPos[1]}>
+          <span className="cmp-icon">⛵</span>
+          <span className="cmp-dist" />
+        </span>
+      )}
       {POIS.filter((p) => discovered[p.id]).map((p) => (
         <span key={p.id} className={`cmp-marker poi ${looted[p.id] ? 'done' : ''}`} data-bearing="0" data-x={p.x} data-z={p.z}>
           <span className="cmp-icon">{p.icon}</span>

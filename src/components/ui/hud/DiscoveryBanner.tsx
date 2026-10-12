@@ -41,7 +41,7 @@ export function ShipRepairedModal() {
           La nave nunca volverá a volar, pero ya flota. El motor mueve la hélice sin humo negro, la radio capta la baliza
           y el ordenador traza la ruta por mar hacia la otra isla.
         </p>
-        <p>Puedes seguir explorando y mejorando tu robot mientras preparas la travesía.</p>
+        <p>El barco te espera amarrado en el muelle de la playa este (⛵ en la brújula). Súbete y prueba a navegar.</p>
         <button className="install-ok" onClick={() => getGame().markShipRepairedSeen()}>
           Seguir explorando
         </button>
