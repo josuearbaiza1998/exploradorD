@@ -19,8 +19,8 @@ export const groundAt = (x: number, z: number) => {
   return h
 }
 
-/** El muelle existe (lo activa <Boat/> al botar el barco). */
-export const pier = { on: false }
+/** El muelle de la playa este se pisa (existe desde el principio). */
+export const pier = { on: true }
 
 /**
  * Motor de personaje "cinemático" ligero (sin motor de físicas).

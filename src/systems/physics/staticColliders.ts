@@ -34,22 +34,19 @@ export function pruneColliderCache(keepChunkKeys: Set<string>) {
   for (const key of chunkCache.keys()) if (!keepChunkKeys.has(key)) chunkCache.delete(key)
 }
 
-/** La nave: círculos a lo largo del casco y las alas (placeholder aproximado). */
-const SHIP_COLLIDERS: CircleCollider[] = (() => {
+/** Coordenadas locales de la nave (x, z, radio) → círculos de mundo. */
+function shipCircles(local: [number, number, number][], h: number): CircleCollider[] {
   const rot = -CRASH_SITE.rotation
   const cos = Math.cos(rot)
   const sin = Math.sin(rot)
-  // Coordenadas locales (x, z, radio) del placeholder de la nave.
-  const local: [number, number, number][] = [
-    [0, -9, 3], [0, -4, 3.4], [0, 1, 3.4], [0, 6, 3], [6.5, -1, 3.2], [-7, 4, 2.6],
-  ]
-  return local.map(([x, z, r]) => ({
-    x: CRASH_SITE.x + x * cos + z * sin,
-    z: CRASH_SITE.z - x * sin + z * cos,
-    r,
-    h: 5,
-  }))
-})()
+  return local.map(([x, z, r]) => ({ x: CRASH_SITE.x + x * cos + z * sin, z: CRASH_SITE.z - x * sin + z * cos, r, h }))
+}
+
+/** La nave: círculos a lo largo del casco y las alas (placeholder aproximado). */
+const SHIP_COLLIDERS = shipCircles([[0, -9, 3], [0, -4, 3.4], [0, 1, 3.4], [0, 6, 3], [6.5, -1, 3.2], [-7, 4, 2.6]], 5)
+/** Astillero (casco estanco hecho): el barco sobre la grada y, hasta montar el motor, la cola cortada. */
+const YARD_COLLIDERS = shipCircles([[0, -1.4, 2], [0, 1.6, 2], [0, 4.6, 1.6], [-2.6, 1.4, 1]], 4)
+const TAIL_COLLIDERS = shipCircles([[0, -7.6, 2.4], [0, -10, 1.6]], 4)
 
 /** Lugares por descubrir: pilares, rocas de la cueva, la baliza… */
 const POI_COLLIDERS: CircleCollider[] = POIS.flatMap((poi) =>
@@ -75,8 +72,15 @@ export function queryColliders(x: number, z: number, radius: number): CircleColl
       }
     }
   }
-  // La nave ya no está aquí cuando se convierte en barco (está en el muelle).
-  if (!isShipRepaired(getGame())) for (const c of SHIP_COLLIDERS) result.push(c)
+  // La nave se convierte en barco en la grada y, terminado, se va al muelle.
+  const game = getGame()
+  if (!isShipRepaired(game)) {
+    if (!game.repairs.hull) for (const c of SHIP_COLLIDERS) result.push(c)
+    else {
+      for (const c of YARD_COLLIDERS) result.push(c)
+      if (!game.repairs.engine) for (const c of TAIL_COLLIDERS) result.push(c)
+    }
+  }
   for (const c of POI_COLLIDERS) if (Math.abs(c.x - x) < pad + c.r && Math.abs(c.z - z) < pad + c.r) result.push(c)
   // Estructuras construidas por el jugador (pocas: se recorren todas).
   for (const st of getGame().structures) {

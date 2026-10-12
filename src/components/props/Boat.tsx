@@ -7,7 +7,6 @@ import { MATERIALS, sharedToon } from '@/materials/toonMaterials'
 import { useGameStore } from '@/store/gameStore'
 import { isShipRepaired } from '@/store/slices/explorationSlice'
 import { boat, floatBoat } from '@/systems/boat'
-import { pier } from '@/systems/physics/characterMotor'
 import { seaState } from '@/systems/sea'
 import { getHeight } from '@/utils/terrain/heightfield'
 import { BoatModel } from './BoatModel'
@@ -98,7 +97,6 @@ export function Boat() {
 
   useEffect(() => {
     boat.launched = launched
-    pier.on = launched
     if (!launched) return
     const saved = useGameStore.getState().boatPos
     const [x, z, h] = saved ?? [BOAT_MOOR.x, BOAT_MOOR.z, BOAT_MOOR.heading]
@@ -119,12 +117,13 @@ export function Boat() {
     g.rotation.copy(euler)
   })
 
-  if (!launched) return null
+  // El muelle está desde el principio; el barco aparece amarrado al botarlo.
+  if (!launched) return <Pier />
   return (
     <>
       <Pier />
       <group ref={group} name="boat">
-        <BoatModel />
+        <BoatModel afloat />
       </group>
       <Wake />
     </>

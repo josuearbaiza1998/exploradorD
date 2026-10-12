@@ -1,3 +1,4 @@
+import { createTerrainMaterial } from './terrainMaterial'
 import { Color, DoubleSide, MeshToonMaterial, type MeshToonMaterialParameters, type Side } from 'three'
 import { PALETTE } from '@/config/palette'
 import { toonGradient2, toonGradient3 } from './gradientMap'
@@ -46,7 +47,7 @@ export function sharedToon(
 
 /** Materiales nombrados del mundo. */
 export const MATERIALS = {
-  terrain: createToonMaterial({ vertexColors: true, flatShading: true }),
+  terrain: createTerrainMaterial(),
   shipHull: createToonMaterial({ color: PALETTE.shipHull, flatShading: true }),
   shipAccent: createToonMaterial({ color: PALETTE.shipAccent, flatShading: true }),
   shipDark: createToonMaterial({ color: PALETTE.shipDark, flatShading: true }),

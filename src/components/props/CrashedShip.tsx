@@ -12,6 +12,7 @@ import { useGameStore } from '@/store/gameStore'
 import { isShipRepaired } from '@/store/slices/explorationSlice'
 import type { RepairId } from '@/config/repairs'
 import { finGeometry, fuselageGeometry, wingGeometry } from './shipGeometry'
+import { BoatModel } from './BoatModel'
 
 const groundY = getHeight(CRASH_SITE.x, CRASH_SITE.z)
 
@@ -212,72 +213,136 @@ function CrashScar({ wing, scorch }: { wing: BufferGeometry; scorch: Material })
   )
 }
 
-const PONTOON_LEN = 11
+/** El barco en construcción va algo adelantado sobre la huella de la nave. */
+const YARD_Z = 2
+/** Altura del barco sobre la base (la quilla queda a un palmo de la arena, sobre la grada). */
+const YARD_Y = 0.6 + 0.55
 
 /**
- * Flotadores de madera ya construidos (casco estanco reparado), tumbados en la
- * arena junto a la nave hasta que se bota como barco. Cada extremo se apoya en
- * el terreno real, así no quedan colgando sobre las dunas.
+ * Grada de madera: calzos en V bajo la quilla y puntales a los costados.
+ * Se queda en la arena cuando el barco se bota (cuenta dónde se construyó).
  */
-function Pontoons() {
-  const logs = useMemo(() => {
-    const rot = -CRASH_SITE.rotation
-    const base = groundY - 0.6
-    const ground = (lx: number, lz: number) => {
-      const x = CRASH_SITE.x + lx * Math.cos(rot) + lz * Math.sin(rot)
-      const z = CRASH_SITE.z - lx * Math.sin(rot) + lz * Math.cos(rot)
-      return getHeight(x, z) - base
-    }
-    return [-6.2, -7.8].map((x) => {
-      const z0 = -10
-      const z1 = z0 + PONTOON_LEN
-      const h0 = ground(x, z0)
-      const h1 = ground(x, z1)
-      const mid = ground(x, (z0 + z1) / 2)
-      // Apoyado en el punto más alto de los tres para no hundirse en la duna.
-      const y = Math.max((h0 + h1) / 2, mid) + 0.6
-      return { x, y, z: (z0 + z1) / 2, pitch: -Math.atan2(h1 - h0, PONTOON_LEN) }
-    })
-  }, [])
-  const band = sharedToon('#c9a86a')
+function Cradle() {
+  const wood = sharedToon('#7c5130', { flatShading: true })
   return (
-    <Outlined thickness={0.07}>
-      {logs.map((l) => (
-        <group key={l.x} position={[l.x, l.y, l.z]} rotation-x={l.pitch}>
-          <mesh material={MATERIALS.palmTrunk} rotation-x={Math.PI / 2} castShadow receiveShadow>
-            <capsuleGeometry args={[0.6, PONTOON_LEN - 1.2, 3, 8]} />
+    <group position-z={YARD_Z}>
+      {[-2.6, 0, 2.6].map((z) => (
+        <group key={z} position-z={z}>
+          <mesh material={wood} position={[0, 0.6 + 0.12, 0]} castShadow receiveShadow>
+            <boxGeometry args={[2.6, 0.32, 0.4]} />
           </mesh>
-          {/* Ataduras de fibra, ceñidas al tronco */}
-          {[-3.5, 0, 3.5].map((z) => (
-            <mesh key={z} material={band} position-z={z} rotation-x={Math.PI / 2}>
-              <cylinderGeometry args={[0.63, 0.63, 0.18, 8]} />
+          {[-1, 1].map((sx) => (
+            <mesh key={sx} material={wood} position={[sx * 0.75, 0.6 + 0.45, 0]} rotation-z={sx * 0.5}>
+              <boxGeometry args={[0.7, 0.24, 0.36]} />
             </mesh>
           ))}
         </group>
       ))}
-    </Outlined>
+      {/* Puntales inclinados contra la borda */}
+      {[-1, 1].map((sx) =>
+        [-1.6, 1.4].map((z) => (
+          <mesh key={`${sx}${z}`} material={wood} position={[sx * 2.15, 0.6 + 0.8, z]} rotation-z={sx * 0.55}>
+            <boxGeometry args={[0.14, 1.9, 0.14]} />
+          </mesh>
+        )),
+      )}
+    </group>
   )
 }
 
-/** Nave estrellada: base de recarga del robot y faro de humo visible desde el spawn. */
+/**
+ * La nave a medio convertir en barco: el casco nuevo sobre la grada, con las
+ * piezas que ya se han reparado montadas, y los restos de la nave que aún
+ * faltan por aprovechar tirados alrededor (la cola con las toberas y las
+ * derivas, el morro con la cabina). Cada reparación pasa una pieza de los
+ * restos al barco.
+ */
+function Shipyard({ repairs }: { repairs: Partial<Record<RepairId, true>> }) {
+  const geo = useMemo(() => ({ fin: finGeometry() }), [])
+  const glass = sharedToon('#1f5f7a', { emissive: '#3ad0ff', emissiveIntensity: 0.15 })
+  const scorch = sharedToon('#3b2a22')
+  return (
+    <>
+      <Cradle />
+      <group position={[0, YARD_Y, YARD_Z]}>
+        <BoatModel parts={repairs} />
+      </group>
+      <Outlined thickness={0.07}>
+        <group>
+          {/* Cola de la nave, cortada: toberas (el motor aún sin montar) y derivas */}
+          {!repairs.engine && (
+            <group rotation={[0.1, 0, -0.16]}>
+              <mesh material={MATERIALS.shipHull} position={[0, 2.3, -7.6]} rotation-x={Math.PI / 2} scale={[1, 0.72, 1]} castShadow>
+                <cylinderGeometry args={[2.3, 2.1, 4.2, 8]} />
+              </mesh>
+              <mesh material={scorch} position={[0, 2.3, -5.45]} rotation-x={Math.PI / 2} scale={[1, 0.72, 1]}>
+                <cylinderGeometry args={[2.25, 2.25, 0.1, 8]} />
+              </mesh>
+              {[-0.9, 0.9].map((x) => (
+                <mesh key={x} material={MATERIALS.shipDark} position={[x, 2.3, -10]} rotation-x={Math.PI / 2} castShadow>
+                  <cylinderGeometry args={[0.85, 1.05, 1.6, 8]} />
+                </mesh>
+              ))}
+              <group position={[0.9, 2.3, -10.9]}>
+                <EngineFire />
+              </group>
+              {!repairs.comms && (
+                <>
+                  <mesh geometry={geo.fin} material={MATERIALS.shipHull} position={[1.1, 3.6, -6.4]} rotation-z={-0.35} castShadow />
+                  <mesh geometry={geo.fin} material={MATERIALS.shipDark} position={[-1.1, 3.6, -6.4]} rotation-z={0.6} castShadow />
+                </>
+              )}
+            </group>
+          )}
+          {/* Morro con la cabina, desmontado a un lado hasta reparar la navegación */}
+          {!repairs.navigation && (
+            <group position={[6.5, 0.9, 5]} rotation={[0.15, 0.6, 0.2]}>
+              <mesh material={MATERIALS.shipHull} scale={[1.5, 0.9, 2.2]} castShadow>
+                <sphereGeometry args={[1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2]} />
+              </mesh>
+              <mesh material={glass} position={[0, 0.35, 0.2]} scale={[1, 0.6, 1.5]}>
+                <sphereGeometry args={[1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2]} />
+              </mesh>
+            </group>
+          )}
+        </group>
+      </Outlined>
+    </>
+  )
+}
+
+/**
+ * La nave estrellada: base de recarga del robot y faro de humo. Con el casco
+ * estanco empieza a convertirse en barco aquí mismo (ver Shipyard); con todo
+ * reparado, el barco espera en el muelle y aquí queda la grada vacía.
+ */
 export function CrashedShip() {
-  const engineFixed = useGameStore((s) => !!s.repairs.engine)
-  const hullFixed = useGameStore((s) => !!s.repairs.hull)
-  // Adaptada como barco, la nave está en el muelle: aquí queda la huella del impacto.
+  const repairs = useGameStore((s) => s.repairs)
   const launched = useGameStore(isShipRepaired)
+  const base: [number, number, number] = [CRASH_SITE.x, groundY - 0.6, CRASH_SITE.z]
   if (launched)
     return (
-      <group name="crash-site" position={[CRASH_SITE.x, groundY - 0.6, CRASH_SITE.z]} rotation-y={-CRASH_SITE.rotation}>
+      <group name="crash-site" position={base} rotation-y={-CRASH_SITE.rotation}>
         <ShipPlaceholder variant="scar" />
+        <Cradle />
+      </group>
+    )
+  if (repairs.hull)
+    return (
+      <group name="shipyard">
+        <group position={base} rotation-y={-CRASH_SITE.rotation}>
+          <ShipPlaceholder variant="scar" />
+          <Shipyard repairs={repairs} />
+        </group>
+        {!repairs.engine && <SmokeColumn position={[engine.x, engine.y, engine.z]} clean={false} />}
       </group>
     )
   return (
     <group name="crashed-ship">
-      <group position={[CRASH_SITE.x, groundY - 0.6, CRASH_SITE.z]} rotation-y={-CRASH_SITE.rotation}>
+      <group position={base} rotation-y={-CRASH_SITE.rotation}>
         <ModelSlot id="crashedShip" placeholder={<ShipPlaceholder />} />
-        {hullFixed && <Pontoons />}
       </group>
-      <SmokeColumn position={[engine.x, engine.y, engine.z]} clean={engineFixed} />
+      <SmokeColumn position={[engine.x, engine.y, engine.z]} clean={!!repairs.engine} />
     </group>
   )
 }

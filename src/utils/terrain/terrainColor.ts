@@ -16,6 +16,9 @@ const c = {
 }
 const tmp = new Color()
 
+/** Cuánto es arena el último punto coloreado (0 roca/hierba/orilla, 1 arena seca). */
+export let terrainSand = 1
+
 /**
  * Color por vértice: arena con matices, roca roja en pendientes y cumbres,
  * arena húmeda en la orilla y un anillo verde brillante alrededor del oasis.
@@ -24,29 +27,36 @@ const tmp = new Color()
 export function terrainColor(x: number, y: number, z: number, slope: number, out: Color): Color {
   const n = valueNoise2D(x / 18, z / 18, WORLD_SEED + 55)
   out.copy(c.sand).lerp(n > 0 ? c.sandLight : c.sandDark, Math.abs(n) * 0.8)
+  let sandK = 1
 
   // Roca en laderas empinadas y en lo alto de las colinas guía.
   const rockiness = Math.max(smoothstep(0.55, 0.95, slope), smoothstep(16, 30, y) * 0.85)
   if (rockiness > 0) {
     tmp.copy(c.rock).lerp(c.rockDark, smoothstep(0.9, 1.4, slope))
     out.lerp(tmp, rockiness)
+    sandK -= rockiness
   }
 
   // Paredes escalables: roca oscura con estratos horizontales, se reconocen de lejos.
   if (isClimbWall(x, z, y, slope)) {
     const band = Math.sin(y * 0.9 + n * 2) > 0.3 ? 0.55 : 0.85
     out.copy(c.rockDark).multiplyScalar(band + 0.15)
+    sandK = 0
   }
 
   // Orilla del mar.
-  out.lerp(c.wet, 1 - smoothstep(ISLAND.seaLevel + 0.2, ISLAND.seaLevel + 1.5, y))
+  const wet = 1 - smoothstep(ISLAND.seaLevel + 0.2, ISLAND.seaLevel + 1.5, y)
+  out.lerp(c.wet, wet)
+  sandK *= 1 - wet
 
   // Oasis: hierba vibrante => contraste fuerte con el desierto.
   const od = Math.hypot(x - OASIS.x, z - OASIS.z)
   const green = (1 - smoothstep(OASIS.radius * 1.05, OASIS.radius * 1.55, od + n * 4)) *
     smoothstep(OASIS_WATER_LEVEL - 0.2, OASIS_WATER_LEVEL + 0.3, y)
   if (green > 0) out.lerp(c.grass, green)
+  sandK *= 1 - green
   if (od < OASIS.radius * 1.1 && y < OASIS_WATER_LEVEL + 0.2) out.lerp(c.wet, 0.7)
 
+  terrainSand = Math.max(0, sandK)
   return out
 }

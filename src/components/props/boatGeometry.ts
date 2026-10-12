@@ -11,13 +11,15 @@ export const HULL = { stern: -4.2, bow: 5.3, beam: 1.75, keel: -0.3, gunwale: 1.
 export function hullHalfBeam(z: number) {
   const t = (z - HULL.stern) / (HULL.bow - HULL.stern)
   if (t > 0.5) return HULL.beam * Math.sqrt(Math.max(0, 1 - ((t - 0.5) / 0.5) ** 2.2))
-  return HULL.beam * (0.88 + 0.12 * Math.sin((t / 0.5) * Math.PI * 0.5))
+  return HULL.beam * (0.96 + 0.04 * Math.sin((t / 0.5) * Math.PI * 0.5))
 }
 
 /** Altura de la borda: la proa se levanta en cuerno, como en la imagen de referencia. */
 export function gunwaleAt(z: number) {
   const k = Math.max(0, (z - 1.2) / (HULL.bow - 1.2))
-  return HULL.gunwale + Math.pow(k, 2.2) * 1.9
+  // La popa también se alza un poco: borda alta y robusta sobre el motor.
+  const ks = Math.max(0, (-2.4 - z) / (-2.4 - HULL.stern))
+  return HULL.gunwale + Math.pow(k, 2.2) * 1.9 + Math.pow(ks, 1.5) * 0.3
 }
 
 /** Quilla: sube en la proa, donde el casco corta el agua. */

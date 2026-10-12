@@ -35,7 +35,8 @@ export const ISLAND = {
 /** Puntos de interés (POI). */
 export const SPAWN: Vec2 = { x: 0, z: 40 }
 
-export const CRASH_SITE: Vec2 & { rotation: number } = { x: 70, z: -120, rotation: 0.6 }
+/** La nave cayó cerca de la playa este, con el morro hacia el muelle (y hacia la otra isla). */
+export const CRASH_SITE: Vec2 & { rotation: number } = { x: 118, z: -60, rotation: -1.92 }
 
 export const OASIS: Vec2 & { radius: number; depth: number } = {
   x: -135,

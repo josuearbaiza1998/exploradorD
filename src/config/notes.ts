@@ -38,8 +38,8 @@ export const NOTES: NoteDef[] = [
   },
   {
     id: 'n4',
-    x: 120,
-    z: -40,
+    x: 106,
+    z: -30,
     title: 'Registro 4 · Los antiguos',
     text: 'Hay columnas talladas hacia el este. Alguien vivió aquí antes que nosotros. En su altar late un cristal con energía pura.',
   },
@@ -75,8 +75,8 @@ export const NOTES: NoteDef[] = [
   {
     id: 'n10',
     kind: 'disk',
-    x: 58,
-    z: -100,
+    x: 104,
+    z: -74,
     title: 'Disquete · Diagnóstico de la nave',
     text: 'Daño estructural: 87 %. El chasis se dobló en el impacto y no aguantará otro despegue. Casco: estanco. Motor: recuperable. Recomendación del sistema: adaptar como embarcación.',
   },
