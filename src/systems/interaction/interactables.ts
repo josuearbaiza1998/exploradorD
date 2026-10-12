@@ -6,6 +6,7 @@ import { getHeight } from '@/utils/terrain/heightfield'
 import { COLLECTOR_USE, PANEL_DIRTY, STRUCTURES } from '@/config/structures'
 import { getGame } from '@/store/gameStore'
 import { NOTES } from '@/config/notes'
+import { SUNKEN_CRATES } from '@/config/sunken'
 import { CAVE_CACHE, CAVE_CRYSTALS, CAVE_ORIGIN, caveFloor } from '@/config/cave'
 import { POIS, poiLocalToWorld, type PoiId } from '@/config/pois'
 import type { PlacedStructure } from '@/store/slices/structuresSlice'
@@ -27,6 +28,8 @@ export const findKey = (id: string) => `find|${id}`
 export const noteKey = (id: string) => `note|${id}`
 
 export const NOTE_WORLD = NOTES.map((n) => ({ ...n, key: noteKey(n.id), y: n.cave ? caveFloor(n.x, n.z) : getHeight(n.x, n.z) }))
+
+export const sunkenKey = (i: number) => `sunken|${i}`
 
 export const caveCrystalKey = (i: number) => `cavecrystal|${i}`
 export const CAVE_CRYSTAL_WORLD = CAVE_CRYSTALS.map(([lx, lz], i) => {
@@ -128,6 +131,12 @@ export function findTarget(
     if (Math.abs(n.x - px) > reach || Math.abs(n.z - pz) > reach) continue
     consider(n.key, 'note', n.x, n.y, n.z, 0.5)
   }
+
+  // Cargamento hundido (solo se llega buceando).
+  SUNKEN_CRATES.forEach((c, i) => {
+    if (Math.abs(c.x - px) > reach || Math.abs(c.z - pz) > reach || sunkenKey(i) in harvested) return
+    consider(sunkenKey(i), 'sunken', c.x, getHeight(c.x, c.z) + 0.4, c.z, 0.7)
+  })
 
   // Racimos de cristal de la cueva.
   for (const c of CAVE_CRYSTAL_WORLD) {

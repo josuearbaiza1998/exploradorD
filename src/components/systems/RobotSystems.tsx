@@ -52,6 +52,8 @@ export function RobotSystems() {
   const shadeTimer = useRef(0)
   const coverNear = useRef(false)
   const mapTimer = useRef({ reveal: 0, flush: 0 })
+  const wasUnder = useRef(false)
+  const underNoticeAt = useRef(-100)
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.1)
@@ -110,13 +112,22 @@ export function RobotSystems() {
           coverNear.current = tallCoverNear(player.position.x, player.position.z)
         }
         const temp = ambientTemperature(hour) - (RAINY.includes(game.weather) ? (game.weather === 'drizzle' ? 3 : 6) : 0)
-        const shade = sheltered || coverNear.current || inCave(player.position.x, player.position.z) || weatherState.sun < 0.5
+        const shade = sheltered || player.underwater || coverNear.current || inCave(player.position.x, player.position.z) || weatherState.sun < 0.5
         const wasHot = thermal.overheated
         const warm = thermal.heat
         updateThermal(temp, shade, effort, player.sprinting, gameHours)
         if (!wasHot && thermal.overheated) game.notify('🔥 ¡Sobrecalentado! Busca sombra: rocas altas, la nave o un refugio', 'warn')
         else if (warm < 0.7 && thermal.heat >= 0.7) game.notify('🌡️ El robot se está calentando', 'warn')
         if (thermal.overheated) drain *= 1.6
+        // Sumergido: las bombas del sellado trabajan y el agua roba calor.
+        if (player.underwater) drain *= fx.diveDrain
+        if (player.underwater !== wasUnder.current) {
+          wasUnder.current = player.underwater
+          if (player.underwater && game.totalHours - underNoticeAt.current > 6) {
+            underNoticeAt.current = game.totalHours
+            game.notify('🤿 Bajo el agua: la batería se gasta más rápido. Vuelve a la orilla a tiempo', 'info')
+          }
+        }
         if (!sheltered) drain *= thermal.cold
         if (!sheltered) drain *= weatherState.drain
         // Más capacidad = el mismo consumo baja menos el porcentaje.
@@ -138,6 +149,8 @@ export function RobotSystems() {
               fx.dirt,
           )
           if (weatherState.washPerHour > 0) game.cleanSensors(weatherState.washPerHour * gameHours)
+          // El agua del mar lava el polvo de las gafas.
+          if (player.underwater) game.cleanSensors(0.6 * gameHours)
         }
 
         break

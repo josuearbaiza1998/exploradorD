@@ -22,6 +22,8 @@ export type CharacterBody = {
   inWater: boolean
   /** Está trepando una pared de roca (lo calcula el motor). */
   climbing: boolean
+  /** Completamente sumergido (camina por el fondo). */
+  underwater?: boolean
 }
 
 export interface CharacterMotor {
@@ -45,7 +47,17 @@ export const MOTOR_CONFIG = {
   canClimb: false,
   /** Velocidad al trepar (m/s). */
   climbSpeed: 1.7,
+  /** Tiene el sellado estanco: puede entrar en agua honda y andar por el fondo. */
+  canDive: false,
+  /** Multiplicador de velocidad bajo el agua. */
+  diveSpeed: 0.55,
 }
+
+/** Último intento bloqueado por agua honda (para avisar al jugador). */
+export const waterBlock = { at: -10 }
+
+/** Profundidad a partir de la cual el robot queda sumergido. */
+export const UNDERWATER_DEPTH = 1.3
 
 /** Último intento bloqueado por una pared de roca (para avisar al jugador). */
 export const wallBlock = { at: -10 }
@@ -62,7 +74,10 @@ function waterDepth(x: number, z: number, ground: number): number {
 function canEnter(x: number, z: number, fromY: number, fromGround: number): boolean {
   if (cave.active) return caveCanEnter(x, z, MOTOR_CONFIG.radius)
   const ground = getHeight(x, z)
-  if (waterDepth(x, z, ground) > MOTOR_CONFIG.maxWaterDepth) return false
+  if (!MOTOR_CONFIG.canDive && waterDepth(x, z, ground) > MOTOR_CONFIG.maxWaterDepth) {
+    waterBlock.at = performance.now() / 1000
+    return false
+  }
   const slope = getSlope(x, z, SLOPE_STEP)
   // Pared de roca: sin garras no se sube (ni a saltos: se compara con el suelo, no con la altura del salto).
   if (ground > fromGround + 0.001 && isClimbWall(x, z, ground, slope)) {
@@ -101,11 +116,13 @@ export const simpleMotor: CharacterMotor = {
   step(body, wishX, wishZ, jump, dt) {
     const p = body.position
     const ground0 = groundAt(p.x, p.z)
-    body.inWater = !cave.active && waterDepth(p.x, p.z, ground0) > 0.15
+    const depth0 = cave.active ? 0 : waterDepth(p.x, p.z, ground0)
+    body.inWater = depth0 > 0.15
+    body.underwater = depth0 > UNDERWATER_DEPTH
     // Trepando: sobre una pared de roca, con garras. Más lento y sin saltos.
     body.climbing =
       MOTOR_CONFIG.canClimb && !cave.active && p.y - ground0 < 0.3 && isClimbWall(p.x, p.z, ground0, getSlope(p.x, p.z, SLOPE_STEP))
-    let factor = body.inWater ? MOTOR_CONFIG.waterSpeedFactor : 1
+    let factor = body.underwater ? MOTOR_CONFIG.diveSpeed : body.inWater ? MOTOR_CONFIG.waterSpeedFactor : 1
     if (body.climbing) {
       const wish = Math.hypot(wishX, wishZ)
       if (wish > MOTOR_CONFIG.climbSpeed) factor *= MOTOR_CONFIG.climbSpeed / wish
@@ -139,10 +156,11 @@ export const simpleMotor: CharacterMotor = {
     // --- Vertical: gravedad, salto y anclaje al suelo ---
     const ground = groundAt(p.x, p.z)
     if (body.grounded && jump) {
-      body.velocity.y = MOTOR_CONFIG.jumpSpeed
+      // Bajo el agua el salto es un impulso lento y flotante.
+      body.velocity.y = MOTOR_CONFIG.jumpSpeed * (body.underwater ? 0.55 : 1)
       body.grounded = false
     }
-    body.velocity.y -= MOTOR_CONFIG.gravity * dt
+    body.velocity.y -= MOTOR_CONFIG.gravity * (body.underwater ? 0.25 : 1) * dt
     p.y += body.velocity.y * dt
 
     if (p.y <= ground) {

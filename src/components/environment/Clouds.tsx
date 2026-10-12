@@ -64,7 +64,8 @@ export function Clouds() {
     const dark = Math.min(1, weatherState.rain * 1.2 + (1 - weatherState.sun) * 0.4)
     // De noche las nubes reflejan el color del cielo.
     tmp.copy(white).lerp(storm, dark).lerp(environment.palette.skyHorizon, 0.25).multiplyScalar(0.35 + environment.palette.daylight * 0.65 + weatherState.flash * 1.4)
-    const speed = 2 + wind.strength * 10
+    // Lentas: las nubes grandes apenas se mueven aunque sople el viento.
+    const speed = 0.7 + wind.strength * 3.5
     let k = 0
     for (let c = 0; c < CLOUDS; c++) {
       const cl = clouds[c]

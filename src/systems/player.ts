@@ -19,6 +19,8 @@ export const player = {
   heading: Math.atan2(CRASH_SITE.x - SPAWN.x, CRASH_SITE.z - SPAWN.z),
   grounded: true,
   inWater: false,
+  /** Sumergido del todo (con el sellado estanco). */
+  underwater: false,
   climbing: false,
   /** Ciclo de la escalada (avanza al trepar; manos y pies alternos). */
   climbPhase: 0,

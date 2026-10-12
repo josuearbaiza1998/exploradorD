@@ -29,7 +29,7 @@ function nextObjective(s: GameState): Objective {
   if (repaired < REPAIRS.length) {
     // Primero lo que ya se puede reparar; si no, explorar hacia el lugar más cercano sin abrir.
     const ready = REPAIRS.find((r) => !s.repairs[r.id] && s.hasItems(r.cost, true))
-    if (ready) return { title: `Repara: ${ready.icon} ${ready.name}`, detail: 'Mochila › Nave, junto a la nave.', cost: ready.cost }
+    if (ready) return { title: `Adapta: ${ready.icon} ${ready.name}`, detail: 'Mochila › Nave, junto a la nave.', cost: ready.cost }
     const missing = POIS.filter((p) => !s.looted[p.id] && !s.inventory[p.part])
     if (missing.length && Object.keys(s.upgrades).length > 0) {
       const near = missing.reduce((a, b) =>
@@ -37,13 +37,13 @@ function nextObjective(s: GameState): Objective {
       )
       const dir = cardinal(near.x - player.position.x, near.z - player.position.z)
       return {
-        title: `Repara la nave (${repaired}/${REPAIRS.length})`,
+        title: `Convierte la nave en barco (${repaired}/${REPAIRS.length})`,
         detail: s.discovered[near.id] ? `Abre el contenedor de ${near.name} (${dir}).` : `Faltan piezas. Explora hacia el ${dir}: algo destaca en el horizonte.`,
       }
     }
     if (!missing.length) {
       const next = REPAIRS.find((r) => !s.repairs[r.id])!
-      return { title: `Repara: ${next.icon} ${next.name}`, detail: 'Reúne los materiales y repárala en la nave.', cost: next.cost }
+      return { title: `Adapta: ${next.icon} ${next.name}`, detail: 'Reúne los materiales y móntalo en la nave.', cost: next.cost }
     }
   }
   if (Object.keys(s.upgrades).length === 0)

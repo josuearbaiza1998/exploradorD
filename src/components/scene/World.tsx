@@ -8,6 +8,7 @@ import { Finds } from '@/components/props/Finds'
 import { CaveSystem } from '@/components/systems/CaveSystem'
 import { EcologySystem } from '@/components/systems/EcologySystem'
 import { Puddles } from '@/components/props/Puddles'
+import { Underwater } from '@/components/props/Underwater'
 import { WeatherRewards } from '@/components/systems/WeatherRewards'
 import { Pois } from '@/components/props/Pois'
 import { HitEffects } from '@/components/props/HitEffects'
@@ -17,6 +18,7 @@ import { Clouds } from '@/components/environment/Clouds'
 import { SkyDome } from '@/components/environment/SkyDome'
 import { SkyEvents } from '@/components/environment/SkyEvents'
 import { FarIsland } from '@/components/environment/FarIsland'
+import { Constellations } from '@/components/environment/Constellations'
 import { ChargingPad } from '@/components/props/ChargingPad'
 import { DroppedBoxes } from '@/components/props/DroppedBoxes'
 import { RobotSystems } from '@/components/systems/RobotSystems'
@@ -48,6 +50,7 @@ export function World() {
       <SkyDome />
       <SkyEvents />
       <FarIsland />
+      <Constellations />
       <Clouds />
       <Lighting />
       <Weather />
@@ -70,6 +73,7 @@ export function World() {
       <BuildGhost />
       <Oasis />
       <Puddles />
+      <Underwater />
       <Vegetation />
       <Fauna />
       <Scavengers />

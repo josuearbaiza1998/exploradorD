@@ -3,7 +3,7 @@ import type { Vec2 } from './world'
 
 /**
  * Lugares por descubrir. Cada uno guarda un contenedor con una pieza única
- * para reparar la nave y algo de botín. Están detrás de colinas o en lo alto
+ * para adaptar la nave como barco y algo de botín. Están detrás de colinas o en lo alto
  * (regla del triángulo) y tienen una silueta o luz que se ve de lejos.
  */
 export type PoiId = 'probeWreck' | 'ruins' | 'cave' | 'beacon'

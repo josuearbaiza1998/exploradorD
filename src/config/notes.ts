@@ -4,7 +4,15 @@ import type { Vec2 } from './world'
  * Registros sueltos por el mapa: tabletas de datos de la expedición anterior
  * (la sonda D-2 y su nave). Cuentan la historia a quien explora.
  */
-export type NoteDef = Vec2 & { id: string; title: string; text: string; /** Está dentro de la cueva. */ cave?: true }
+export type NoteDef = Vec2 & {
+  id: string
+  title: string
+  text: string
+  /** Está dentro de la cueva. */
+  cave?: true
+  /** Soporte: tableta (por defecto), disquete o tuerca grabada. */
+  kind?: 'pad' | 'disk' | 'nut'
+}
 
 export const NOTES: NoteDef[] = [
   {
@@ -65,10 +73,34 @@ export const NOTES: NoteDef[] = [
     text: 'Desde esta playa se ve otra isla al este. De noche parpadea una luz en su cima, siempre al mismo ritmo: no es un fuego, es una baliza. Alguien la encendió. Tengo que encontrar la forma de cruzar.',
   },
   {
+    id: 'n10',
+    kind: 'disk',
+    x: 58,
+    z: -100,
+    title: 'Disquete · Diagnóstico de la nave',
+    text: 'Daño estructural: 87 %. El chasis se dobló en el impacto y no aguantará otro despegue. Casco: estanco. Motor: recuperable. Recomendación del sistema: adaptar como embarcación.',
+  },
+  {
+    id: 'n11',
+    kind: 'nut',
+    x: -150,
+    z: 2,
+    title: 'Tuerca grabada · Mareas',
+    text: 'Alguien grabó esto en una tuerca con la punta de un clavo: "Al amanecer el mar está en calma. Con viento fuerte las olas rompen alto en la orilla. La corriente del este empuja hacia la isla de la baliza."',
+  },
+  {
+    id: 'n12',
+    kind: 'disk',
+    x: 60,
+    z: 170,
+    title: 'Disquete · Bajo el agua',
+    text: 'Si se sellan las juntas, las celdas del robot aguantan bajo el agua. Frente a esta playa, en el fondo, hay restos de un cargamento hundido. Bajar gasta batería: hay que volver a la orilla a tiempo.',
+  },
+  {
     id: 'n7',
     x: -55,
     z: 128,
     title: 'Registro 7 · Último',
-    text: 'Batería al 3 %. Dejo mi chip de navegación en el contenedor. Si otra sonda lo encuentra: la nave que viste caer todavía puede volar.',
+    text: 'Batería al 3 %. Dejo mi chip de navegación en el contenedor. Si otra sonda lo encuentra: la nave que viste caer no volverá a volar, pero su casco flota. Con un motor y una hélice, el mar es el camino.',
   },
 ]

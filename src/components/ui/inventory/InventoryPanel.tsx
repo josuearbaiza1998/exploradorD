@@ -333,7 +333,7 @@ function UpgradesTab() {
   )
 }
 
-/** Objetivo principal: reparar los sistemas de la nave con piezas únicas de los lugares por descubrir. */
+/** Objetivo principal: adaptar la nave como barco con piezas únicas de los lugares por descubrir. */
 function ShipTab() {
   const repairs = useGameStore((s) => s.repairs)
   const discovered = useGameStore((s) => s.discovered)
@@ -346,9 +346,9 @@ function ShipTab() {
         <span className="repair-progress">
           <i style={{ width: `${(done / REPAIRS.length) * 100}%` }} />
         </span>
-        Nave reparada: {done}/{REPAIRS.length}
+        Barco: {done}/{REPAIRS.length}
         {' · '}
-        {atBench ? <em className="inv-bench on">junto a la nave</em> : <em className="inv-bench">acércate a la nave para reparar</em>}
+        {atBench ? <em className="inv-bench on">junto a la nave</em> : <em className="inv-bench">acércate a la nave para montarlo</em>}
       </p>
       <ul className="recipe-list upgrade-list">
         {REPAIRS.map((r) => {
@@ -357,7 +357,7 @@ function ShipTab() {
           const part = (Object.keys(r.cost) as ItemId[]).find((i) => ITEMS[i].kind === 'part')
           const source = POIS.find((p) => p.part === part)
           let reason = ''
-          if (fixed) reason = 'Reparado ✓'
+          if (fixed) reason = 'Hecho ✓'
           else if (!atBench) reason = 'En la nave'
           else if (!affordable) reason = 'Faltan piezas'
           return (
@@ -387,10 +387,10 @@ function ShipTab() {
               <button
                 disabled={!!reason}
                 onClick={() => {
-                  if (getGame().repair(r.id, atBench)) getGame().notify(`Sistema reparado: ${r.icon} ${r.name}`, 'info')
+                  if (getGame().repair(r.id, atBench)) getGame().notify(`Barco: ${r.icon} ${r.name} listo`, 'info')
                 }}
               >
-                {reason || 'Reparar'}
+                {reason || 'Montar'}
               </button>
             </li>
           )

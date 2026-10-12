@@ -5,7 +5,7 @@ import type { ItemId, ToolId } from './items'
  * Progresión escalonada: manos → hacha → martillo. El metal NO sale de las
  * rocas: solo de la nave (scavenging).
  */
-export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel' | 'structure' | 'cache' | 'buried' | 'bloom' | 'note' | 'crystal' | 'fulgurite' | 'meteorite' | 'scavenger' | 'panelClean' | 'collector'
+export type HarvestKind = 'smallTree' | 'shrub' | 'palm' | 'rock' | 'debris' | 'hullPanel' | 'structure' | 'cache' | 'buried' | 'bloom' | 'note' | 'crystal' | 'fulgurite' | 'meteorite' | 'sunken' | 'scavenger' | 'panelClean' | 'collector'
 
 export type HarvestDef = {
   label: string
@@ -184,6 +184,19 @@ export const HARVEST: Record<HarvestKind, HarvestDef> = {
     icon: '✊',
     hits: 2,
     yields: [{ item: 'meteorite', min: 1, max: 2 }],
+    regrowHours: null,
+  },
+  // Cargamento hundido frente a la playa sur (solo se llega buceando).
+  sunken: {
+    material: 'metal',
+    label: 'Carga hundida',
+    verb: 'Abrir',
+    icon: '🔓',
+    hits: 3,
+    yields: [
+      { item: 'scrapMetal', min: 2, max: 3 },
+      { item: 'techParts', min: 1, max: 2 },
+    ],
     regrowHours: null,
   },
   // Registro de la expedición anterior: se lee (se puede releer).

@@ -2,10 +2,15 @@ import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { BackSide, Color, ShaderMaterial, Vector3, type Mesh } from 'three'
 import { getGame } from '@/store/gameStore'
+import { hourOfDay } from '@/store/slices/clockSlice'
 import { environment } from '@/systems/environmentState'
 import { weatherState } from '@/systems/weatherState'
 
 const FLASH = new Color('#e6ecff')
+const smooth = (a: number, b: number, x: number) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
+  return t * t * (3 - 2 * t)
+}
 
 /**
  * Cúpula de cielo estilizada: degradado de dos colores con un disco de
@@ -34,6 +39,7 @@ export function SkyDome() {
           uShootA: { value: new Vector3(0, 1, 0) },
           uShootB: { value: new Vector3(0, 1, 0) },
           uShoot: { value: 0 },
+          uMilky: { value: 0 },
         },
         vertexShader: /* glsl */ `
           varying vec3 vDir;
@@ -56,6 +62,7 @@ export function SkyDome() {
           uniform vec3 uShootA;
           uniform vec3 uShootB;
           uniform float uShoot;
+          uniform float uMilky;
           varying vec3 vDir;
           float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
           void main() {
@@ -67,13 +74,37 @@ export function SkyDome() {
             vec3 dir = normalize(vDir);
             // Estrellas: celdas en la dirección de vista, con titileo.
             if (uNight > 0.01 && dir.y > 0.02) {
+              float horizonFade = smoothstep(0.02, 0.2, dir.y);
+              // Vía láctea de madrugada: banda polvorienta a lo largo de un gran círculo.
+              float band = 0.0;
+              if (uMilky > 0.01) {
+                vec3 bn = normalize(vec3(0.35, 0.45, 0.82));
+                float bd = dot(dir, bn);
+                float wob = sin(dir.x * 9.0 + dir.z * 5.0) * 0.04 + sin(dir.y * 17.0 - dir.x * 11.0) * 0.025;
+                band = exp(-pow(bd + wob, 2.0) / 0.018);
+                float dust = 0.55 + 0.25 * sin(dir.x * 31.0 + sin(dir.z * 23.0) * 2.0) + 0.2 * sin(dir.z * 47.0 - dir.y * 29.0);
+                // Grieta oscura en el centro de la banda.
+                float rift = 1.0 - 0.6 * exp(-pow(bd + wob * 1.6 + 0.012, 2.0) / 0.0016);
+                col += vec3(0.55, 0.6, 0.85) * band * dust * rift * 0.32 * uMilky * uNight * horizonFade;
+              }
               vec3 cell = floor(dir * 260.0);
               float r = hash(cell);
-              if (r > 0.9965) {
+              // Más estrellas dentro de la banda de la vía láctea.
+              if (r > 0.9965 - band * uMilky * 0.012) {
                 vec3 c = (cell + 0.5) / 260.0;
                 float star = smoothstep(0.0028, 0.0008, length(dir - normalize(c)));
                 float tw = 0.65 + 0.35 * sin(uTime * (1.5 + r * 6.0) + r * 80.0);
-                col += vec3(0.95, 0.95, 1.0) * star * tw * uNight * smoothstep(0.02, 0.2, dir.y) * (0.5 + fract(r * 937.0) * 0.8);
+                // Unas pocas azuladas y otras anaranjadas.
+                vec3 tint = mix(vec3(1.0, 0.85, 0.7), vec3(0.8, 0.9, 1.0), fract(r * 311.0));
+                col += tint * star * tw * uNight * horizonFade * (0.5 + fract(r * 937.0) * 0.8);
+              }
+              // Capa de estrellas débiles, mucho más numerosas.
+              vec3 cell2 = floor(dir * 520.0);
+              float r2 = hash(cell2 + 17.0);
+              if (r2 > 0.994 - band * uMilky * 0.02) {
+                vec3 c2 = (cell2 + 0.5) / 520.0;
+                float s2 = smoothstep(0.0016, 0.0004, length(dir - normalize(c2)));
+                col += vec3(0.85, 0.88, 1.0) * s2 * uNight * horizonFade * (0.25 + fract(r2 * 613.0) * 0.35);
               }
               // Estrella fugaz: trazo entre A y la cabeza, con cola que se desvanece.
               if (uShoot > 0.0 && uShoot < 1.0) {
@@ -131,6 +162,9 @@ export function SkyDome() {
     u.uSunVisible.value = 1 - Math.min(1, weatherState.tintAmount * 1.2)
     const clear = 1 - Math.min(1, weatherState.tintAmount * 1.5)
     u.uNight.value = Math.max(0, 1 - p.daylight * 1.6) * clear
+    // La vía láctea asoma de madrugada (de 0:00 a 5:00), cuando el cielo está más oscuro.
+    const hr = hourOfDay(getGame().totalHours)
+    u.uMilky.value = hr < 6 ? smooth(0, 1, hr) * (1 - smooth(4.2, 5.2, hr)) : smooth(23, 24, hr) * 0.3
     u.uTime.value = clock.elapsedTime
     // Una fase por día de juego: ciclo lunar de 8 días.
     u.uMoonPhase.value = ((Math.floor(getGame().totalHours / 24) % 8) + 4) % 8 / 8

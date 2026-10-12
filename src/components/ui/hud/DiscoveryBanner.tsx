@@ -25,7 +25,7 @@ export function DiscoveryBanner() {
   )
 }
 
-/** Final: la nave está reparada. Se muestra una vez. */
+/** Final: el barco está listo. Se muestra una vez. */
 export function ShipRepairedModal() {
   const show = useGameStore((s) => isShipRepaired(s) && !s.shipRepairedSeen)
   // Cierra la mochila para que el final se vea entero.
@@ -36,12 +36,12 @@ export function ShipRepairedModal() {
   return (
     <div className="inv-backdrop">
       <div className="install-help ending">
-        <h3>🚀 ¡Nave reparada!</h3>
+        <h3>⛵ ¡El barco está listo!</h3>
         <p>
-          Los cuatro sistemas responden. El motor ruge limpio, sin humo negro, y la antena ya envía señal. La sonda ha
-          sobrevivido al desierto.
+          La nave nunca volverá a volar, pero ya flota. El motor mueve la hélice sin humo negro, la radio capta la baliza
+          y el ordenador traza la ruta por mar hacia la otra isla.
         </p>
-        <p>Puedes seguir explorando y mejorando tu robot.</p>
+        <p>Puedes seguir explorando y mejorando tu robot mientras preparas la travesía.</p>
         <button className="install-ok" onClick={() => getGame().markShipRepairedSeen()}>
           Seguir explorando
         </button>

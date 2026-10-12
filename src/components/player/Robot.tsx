@@ -10,7 +10,7 @@ import { getGame } from '@/store/gameStore'
 import { cameraAxes } from '@/systems/cameraRig'
 import { focus } from '@/systems/focus'
 import { consumeJump, getMoveVector } from '@/systems/input'
-import { MOTOR_CONFIG, simpleMotor, wallBlock } from '@/systems/physics/characterMotor'
+import { MOTOR_CONFIG, simpleMotor, wallBlock, waterBlock } from '@/systems/physics/characterMotor'
 import { getHeight, getSlope } from '@/utils/terrain/heightfield'
 import { upgradeEffects } from '@/config/upgrades'
 import { player } from '@/systems/player'
@@ -79,6 +79,8 @@ export function Robot() {
       MOTOR_CONFIG.jumpSpeed = BASE_JUMP * fx.jump
       MOTOR_CONFIG.canClimb = fx.climb > 0
       MOTOR_CONFIG.climbSpeed = fx.climbSpeed
+      MOTOR_CONFIG.canDive = fx.dive > 0
+      MOTOR_CONFIG.diveSpeed = fx.diveSpeed
       // Con la batería casi agotada el robot cojea y va más lento.
       const limp = (getGame().battery < LIMP_BELOW ? 0.7 : 1) * (thermal.overheated ? 0.6 : 1)
       const speed = limp * RUN_SPEED * fx.speed * (player.sprinting ? fx.sprint : 1) * (environment.sheltered ? 1 : weatherState.speed) * (1 - headwind * storm * 0.35)
@@ -99,6 +101,11 @@ export function Robot() {
       if (now - wallBlock.at < 0.2 && now - wallNoticeAt.current > 25 && fx.climb === 0) {
         wallNoticeAt.current = now
         getGame().notify('🧗 Pared de roca: hacen falta garras de escalada (mejora en la nave)', 'warn')
+      }
+      // Aviso al llegar a agua honda sin el sellado.
+      if (now - waterBlock.at < 1 && now - wallNoticeAt.current > 25 && fx.dive === 0) {
+        wallNoticeAt.current = now
+        getGame().notify('🌊 Demasiado hondo: el agua dañaría los circuitos. Hace falta el sellado estanco (mejora en la nave)', 'warn')
       }
     } else {
       player.sprintCharge = 0

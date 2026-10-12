@@ -13,7 +13,7 @@ export type ExplorationSlice = {
   repairs: Partial<Record<RepairId, true>>
   /** Último lugar descubierto (para el aviso en pantalla; no se guarda). */
   lastDiscovery: PoiId | null
-  /** Se mostró ya el final de "nave reparada". */
+  /** Se mostró ya el final de "barco listo". */
   shipRepairedSeen: boolean
   /** Hallazgos del clima: restos que desentierra una tormenta y flores tras la lluvia. */
   finds: Find[]
@@ -86,7 +86,7 @@ export const createExplorationSlice: StateCreator<GameState, [], [], Exploration
     }
     set((st) => ({ looted: { ...st.looted, [id]: true } }))
     const part = ITEMS[poi.part]
-    get().logJournal({ kind: 'part', icon: part.icon, title: part.name, text: `Encontrada en ${poi.name}. Sirve para reparar la nave.` })
+    get().logJournal({ kind: 'part', icon: part.icon, title: part.name, text: `Encontrada en ${poi.name}. Sirve para convertir la nave en barco.` })
     return got
   },
   repair: (id, atShip) => {
@@ -94,7 +94,7 @@ export const createExplorationSlice: StateCreator<GameState, [], [], Exploration
     const def = REPAIRS.find((r) => r.id === id)
     if (!def || !atShip || s.repairs[id] || !s.pay(def.cost, true)) return false
     set({ repairs: { ...s.repairs, [id]: true } })
-    get().logJournal({ kind: 'repair', icon: def.icon, title: `Reparado: ${def.name}`, text: def.description })
+    get().logJournal({ kind: 'repair', icon: def.icon, title: `Barco: ${def.name}`, text: def.description })
     return true
   },
   markShipRepairedSeen: () => set({ shipRepairedSeen: true }),

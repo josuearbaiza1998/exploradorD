@@ -4,6 +4,7 @@ import type { AmbientLight, DirectionalLight, HemisphereLight } from 'three'
 import { Fog } from 'three'
 import { environment } from '@/systems/environmentState'
 import { focus } from '@/systems/focus'
+import { seaSurface } from '@/systems/sea'
 import { weatherState } from '@/systems/weatherState'
 import { getGame } from '@/store/gameStore'
 import { Color } from 'three'
@@ -11,6 +12,7 @@ import { useQuality } from '@/store/settingsStore'
 
 const CAVE_AMBIENT = new Color('#6f86c8')
 const MIST_COLOR = new Color('#9fb0d8')
+const UNDERWATER = new Color('#1f7f93')
 
 const SHADOW_DISTANCE = 120
 const LIGHT_DISTANCE = 150
@@ -41,7 +43,7 @@ export function Lighting() {
   }, [scene])
 
   const nv = useRef(0)
-  useFrame((_, delta) => {
+  useFrame(({ camera }, delta) => {
     const p = environment.palette
     // Visión nocturna: sube la luz ambiente de noche (el tinte verde lo pone la UI).
     const nvTarget = getGame().nightVisionOn ? 1 - p.daylight : 0
@@ -80,6 +82,12 @@ export function Lighting() {
         scene.fog.near *= 1 - mist * 0.75
         scene.fog.far *= 1 - mist * 0.55
       }
+    }
+    // Cámara bajo el mar: todo se tiñe de azul verdoso y se ve poco.
+    if (!environment.inCave && camera.position.y < seaSurface(camera.position.x, camera.position.z) && scene.fog instanceof Fog) {
+      scene.fog.color.set(UNDERWATER).multiplyScalar(0.35 + p.daylight * 0.65)
+      scene.fog.near = 0
+      scene.fog.far = 24
     }
     // Dentro de la cueva: casi sin sol, penumbra azulada (la luz la ponen los cristales).
     if (environment.inCave) {

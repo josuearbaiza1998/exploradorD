@@ -18,7 +18,7 @@ export type ItemId =
   | 'axe'
   | 'hammer'
   | 'sonicCleaner'
-  // Piezas únicas para reparar la nave (una en cada lugar por descubrir).
+  // Piezas únicas para adaptar la nave como barco (una en cada lugar por descubrir).
   | 'antenna'
   | 'navChip'
   | 'coolant'
@@ -93,10 +93,10 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     kind: 'tool',
     description: 'Sacude el polvo de los sensores con vibración. Reutilizable, gasta batería.',
   },
-  antenna: { id: 'antenna', name: 'Antena de largo alcance', icon: '📡', stack: 1, kind: 'part', description: 'Pieza para reparar la nave.' },
-  navChip: { id: 'navChip', name: 'Chip de navegación', icon: '🧭', stack: 1, kind: 'part', description: 'Pieza para reparar la nave.' },
-  coolant: { id: 'coolant', name: 'Bomba de refrigerante', icon: '🧊', stack: 1, kind: 'part', description: 'Pieza para reparar la nave.' },
-  energyCrystal: { id: 'energyCrystal', name: 'Cristal de energía', icon: '💎', stack: 1, kind: 'part', description: 'Pieza para reparar la nave.' },
+  antenna: { id: 'antenna', name: 'Antena de largo alcance', icon: '📡', stack: 1, kind: 'part', description: 'Pieza para convertir la nave en barco.' },
+  navChip: { id: 'navChip', name: 'Chip de navegación', icon: '🧭', stack: 1, kind: 'part', description: 'Pieza para convertir la nave en barco.' },
+  coolant: { id: 'coolant', name: 'Bomba de refrigerante', icon: '🧊', stack: 1, kind: 'part', description: 'Pieza para convertir la nave en barco.' },
+  energyCrystal: { id: 'energyCrystal', name: 'Cristal de energía', icon: '💎', stack: 1, kind: 'part', description: 'Pieza para convertir la nave en barco.' },
 }
 
 export type Inventory = Partial<Record<ItemId, number>>

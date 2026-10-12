@@ -82,6 +82,32 @@ function ShipRepairs({ repairs }: { repairs: Partial<Record<RepairId, true>> }) 
   const pipe = sharedToon('#4fb3d9', { emissive: '#1f7fa8', emissiveIntensity: 0.3 })
   return (
     <>
+      {repairs.hull &&
+        [-1, 1].map((side) => (
+          <group key={side} position={[side * 3.3, 1, -2]}>
+            {/* Flotadores de madera atados con fibra */}
+            <mesh material={MATERIALS.palmTrunk} rotation-x={Math.PI / 2} castShadow>
+              <capsuleGeometry args={[0.65, 11, 3, 8]} />
+            </mesh>
+            {[-4, 0, 4].map((z) => (
+              <mesh key={z} material={sharedToon('#c9a86a')} position-z={z} rotation-x={Math.PI / 2}>
+                <cylinderGeometry args={[0.7, 0.7, 0.18, 8]} />
+              </mesh>
+            ))}
+          </group>
+        ))}
+      {repairs.engine && (
+        // Hélice bajo las toberas: la nave ahora navega.
+        <group position={[0, 0.9, -11.2]}>
+          {[0, 1, 2].map((i) => (
+            <group key={i} rotation-z={(i * Math.PI * 2) / 3}>
+              <mesh material={metal} position-y={0.6}>
+                <boxGeometry args={[0.28, 1.1, 0.08]} />
+              </mesh>
+            </group>
+          ))}
+        </group>
+      )}
       {repairs.comms && (
         <group position={[0, 4.4, -1.5]}>
           {/* Mástil y plato de la antena */}

@@ -10,7 +10,7 @@ export const CARRY_BASE = 30
 /** Carga extra que lleva el dron. */
 export const DRONE_CARRY = 10
 
-export type UpgradeId = 'battery' | 'legs' | 'solar' | 'sensors' | 'arms' | 'nightVision' | 'backpack' | 'climb'
+export type UpgradeId = 'battery' | 'legs' | 'solar' | 'sensors' | 'arms' | 'nightVision' | 'backpack' | 'climb' | 'diving'
 
 export type UpgradeDef = {
   id: UpgradeId
@@ -85,6 +85,15 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
       { description: 'Escala un 50 % más rápido y gasta menos batería al trepar', cost: { stone: 4, scrapMetal: 2, crystal: 3 } },
     ],
   },
+  diving: {
+    id: 'diving',
+    name: 'Sellado estanco',
+    icon: '🤿',
+    levels: [
+      { description: 'Juntas selladas: camina por el fondo del mar. Bajo el agua gasta más batería', cost: { fiber: 6, scrapMetal: 3, techParts: 1 } },
+      { description: 'Bucea más rápido y gasta menos batería bajo el agua', cost: { scrapMetal: 3, techParts: 2, crystal: 2 } },
+    ],
+  },
   nightVision: {
     id: 'nightVision',
     name: 'Visión nocturna',
@@ -118,6 +127,12 @@ export function upgradeEffects(u: UpgradeLevels, drone = false) {
     climbSpeed: [0, 1.7, 2.6][lv('climb')],
     /** Multiplicador del gasto mientras trepa. */
     climbDrain: [1, 1.8, 1.3][lv('climb')],
+    /** Nivel de sellado: 0 = no puede meterse en agua honda. */
+    dive: lv('diving'),
+    /** Multiplicador de velocidad caminando por el fondo. */
+    diveSpeed: [0.55, 0.6, 0.85][lv('diving')],
+    /** Multiplicador del gasto de batería sumergido. */
+    diveDrain: [1, 2.2, 1.5][lv('diving')],
     /** Carga máxima de la mochila (recursos y consumibles; herramientas y piezas no ocupan). */
     carry: CARRY_BASE + [0, 15, 35, 60][lv('backpack')] + (drone ? DRONE_CARRY : 0),
   }
