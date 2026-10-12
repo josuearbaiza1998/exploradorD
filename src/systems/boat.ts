@@ -1,5 +1,6 @@
 import { BOAT, BOAT_MOOR, PIER, pierDeck } from '@/config/boat'
 import { ISLAND } from '@/config/world'
+import { BUOYS, ROUTE_HALF_WIDTH, routeCoords, routePoint, STORM_AT } from '@/config/currents'
 import { getGame } from '@/store/gameStore'
 import { getHeight, getSlope } from '@/utils/terrain/heightfield'
 import { waveHeight } from './sea'
@@ -35,8 +36,36 @@ function navigable(x: number, z: number, heading: number) {
     const px = x + fx * BOAT.halfLength * k
     const pz = z + fz * BOAT.halfLength * k
     if (depthAt(px, pz) < BOAT.minDepth) return false
+    // Las boyas también estorban.
+    for (const b of BUOYS) if (Math.hypot(b.x - px, b.z - pz) < 2.5) return false
   }
   return true
+}
+
+/**
+ * Hasta dónde se puede navegar: sin carta, solo cerca de la isla; con la
+ * carta, también por el pasillo de la corriente hacia la otra isla, hasta la
+ * tormenta que las separa. Devuelve hacia dónde empuja el oleaje y el aviso.
+ */
+function seaLimit(x: number, z: number): { pushX: number; pushZ: number; message: string } | null {
+  const r = Math.hypot(x, z)
+  if (r <= BOAT.openSeaRadius) return null
+  const hasChart = !!getGame().inventory.currentChart
+  const route = routeCoords(x, z)
+  if (hasChart && route.off < ROUTE_HALF_WIDTH && route.t > 0) {
+    if (route.t < STORM_AT) return null
+    // La tormenta: empuja de vuelta por la ruta.
+    const back = routePoint(0)
+    const d = Math.hypot(back.x - x, back.z - z) || 1
+    return { pushX: (back.x - x) / d, pushZ: (back.z - z) / d, message: '⛈️ Una tormenta perpetua cierra el paso a la otra isla: el barco no aguantaría ese oleaje tal como está' }
+  }
+  return {
+    pushX: -x / r,
+    pushZ: -z / r,
+    message: hasChart
+      ? '🗺️ Fuera de la ruta de la carta las olas son enormes: sigue el pasillo de la corriente (míralo en el mapa)'
+      : '🌊 Mar adentro las olas son enormes: para cruzar hace falta saber por dónde van las corrientes',
+  }
 }
 
 /**
@@ -58,14 +87,15 @@ export function stepBoat(dt: number, wishX: number, wishZ: number, t: number) {
   const nx = boat.x + Math.sin(boat.heading) * boat.speed * dt
   const nz = boat.z + Math.cos(boat.heading) * boat.speed * dt
   if (navigable(nx, nz, boat.heading)) {
-    // Mar abierto: el oleaje devuelve el barco hacia la isla (por ahora).
-    if (Math.hypot(nx, nz) > BOAT.openSeaRadius) {
+    const limit = seaLimit(nx, nz)
+    if (limit) {
+      // Mar abierto o tormenta: el oleaje devuelve el barco.
       boat.speed *= 0.5
-      boat.x -= (nx / Math.hypot(nx, nz)) * 2 * dt
-      boat.z -= (nz / Math.hypot(nx, nz)) * 2 * dt
+      boat.x += limit.pushX * 3 * dt
+      boat.z += limit.pushZ * 3 * dt
       if (t - boat.openSeaNoticeAt > 20) {
         boat.openSeaNoticeAt = t
-        getGame().notify('🌊 Mar adentro las olas son enormes: para cruzar hace falta saber por dónde van las corrientes', 'warn')
+        getGame().notify(limit.message, 'warn')
       }
     } else {
       boat.x = nx

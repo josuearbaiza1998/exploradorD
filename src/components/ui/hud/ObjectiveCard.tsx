@@ -49,6 +49,10 @@ function nextObjective(s: GameState): Objective {
   // Barco listo y aún sin estrenar.
   if (repaired === REPAIRS.length && !s.boatPos)
     return { title: 'Prueba el barco', detail: 'Está amarrado en el muelle de la playa este (⛵ en la brújula). Súbete desde el final del muelle.' }
+  if (repaired === REPAIRS.length && !s.inventory.currentChart) {
+    const n = Object.keys(s.buoys).length
+    return { title: `Traza la carta de corrientes (${n}/3)`, detail: 'Hay boyas de deriva en el mar alrededor de la isla. Acércate en barco y lee sus datos.' }
+  }
   if (Object.keys(s.upgrades).length === 0)
     return { title: 'Mejora tu robot', detail: 'Mochila › Mejoras, junto a la nave.' }
   if (!s.upgrades.nightVision)

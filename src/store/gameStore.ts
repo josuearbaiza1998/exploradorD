@@ -74,6 +74,7 @@ export const useGameStore = create<GameState>()(
         repairs: s.repairs,
         shipRepairedSeen: s.shipRepairedSeen,
         boatPos: s.boatPos,
+        buoys: s.buoys,
         finds: s.finds,
         notesRead: s.notesRead,
         journal: s.journal,

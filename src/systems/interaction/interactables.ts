@@ -13,6 +13,7 @@ import { POIS, poiLocalToWorld, type PoiId } from '@/config/pois'
 import type { PlacedStructure } from '@/store/slices/structuresSlice'
 import type { Find } from '@/store/slices/explorationSlice'
 import { scavengerKey, scavengers } from '@/systems/scavengers'
+import { player } from '@/systems/player'
 
 /** Alcance de interacción (m) medido desde el borde del objeto. */
 export const INTERACT_RANGE = 1.6
@@ -139,10 +140,12 @@ export function findTarget(
     if (hull.d < 7) consider('boat|', 'boat', hull.x, boat.y + 1, hull.z, Math.max(0.5, hull.d - 1.2))
   }
 
-  // Cargamento hundido (solo se llega buceando).
+  // Cargamento hundido (solo se llega buceando hasta cerca del fondo).
   SUNKEN_CRATES.forEach((c, i) => {
     if (Math.abs(c.x - px) > reach || Math.abs(c.z - pz) > reach || sunkenKey(i) in harvested) return
-    consider(sunkenKey(i), 'sunken', c.x, getHeight(c.x, c.z) + 0.4, c.z, 0.7)
+    const y = getHeight(c.x, c.z) + 0.4
+    if (player.position.y > y + 1.6) return
+    consider(sunkenKey(i), 'sunken', c.x, y, c.z, 0.7)
   })
 
   // Racimos de cristal de la cueva.

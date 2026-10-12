@@ -136,7 +136,7 @@ function RiggedRobot({ path }: { path: string }) {
   const current = useRef<{ clip: Clip; action?: AnimationAction }>({ clip: 'Idle' })
   const lastAction = useRef(0)
   /** Peso de las poses procedurales (0..1, con transición suave). */
-  const poseW = useRef({ climb: 0, brace: 0, phase: 0, side: 1 })
+  const poseW = useRef({ climb: 0, brace: 0, swim: 0, phase: 0, side: 1 })
   /** Momento (s) en que dejó de pisar suelo; null si está en el suelo. */
   const airSince = useRef<number | null>(null)
   const [rig, setRig] = useState<{
@@ -239,7 +239,7 @@ function RiggedRobot({ path }: { path: string }) {
     if (mode === 'emergency') clip = 'Death'
     else if (mode === 'recharging') clip = 'Sitting'
     else if (mode === 'returning') clip = 'Walking'
-    else if (player.climbing || player.bracing) clip = 'Idle'
+    else if (player.climbing || player.bracing || player.swimming) clip = 'Idle'
     else if (now - player.actionAt < 0.45) clip = 'Punch'
     else if (airborne) clip = 'Jump'
     else if (player.speed < 0.35) clip = 'Idle'
@@ -277,14 +277,15 @@ function RiggedRobot({ path }: { path: string }) {
     applyPoses(delta)
   })
 
-  /** Trepar (manos y pies alternos contra la pared) y aguantar el viento. */
+  /** Trepar (manos y pies alternos contra la pared), aguantar el viento y nadar. */
   function applyPoses(delta: number) {
     const pw = poseW.current
     const dt = Math.min(delta, 0.05)
     const k = 1 - Math.exp(-8 * dt)
     pw.climb += ((player.climbing ? 1 : 0) - pw.climb) * k
     pw.brace += ((player.bracing && !player.climbing ? 1 : 0) - pw.brace) * k
-    if (pw.climb < 0.01 && pw.brace < 0.01) return
+    pw.swim += ((player.swimming ? 1 : 0) - pw.swim) * k
+    if (pw.climb < 0.01 && pw.brace < 0.01 && pw.swim < 0.01) return
     const root = outer.current
     const b = setup.bones
     if (!root) return
@@ -320,6 +321,34 @@ function RiggedRobot({ path }: { path: string }) {
       }
       // Cabeza: mira hacia arriba, buscando el siguiente agarre.
       aimBone(b.Neck, b.Head, [0, 0.95, -0.15], w * 0.7)
+    }
+    if (pw.swim > 0.01) {
+      const w = pw.swim
+      // Con el cuerpo tumbado (lo inclina el controlador), "arriba" local es
+      // hacia delante: crol con brazos alternos y patada corta de piernas.
+      const m = Math.min(1, player.speed / 1.4)
+      const ph = player.swimPhase * Math.PI * 2
+      for (const [sfx, side, off] of [['L', L, 0], ['R', R, Math.PI]] as const) {
+        const a = ph + off
+        // Quieto: brazos abiertos remando suave para mantenerse a flote.
+        const scull = Math.sin(a * 0.5) * 0.25
+        const tread: [number, number, number] = [side * 0.85, -0.15, 0.45 + scull]
+        // Brazada: estirado por delante, tira bajo el cuerpo hasta la cadera y recobra por fuera.
+        const stroke: [number, number, number] = [side * (0.25 + Math.max(0, -Math.sin(a)) * 0.35), Math.cos(a), Math.sin(a) * 0.8]
+        const dir: [number, number, number] = [
+          tread[0] + (stroke[0] - tread[0]) * m,
+          tread[1] + (stroke[1] - tread[1]) * m,
+          tread[2] + (stroke[2] - tread[2]) * m,
+        ]
+        aimBone(b[`UpperArm${sfx}`], b[`LowerArm${sfx}`], dir, w)
+        aimBone(b[`LowerArm${sfx}`], b[`Palm2${sfx}`], [dir[0] * 0.8, dir[1], dir[2] + 0.25], w)
+        // Patada: piernas casi rectas, arriba y abajo alternas.
+        const kick = Math.sin(ph * 2 + off) * (0.18 + m * 0.2)
+        aimBone(b[`UpperLeg${sfx}`], b[`LowerLeg${sfx}`], [side * 0.14, -1, kick], w)
+        aimBone(b[`LowerLeg${sfx}`], b[`LowerLeg${sfx}_end`], [side * 0.08, -1, kick - 0.2], w)
+      }
+      // La cabeza mira al frente (hacia arriba en el cuerpo tumbado).
+      aimBone(b.Neck, b.Head, [0, 0.6, 0.8 - m * 0.3], w * 0.7 * m)
     }
     if (pw.brace > 0.01) {
       const w = pw.brace

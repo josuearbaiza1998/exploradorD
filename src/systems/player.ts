@@ -19,8 +19,12 @@ export const player = {
   heading: Math.atan2(CRASH_SITE.x - SPAWN.x, CRASH_SITE.z - SPAWN.z),
   grounded: true,
   inWater: false,
-  /** Sumergido del todo (con el sellado estanco). */
+  /** Sumergido del todo, buceando (con el sellado estanco). */
   underwater: false,
+  /** Nadando en agua honda, en la superficie o buceando. */
+  swimming: false,
+  /** Ciclo de brazadas (avanza al nadar). */
+  swimPhase: 0,
   climbing: false,
   /** Ciclo de la escalada (avanza al trepar; manos y pies alternos). */
   climbPhase: 0,

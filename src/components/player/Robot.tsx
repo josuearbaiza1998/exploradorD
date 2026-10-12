@@ -9,7 +9,7 @@ import { grapple, stepGrapple } from '@/systems/grapple'
 import { getGame } from '@/store/gameStore'
 import { cameraAxes } from '@/systems/cameraRig'
 import { focus } from '@/systems/focus'
-import { consumeJump, getMoveVector } from '@/systems/input'
+import { consumeJump, getMoveVector, input } from '@/systems/input'
 import { MOTOR_CONFIG, simpleMotor, wallBlock, waterBlock } from '@/systems/physics/characterMotor'
 import { getHeight, getSlope } from '@/utils/terrain/heightfield'
 import { upgradeEffects } from '@/config/upgrades'
@@ -93,6 +93,10 @@ export function Robot() {
       MOTOR_CONFIG.climbSpeed = fx.climbSpeed
       MOTOR_CONFIG.canDive = fx.dive > 0
       MOTOR_CONFIG.diveSpeed = fx.diveSpeed
+      MOTOR_CONFIG.swimSpeed = fx.swimSpeed
+      // Nadando: el botón de salto sube y el de bucear baja (mantenidos).
+      MOTOR_CONFIG.swimInput = (input.jumpHeld ? 1 : 0) - (input.diveHeld ? 1 : 0)
+      MOTOR_CONFIG.buoyant = false
       // Con la batería casi agotada el robot cojea y va más lento.
       const limp = (getGame().battery < LIMP_BELOW ? 0.7 : 1) * (thermal.overheated ? 0.6 : 1)
       const speed = limp * RUN_SPEED * fx.speed * (player.sprinting ? fx.sprint : 1) * (environment.sheltered ? 1 : weatherState.speed) * (1 - headwind * storm * 0.35)
@@ -125,6 +129,9 @@ export function Robot() {
       player.bracing = false
       player.headwind = 0
       sprintSince.current = -1
+      // Sin control, el sellado lo sube flotando a la superficie.
+      MOTOR_CONFIG.swimInput = 0
+      MOTOR_CONFIG.buoyant = true
       consumeJump() // descartar pulsaciones durante la emergencia
       if (mode === 'returning') {
         // Piloto automático: se dirige a la plataforma de recarga de la nave.
@@ -147,6 +154,7 @@ export function Robot() {
       player.grounded = true
       player.inWater = false
       player.underwater = false
+      player.swimming = false
       player.climbing = false
       player.heading = boat.heading
       wish.current.x = 0
@@ -187,6 +195,17 @@ export function Robot() {
         sway = Math.sin(ph) * 0.09
         up = 0.32 + Math.abs(Math.sin(ph)) * 0.1
         back = -0.5 - want * 0.25
+      }
+      if (player.swimming) {
+        // Nadando: tumbado y avanzando; quieto, casi erguido pataleando. El
+        // cuerpo se sube y se centra para quedar a flor de agua.
+        const m = Math.min(1, player.speed / 1.4)
+        player.swimPhase += dt * (0.45 + m * 0.75)
+        const dive = player.underwater ? Math.max(-0.5, Math.min(0.5, -player.velocity.y * 0.25)) : 0
+        want = 0.15 + m * (1.2 + dive)
+        sway = Math.sin(player.swimPhase * Math.PI * 2) * 0.14 * m
+        up = m * 1.1
+        back = -m * 0.95
       }
       // En el barco el cuerpo se mece con las olas.
       if (boat.boating) {

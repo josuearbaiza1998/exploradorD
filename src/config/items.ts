@@ -13,6 +13,7 @@ export type ItemId =
   | 'crystal'
   | 'fulgurite'
   | 'meteorite'
+  | 'currentChart'
   | 'cell'
   | 'cloth'
   | 'axe'
@@ -93,6 +94,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     kind: 'tool',
     description: 'Sacude el polvo de los sensores con vibración. Reutilizable, gasta batería.',
   },
+  currentChart: { id: 'currentChart', name: 'Carta de corrientes', icon: '🗺️', stack: 1, kind: 'part', description: 'Ruta por mar hacia la otra isla, trazada con los datos de las tres boyas.' },
   antenna: { id: 'antenna', name: 'Antena de largo alcance', icon: '📡', stack: 1, kind: 'part', description: 'Pieza para convertir la nave en barco.' },
   navChip: { id: 'navChip', name: 'Chip de navegación', icon: '🧭', stack: 1, kind: 'part', description: 'Pieza para convertir la nave en barco.' },
   coolant: { id: 'coolant', name: 'Bomba de refrigerante', icon: '🧊', stack: 1, kind: 'part', description: 'Pieza para convertir la nave en barco.' },

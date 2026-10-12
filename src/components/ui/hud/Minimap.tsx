@@ -9,6 +9,7 @@ import { cameraRig } from '@/systems/cameraRig'
 import { player } from '@/systems/player'
 import { scavengers } from '@/systems/scavengers'
 import { boat } from '@/systems/boat'
+import { BUOYS, ROUTE, routePoint } from '@/config/currents'
 import { explored, exploredVersion, MAP_EXTENT, MAP_GRID } from '@/systems/exploredMap'
 import { getHeight, getSlope, OASIS_WATER_LEVEL } from '@/utils/terrain/heightfield'
 import { terrainColor } from '@/utils/terrain/terrainColor'
@@ -138,6 +139,27 @@ function MapCanvas({ big, onClick }: { big: boolean; onClick: () => void }) {
       ctx.arc(toX(CRASH_SITE.x), toY(CRASH_SITE.z), r, 0, Math.PI * 2)
       ctx.fill()
       ctx.stroke()
+      // Carta de corrientes: la ruta hacia la otra isla (sale del mapa por el este).
+      if (game.inventory.currentChart) {
+        const end = routePoint(1)
+        ctx.save()
+        ctx.strokeStyle = '#fff6c8'
+        ctx.lineWidth = r * 0.35
+        ctx.setLineDash([r * 0.9, r * 0.7])
+        ctx.beginPath()
+        ctx.moveTo(toX(ROUTE.from.x), toY(ROUTE.from.z))
+        ctx.lineTo(toX(end.x), toY(end.z))
+        ctx.stroke()
+        ctx.restore()
+      }
+      // Boyas ya leídas (las otras hay que encontrarlas).
+      ctx.fillStyle = '#ff7a2e'
+      for (const b of BUOYS) {
+        if (!game.buoys[b.id]) continue
+        ctx.beginPath()
+        ctx.arc(toX(b.x), toY(b.z), r * 0.6, 0, Math.PI * 2)
+        ctx.fill()
+      }
       // El barco (amarrado o donde se dejó).
       if (boat.launched) {
         ctx.font = `${r * 2.2}px system-ui`

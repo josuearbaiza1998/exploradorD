@@ -22,6 +22,8 @@ import { tallCoverNear, thermal, updateThermal } from '@/systems/thermal'
 import { cave, CAVE_OUTSIDE, inCave } from '@/config/cave'
 import { getHeight } from '@/utils/terrain/heightfield'
 import { boat, landingSpot } from '@/systems/boat'
+import { BUOY_READ_RANGE, BUOYS } from '@/config/currents'
+import { ISLAND } from '@/config/world'
 
 /** Duración (s reales) de cada etapa de la secuencia de emergencia. */
 export const EMERGENCY_TIMING = {
@@ -121,13 +123,14 @@ export function RobotSystems() {
         if (!wasHot && thermal.overheated) game.notify('🔥 ¡Sobrecalentado! Busca sombra: rocas altas, la nave o un refugio', 'warn')
         else if (warm < 0.7 && thermal.heat >= 0.7) game.notify('🌡️ El robot se está calentando', 'warn')
         if (thermal.overheated) drain *= 1.6
-        // Sumergido: las bombas del sellado trabajan y el agua roba calor.
+        // Nadando: los propulsores trabajan; sumergido, además las bombas del sellado.
         if (player.underwater) drain *= fx.diveDrain
-        if (player.underwater !== wasUnder.current) {
-          wasUnder.current = player.underwater
-          if (player.underwater && game.totalHours - underNoticeAt.current > 6) {
+        else if (player.swimming) drain *= fx.swimDrain
+        if (player.swimming !== wasUnder.current) {
+          wasUnder.current = player.swimming
+          if (player.swimming && game.totalHours - underNoticeAt.current > 6) {
             underNoticeAt.current = game.totalHours
-            game.notify('🤿 Bajo el agua: la batería se gasta más rápido. Vuelve a la orilla a tiempo', 'info')
+            game.notify('🏊 Nadando: mantén ⤓ para bucear y ⤒ para subir. Gasta más batería: vuelve a la orilla a tiempo', 'info')
           }
         }
         if (!sheltered) drain *= thermal.cold
@@ -138,7 +141,7 @@ export function RobotSystems() {
         let delta = (solar - drain) * gameHours
         delta += gridGain
         // Coste del salto: al despegar del suelo hacia arriba.
-        if (lastGrounded.current && !player.grounded && player.velocity.y > 0) delta -= ROBOT.drain.jump / fx.capacity
+        if (lastGrounded.current && !player.grounded && !player.swimming && player.velocity.y > 0) delta -= ROBOT.drain.jump / fx.capacity
         lastGrounded.current = player.grounded
         game.addBattery(delta)
 
@@ -152,7 +155,7 @@ export function RobotSystems() {
           )
           if (weatherState.washPerHour > 0) game.cleanSensors(weatherState.washPerHour * gameHours)
           // El agua del mar lava el polvo de las gafas.
-          if (player.underwater) game.cleanSensors(0.6 * gameHours)
+          if (player.swimming) game.cleanSensors(0.6 * gameHours)
         }
 
         break
@@ -201,8 +204,16 @@ export function RobotSystems() {
       if (game.mode !== 'active') boat.boating = false
       else if ((landTimer.current -= dt) <= 0) {
         landTimer.current = 0.35
-        const spot = boat.speed < 2.5 ? landingSpot() : null
-        game.setTarget(spot ? { key: `disembark|${Math.round(spot.x)},${Math.round(spot.z)}`, kind: 'disembark', position: [spot.x, getHeight(spot.x, spot.z), spot.z], radius: 0.6 } : null)
+        // Una boya sin leer al lado tiene prioridad sobre bajar a tierra.
+        const buoy = BUOYS.find((b) => !game.buoys[b.id] && Math.hypot(b.x - boat.x, b.z - boat.z) < BUOY_READ_RANGE)
+        const spot = !buoy && boat.speed < 2.5 ? landingSpot() : null
+        game.setTarget(
+          buoy
+            ? { key: `buoy|${buoy.id}`, kind: 'buoy', position: [buoy.x, ISLAND.seaLevel + 1, buoy.z], radius: 1 }
+            : spot
+              ? { key: `disembark|${Math.round(spot.x)},${Math.round(spot.z)}`, kind: 'disembark', position: [spot.x, getHeight(spot.x, spot.z), spot.z], radius: 0.6 }
+              : null,
+        )
       }
     } else
       game.setTarget(

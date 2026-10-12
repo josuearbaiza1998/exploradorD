@@ -1,3 +1,4 @@
+import { BUOYS, type BuoyId } from '@/config/currents'
 import type { StateCreator } from 'zustand'
 import type { Inventory, ItemId } from '@/config/items'
 import { POIS, type PoiId } from '@/config/pois'
@@ -33,6 +34,10 @@ export type ExplorationSlice = {
   markShipRepairedSeen: () => void
   /** Dónde quedó el barco: [x, z, rumbo] (null = amarrado en el muelle). */
   boatPos: [number, number, number] | null
+  /** Boyas de deriva ya leídas. */
+  buoys: Partial<Record<BuoyId, true>>
+  /** Lee una boya; con las tres se traza la carta. Devuelve si fue nueva. */
+  readBuoy: (id: BuoyId) => boolean
   setBoatPos: (p: [number, number, number] | null) => void
   readNote: (id: string) => void
   logJournal: (entry: Omit<JournalEntry, 'id' | 'at'>) => void
@@ -102,6 +107,23 @@ export const createExplorationSlice: StateCreator<GameState, [], [], Exploration
   },
   markShipRepairedSeen: () => set({ shipRepairedSeen: true }),
   boatPos: null,
+  buoys: {},
+  readBuoy: (id) => {
+    const s = get()
+    if (s.buoys[id]) return false
+    const buoys = { ...s.buoys, [id]: true as const }
+    set({ buoys })
+    const buoy = BUOYS.find((b) => b.id === id)!
+    const n = Object.keys(buoys).length
+    if (n < BUOYS.length) {
+      s.notify(`📡 ${buoy.name}: datos guardados (${n}/${BUOYS.length})`, 'info')
+      return true
+    }
+    get().addItem('currentChart', 1)
+    get().logJournal({ kind: 'part', icon: '🗺️', title: 'Carta de corrientes', text: 'Con los datos de las tres boyas: la corriente del este forma un pasillo hacia la otra isla. Mira la ruta en el mapa.' })
+    s.notify('🗺️ ¡Carta de corrientes trazada! La ruta hacia la otra isla aparece en el mapa', 'gain')
+    return true
+  },
   setBoatPos: (boatPos) => set({ boatPos }),
   addFinds: (finds) => set((s) => ({ finds: [...s.finds, ...finds].slice(-MAX_FINDS) })),
   removeFind: (id) => set((s) => ({ finds: s.finds.filter((f) => f.id !== id) })),

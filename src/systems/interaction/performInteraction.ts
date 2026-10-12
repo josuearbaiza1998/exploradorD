@@ -12,6 +12,7 @@ import { knockScavenger } from '@/systems/scavengers'
 import { COLLECTOR_USE } from '@/config/structures'
 import { thermal } from '@/systems/thermal'
 import { boardBoat, disembark } from '@/systems/boat'
+import type { BuoyId } from '@/config/currents'
 
 /** Energía (%) que cuesta cada golpe. */
 const HIT_COST = 0.25
@@ -34,10 +35,13 @@ export function performInteraction(): boolean {
   if (now - lastHit < HIT_COOLDOWN) return false
 
   // Barco: subir y bajar no gasta energía ni cuenta golpes.
-  if (target.kind === 'boat' || target.kind === 'disembark') {
+  if (target.kind === 'boat' || target.kind === 'disembark' || target.kind === 'buoy') {
     lastHit = now
     if (target.kind === 'boat') boardBoat()
-    else disembark(target.position[0], target.position[2])
+    else if (target.kind === 'buoy') {
+      game.readBuoy(target.key.slice(5) as BuoyId)
+      game.setTarget(null)
+    } else disembark(target.position[0], target.position[2])
     return true
   }
 

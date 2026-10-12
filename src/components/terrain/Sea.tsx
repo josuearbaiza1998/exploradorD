@@ -140,7 +140,7 @@ export function Sea() {
     uniforms.uTime.value = seaState.time
     uniforms.uAmp.value = seaState.amp
     // Con el robot sumergido el mar se aclara para seguir viéndolo.
-    const under = player.position.y < ISLAND.seaLevel - 0.6 || camera.position.y < ISLAND.seaLevel ? 1 : 0
+    const under = player.underwater || camera.position.y < ISLAND.seaLevel ? 1 : 0
     uniforms.uUnder.value += (under - uniforms.uUnder.value) * 0.1
     uniforms.uCamUnder.value = camera.position.y < seaSurface(camera.position.x, camera.position.z) ? 1 : 0
     const m = ref.current

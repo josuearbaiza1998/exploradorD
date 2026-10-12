@@ -97,6 +97,14 @@ export const NOTES: NoteDef[] = [
     text: 'Si se sellan las juntas, las celdas del robot aguantan bajo el agua. Frente a esta playa, en el fondo, hay restos de un cargamento hundido. Bajar gasta batería: hay que volver a la orilla a tiempo.',
   },
   {
+    id: 'n13',
+    kind: 'disk',
+    x: 152,
+    z: -57,
+    title: 'Disquete · Boyas de deriva',
+    text: 'Solté tres boyas para medir las corrientes: una al norte del islote, otra frente a la playa sur y otra al oeste. Si alguien lee sus datos desde el agua, podrá trazar la ruta hacia la isla de la baliza.',
+  },
+  {
     id: 'n7',
     x: -55,
     z: 128,

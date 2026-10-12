@@ -90,8 +90,8 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
     name: 'Sellado estanco',
     icon: '🤿',
     levels: [
-      { description: 'Juntas selladas: camina por el fondo del mar. Bajo el agua gasta más batería', cost: { fiber: 6, scrapMetal: 3, techParts: 1 } },
-      { description: 'Bucea más rápido y gasta menos batería bajo el agua', cost: { scrapMetal: 3, techParts: 2, crystal: 2 } },
+      { description: 'Juntas selladas: nada en agua honda y bucea (⤒ subir, ⤓ bajar). Nadando gasta más batería', cost: { fiber: 6, scrapMetal: 3, techParts: 1 } },
+      { description: 'Nada y bucea más rápido y gasta menos batería en el agua', cost: { scrapMetal: 3, techParts: 2, crystal: 2 } },
     ],
   },
   nightVision: {
@@ -131,6 +131,8 @@ export function upgradeEffects(u: UpgradeLevels, drone = false) {
     dive: lv('diving'),
     /** Multiplicador de velocidad caminando por el fondo. */
     diveSpeed: [0.55, 0.6, 0.85][lv('diving')],
+    swimSpeed: [0.5, 0.5, 0.7][lv('diving')],
+    swimDrain: [1, 1.4, 1.2][lv('diving')],
     /** Multiplicador del gasto de batería sumergido. */
     diveDrain: [1, 2.2, 1.5][lv('diving')],
     /** Carga máxima de la mochila (recursos y consumibles; herramientas y piezas no ocupan). */

@@ -12,6 +12,10 @@ export const input = {
   lookDelta: { x: 0, y: 0 },
   /** Pulsación de salto pendiente (se consume al usarla). */
   jumpQueued: false,
+  /** Botón de salto mantenido (al nadar: subir). */
+  jumpHeld: false,
+  /** Botón de bucear mantenido (solo aparece nadando). */
+  diveHeld: false,
 }
 
 const out = { x: 0, y: 0 }

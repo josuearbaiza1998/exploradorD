@@ -36,7 +36,8 @@ function islandGeometry() {
     g.translate(p.x, 0, p.z)
     return g
   })
-  return mergeGeometries(parts)!
+  // Encogida en planta: el barco llega hasta el muro de tormenta sin meterse dentro de la silueta.
+  return mergeGeometries(parts)!.scale(0.7, 1, 0.7)
 }
 
 /**
