@@ -10,6 +10,7 @@ import { thermal } from '@/systems/thermal'
 import { environment } from '@/systems/environmentState'
 import { groundAt } from '@/systems/physics/characterMotor'
 import { dronePos, scavengers } from '@/systems/scavengers'
+import { boat, boatLamp } from '@/systems/boat'
 
 /** Hueco tras el robot y a su izquierda (local: +x izquierda vista desde atrás). */
 const OFFSET_SIDE = 1.1
@@ -69,10 +70,31 @@ function DroneBody() {
       g.position.set(tx, ty, tz)
       placed.current = true
     }
-    const k = 1 - Math.exp(-FOLLOW * dt)
-    const dx = tx - g.position.x
-    const dz = tz - g.position.z
-    // Lejos (teletransporte, cueva) salta directo.
+    // A bordo cuelga del brazo del mástil y hace de farol.
+    const aboard = boat.boating && boatLamp.valid
+    const k = aboard ? 1 - Math.exp(-14 * dt) : 1 - Math.exp(-FOLLOW * dt)
+    const dx = (aboard ? boatLamp.x : tx) - g.position.x
+    const dz = (aboard ? boatLamp.z : tz) - g.position.z
+    if (aboard) {
+      g.position.set(g.position.x + dx * k, boatLamp.y + Math.sin(t * 3) * 0.03, g.position.z + dz * k)
+      g.rotation.y = boat.heading
+      g.rotation.x = Math.sin(t * 1.7) * 0.06 - boat.pitch * 0.5
+      g.rotation.z = Math.sin(t * 1.3) * 0.08 - boat.roll * 0.5
+      for (const r of rotors.current) if (r) r.rotation.y += dt * 6
+      dronePos.x = g.position.x
+      dronePos.z = g.position.z
+      dronePos.active = true
+      if (lamp.current) {
+        // Como farol se enciende ya al atardecer, con luz cálida.
+        const want = environment.palette.daylight < 0.65 ? 1 : 0
+        lamp.current.color.set('#ffd9a0')
+        lamp.current.intensity += (want * 9 - lamp.current.intensity) * (1 - Math.exp(-3 * dt))
+        lamp.current.visible = lamp.current.intensity > 0.05
+      }
+      eyeMat.color.set(environment.palette.daylight < 0.65 ? '#ffe2a8' : PALETTE.robotAccent)
+      return
+    }
+    // Lejos (teletransporte, cueva, al bajar del barco) salta directo.
     if (dx * dx + dz * dz > 400) g.position.set(tx, ty, tz)
     else g.position.set(g.position.x + dx * k, g.position.y + (ty - g.position.y) * k, g.position.z + dz * k)
     // Mira hacia donde mira el robot y se inclina al avanzar.
@@ -91,6 +113,7 @@ function DroneBody() {
     // Linterna de noche o en la cueva.
     if (lamp.current) {
       const want = !environment.isDay || environment.inCave ? 1 : 0
+      lamp.current.color.set('#cfe9ff')
       lamp.current.intensity += (want * 6 - lamp.current.intensity) * k
       lamp.current.visible = lamp.current.intensity > 0.05
     }

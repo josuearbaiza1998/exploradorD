@@ -10,7 +10,7 @@ import { boat, floatBoat } from '@/systems/boat'
 import { pier } from '@/systems/physics/characterMotor'
 import { seaState } from '@/systems/sea'
 import { getHeight } from '@/utils/terrain/heightfield'
-import { ShipPlaceholder } from './CrashedShip'
+import { BoatModel } from './BoatModel'
 
 /** Muelle de tablones sobre postes, de la playa al amarre. */
 function Pier() {
@@ -55,7 +55,7 @@ function Wake() {
   const ref = useRef<InstancedMesh>(null)
   const { geo, mat, rings, dummy } = useMemo(
     () => ({
-      geo: new CircleGeometry(1, 10).rotateX(-Math.PI / 2),
+      geo: new CircleGeometry(1, 16).rotateX(-Math.PI / 2),
       mat: new MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.55, depthWrite: false }),
       rings: Array.from({ length: WAKE }, () => ({ x: 0, z: 0, age: 99 })),
       dummy: new Object3D(),
@@ -78,7 +78,7 @@ function Wake() {
       r.age += dt
       const k = r.age / 2.2
       dummy.position.set(r.x, ISLAND.seaLevel + 0.12, r.z)
-      dummy.scale.setScalar(k < 1 ? 0.8 + k * 3.2 : 0)
+      dummy.scale.setScalar(k < 1 ? 0.4 + k * 1.9 : 0)
       dummy.updateMatrix()
       m.setMatrixAt(i, dummy.matrix)
     })
@@ -107,12 +107,12 @@ export function Boat() {
     boat.heading = h
   }, [launched])
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const g = group.current
     if (!g || !launched) return
+    const dt = Math.min(delta, 0.05)
     if (!boat.boating) {
-      boat.speed *= 0.97
-      floatBoat(seaState.time)
+      floatBoat(seaState.time, dt)
     }
     g.position.set(boat.x, boat.y - BOAT.draft, boat.z)
     euler.set(boat.pitch, boat.heading, boat.roll)
@@ -124,7 +124,7 @@ export function Boat() {
     <>
       <Pier />
       <group ref={group} name="boat">
-        <ShipPlaceholder variant="afloat" />
+        <BoatModel />
       </group>
       <Wake />
     </>

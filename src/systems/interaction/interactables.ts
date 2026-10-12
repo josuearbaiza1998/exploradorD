@@ -137,7 +137,7 @@ export function findTarget(
   // El barco: se sube desde el muelle o desde la orilla donde se dejó.
   if (boat.launched && !boat.boating) {
     const hull = nearestHullPoint(px, pz)
-    if (hull.d < 7) consider('boat|', 'boat', hull.x, boat.y + 1, hull.z, Math.max(0.5, hull.d - 1.2))
+    if (hull.d < 5) consider('boat|', 'boat', hull.x, boat.y + 1, hull.z, Math.max(0.5, hull.d - 1.2))
   }
 
   // Cargamento hundido (solo se llega buceando hasta cerca del fondo).

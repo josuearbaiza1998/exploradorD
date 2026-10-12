@@ -20,11 +20,27 @@ export const boat = {
   y: ISLAND.seaLevel,
   pitch: 0,
   roll: 0,
+  /** Velocidad real (m/s, mundo): va detrás del rumbo y el barco derrapa un poco en los giros. */
+  vx: 0,
+  vz: 0,
+  /** Giro actual (rad/s), con inercia. */
+  yawRate: 0,
+  /** Timón -1..1 (para el timón, la rueda y los brazos del robot). */
+  rudder: 0,
+  /** Muelles del balanceo: velocidad vertical, de cabeceo y de alabeo. */
+  vy: 0,
+  pitchV: 0,
+  rollV: 0,
+  /** Aceleración reciente (la proa se levanta al dar gas). */
+  surge: 0,
   /** Dónde subió el robot (se guarda como posición segura si se cierra el juego a bordo). */
   boardedFrom: { x: PIER.to.x, z: PIER.to.z },
   /** Último aviso de mar abierto (s). */
   openSeaNoticeAt: -100,
 }
+
+/** Dónde cuelga el dron a bordo (el farol del mástil), en el mundo. Lo actualiza <Boat/>. */
+export const boatLamp = { x: 0, y: 0, z: 0, valid: false }
 
 const depthAt = (x: number, z: number) => ISLAND.seaLevel - getHeight(x, z)
 
@@ -69,28 +85,43 @@ function seaLimit(x: number, z: number): { pushX: number; pushZ: number; message
 }
 
 /**
- * Pilotaje: el barco gira hacia donde apunta el stick (relativo a la cámara)
- * y acelera si va más o menos en esa dirección. Con inercia: frena despacio.
+ * Pilotaje (inspirado en el Mascarón Rojo de Wind Waker): el barco gira hacia
+ * donde apunta el stick con un giro que coge y suelta inercia, acelera si va
+ * más o menos en esa dirección, derrapa un poco en las curvas y se inclina
+ * hacia dentro. Con inercia: frena despacio.
  */
 export function stepBoat(dt: number, wishX: number, wishZ: number, t: number) {
   const wish = Math.min(1, Math.hypot(wishX, wishZ))
   let thrust = 0
+  let wantYaw = 0
   if (wish > 0.15) {
     const want = Math.atan2(wishX, wishZ)
     const diff = Math.atan2(Math.sin(want - boat.heading), Math.cos(want - boat.heading))
-    const turnRate = BOAT.turn * (0.35 + 0.65 * Math.min(1, boat.speed / 3))
-    boat.heading += Math.max(-turnRate * dt, Math.min(turnRate * dt, diff))
-    thrust = wish * Math.max(0, Math.cos(diff))
+    // Parado gira despacio; con algo de marcha, el giro completo.
+    const maxRate = BOAT.turn * (0.4 + 0.6 * Math.min(1, boat.speed / 3))
+    wantYaw = Math.max(-maxRate, Math.min(maxRate, diff * 2.4))
+    thrust = wish * Math.max(0.15, Math.cos(diff))
   }
+  boat.yawRate += (wantYaw - boat.yawRate) * (1 - Math.exp(-3.2 * dt))
+  boat.heading += boat.yawRate * dt
+  boat.rudder += (Math.max(-1, Math.min(1, wantYaw / BOAT.turn)) - boat.rudder) * (1 - Math.exp(-6 * dt))
   const target = BOAT.maxSpeed * thrust
-  boat.speed += (target - boat.speed) * (1 - Math.exp(-(target > boat.speed ? BOAT.accel / BOAT.maxSpeed * 3 : BOAT.drag * 0.4) * dt))
-  const nx = boat.x + Math.sin(boat.heading) * boat.speed * dt
-  const nz = boat.z + Math.cos(boat.heading) * boat.speed * dt
+  const before = boat.speed
+  boat.speed += (target - boat.speed) * (1 - Math.exp(-(target > boat.speed ? (BOAT.accel / BOAT.maxSpeed) * 3 : BOAT.drag * 0.4) * dt))
+  boat.surge += ((boat.speed - before) / Math.max(dt, 1e-3) - boat.surge) * (1 - Math.exp(-4 * dt))
+  // La velocidad real sigue al rumbo con retraso: derrape suave al girar.
+  const k = 1 - Math.exp(-2.6 * dt)
+  boat.vx += (Math.sin(boat.heading) * boat.speed - boat.vx) * k
+  boat.vz += (Math.cos(boat.heading) * boat.speed - boat.vz) * k
+  const nx = boat.x + boat.vx * dt
+  const nz = boat.z + boat.vz * dt
   if (navigable(nx, nz, boat.heading)) {
     const limit = seaLimit(nx, nz)
     if (limit) {
       // Mar abierto o tormenta: el oleaje devuelve el barco.
       boat.speed *= 0.5
+      boat.vx = limit.pushX * 3
+      boat.vz = limit.pushZ * 3
       boat.x += limit.pushX * 3 * dt
       boat.z += limit.pushZ * 3 * dt
       if (t - boat.openSeaNoticeAt > 20) {
@@ -102,24 +133,51 @@ export function stepBoat(dt: number, wishX: number, wishZ: number, t: number) {
       boat.z = nz
     }
   } else {
-    // Toca fondo: se para en seco.
+    // Toca fondo: se para con un golpe (cabezada hacia delante).
+    if (boat.speed > 2) boat.pitchV += boat.speed * 0.25
     boat.speed = 0
+    boat.vx = 0
+    boat.vz = 0
   }
-  floatBoat(t)
+  floatBoat(t, dt)
 }
 
-/** Balanceo sobre las olas (también amarrado). */
-export function floatBoat(t: number) {
+/**
+ * Balanceo sobre las olas con muelles (también amarrado): la altura, el
+ * cabeceo y el alabeo persiguen a las olas con rebote, así al cruzar crestas
+ * a toda marcha el barco brinca y se mece en vez de pegarse rígido al agua.
+ */
+export function floatBoat(t: number, dt = 1 / 60) {
+  dt = Math.min(dt, 0.05)
+  if (!boat.boating) {
+    boat.speed *= Math.exp(-0.8 * dt)
+    boat.yawRate *= Math.exp(-2 * dt)
+    boat.rudder *= Math.exp(-3 * dt)
+    boat.surge *= Math.exp(-3 * dt)
+    boat.vx *= Math.exp(-0.8 * dt)
+    boat.vz *= Math.exp(-0.8 * dt)
+  }
   const fx = Math.sin(boat.heading)
   const fz = Math.cos(boat.heading)
   const h = (x: number, z: number) => waveHeight(x, z, t)
-  const front = h(boat.x + fx * 6, boat.z + fz * 6)
-  const back = h(boat.x - fx * 6, boat.z - fz * 6)
-  const left = h(boat.x - fz * 3, boat.z + fx * 3)
-  const right = h(boat.x + fz * 3, boat.z - fx * 3)
-  boat.y = ISLAND.seaLevel + (front + back + left + right) / 4
-  boat.pitch = Math.atan2(back - front, 12) - boat.speed * 0.006
-  boat.roll = Math.atan2(left - right, 6)
+  const L = BOAT.halfLength * 0.75
+  const W = 1.6
+  const front = h(boat.x + fx * L, boat.z + fz * L)
+  const back = h(boat.x - fx * L, boat.z - fz * L)
+  const left = h(boat.x - fz * W, boat.z + fx * W)
+  const right = h(boat.x + fz * W, boat.z - fx * W)
+  // A toda marcha el casco planea: va algo más alto y con la proa levantada.
+  const plane = Math.min(1, boat.speed / BOAT.maxSpeed)
+  const targetY = ISLAND.seaLevel + (front + back + left + right) / 4 + plane * 0.12
+  const targetPitch = Math.atan2(back - front, L * 2) - plane * 0.1 - Math.max(-0.08, Math.min(0.14, boat.surge * 0.05))
+  // Se inclina hacia dentro de la curva, más cuanto más rápido va.
+  const targetRoll = Math.atan2(left - right, W * 2) + boat.yawRate * (0.06 + plane * 0.16)
+  boat.vy += ((targetY - boat.y) * 38 - boat.vy * 5.5) * dt
+  boat.y += boat.vy * dt
+  boat.pitchV += ((targetPitch - boat.pitch) * 30 - boat.pitchV * 4.5) * dt
+  boat.pitch += boat.pitchV * dt
+  boat.rollV += ((targetRoll - boat.roll) * 22 - boat.rollV * 3.5) * dt
+  boat.roll += boat.rollV * dt
 }
 
 /** Posición de la cubierta en el mundo (donde va el robot). */
@@ -147,14 +205,14 @@ export function landingSpot(): { x: number; z: number } | null {
   let best: { x: number; z: number; d: number } | null = null
   const fx = Math.sin(boat.heading)
   const fz = Math.cos(boat.heading)
-  for (let t = -BOAT.halfLength; t <= BOAT.halfLength; t += 2.5) {
+  for (let t = -BOAT.halfLength; t <= BOAT.halfLength; t += 1.5) {
     for (let a = 0; a < 12; a++) {
       const ang = (a / 12) * Math.PI * 2
-      for (const r of [4, 6, 8, 10]) {
+      for (const r of [3, 4.5, 6, 8]) {
         const x = boat.x + fx * t + Math.cos(ang) * r
         const z = boat.z + fz * t + Math.sin(ang) * r
         // Fuera del casco: no se baja encima del propio barco.
-        if (nearestHullPoint(x, z).d < 3.5) continue
+        if (nearestHullPoint(x, z).d < 2.4) continue
         const onPier = pierDeck(x, z) !== null
         const h = getHeight(x, z)
         if (!onPier && (h < ISLAND.seaLevel + 0.6 || getSlope(x, z) > 0.9)) continue

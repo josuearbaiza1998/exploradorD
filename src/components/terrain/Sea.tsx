@@ -7,6 +7,7 @@ import { focus } from '@/systems/focus'
 import { createToonMaterial } from '@/materials/toonMaterials'
 import { seaState, seaSurface, updateSea, WAVE_GLSL } from '@/systems/sea'
 import { player } from '@/systems/player'
+import { environment } from '@/systems/environmentState'
 import { getHeight } from '@/utils/terrain/heightfield'
 
 /** Mapa de profundidad del mar alrededor de la isla (para la espuma de la orilla y los bajíos). */
@@ -52,6 +53,7 @@ export function Sea() {
       uFoam: { value: new Color('#ffffff') },
       uUnder: { value: 0 },
       uCamUnder: { value: 0 },
+      uDay: { value: 1 },
     }
     const material = createToonMaterial({ color: PALETTE.sea, bands: 2, transparent: true, opacity: 0.92, side: DoubleSide })
     material.onBeforeCompile = (shader) => {
@@ -66,19 +68,33 @@ export function Sea() {
           uniform float uDepthExtent;
           varying vec2 vSeaXZ;
           varying float vWave;
+          varying float vOpen;
           ${WAVE_GLSL}`,
+        )
+        .replace(
+          '#include <beginnormal_vertex>',
+          `vec2 seaXZ = (modelMatrix * vec4(position, 1.0)).xz;
+          vec2 duv = seaXZ / (uDepthExtent * 2.0) + 0.5;
+          float d0 = (duv.x < 0.0 || duv.x > 1.0 || duv.y < 0.0 || duv.y > 1.0) ? 1.0 : texture2D(uDepth, duv).r;
+          // Junto a la orilla las olas se aplanan (no se meten en la arena).
+          float shoreK = smoothstep(0.0, 0.35, d0);
+          float w = waveHeight(seaXZ, uTime, uAmp) * shoreK;
+          // Normal de la ola (diferencias finitas): el sombreado toon marca crestas y valles.
+          float e = 0.8;
+          float wx = waveHeight(seaXZ + vec2(e, 0.0), uTime, uAmp) * shoreK;
+          float wz = waveHeight(seaXZ + vec2(0.0, e), uTime, uAmp) * shoreK;
+          vec3 objectNormal = normalize(vec3(-(wx - w) / e * 1.6, 1.0, -(wz - w) / e * 1.6));
+          #ifdef USE_TANGENT
+            vec3 objectTangent = vec3(tangent.xyz);
+          #endif`,
         )
         .replace(
           '#include <begin_vertex>',
           `#include <begin_vertex>
-          vec2 seaXZ = (modelMatrix * vec4(transformed, 1.0)).xz;
-          vec2 duv = seaXZ / (uDepthExtent * 2.0) + 0.5;
-          float d0 = (duv.x < 0.0 || duv.x > 1.0 || duv.y < 0.0 || duv.y > 1.0) ? 1.0 : texture2D(uDepth, duv).r;
-          // Junto a la orilla las olas se aplanan (no se meten en la arena).
-          float w = waveHeight(seaXZ, uTime, uAmp) * smoothstep(0.0, 0.35, d0);
           transformed.y += w;
           vSeaXZ = seaXZ;
-          vWave = w / max(uAmp, 0.01);`,
+          vOpen = openSea(seaXZ);
+          vWave = w / max(uAmp * (1.0 + vOpen * 1.4), 0.01);`,
         )
       shader.fragmentShader = shader.fragmentShader
         .replace(
@@ -93,8 +109,11 @@ export function Sea() {
           uniform vec3 uFoam;
           uniform float uUnder;
           uniform float uCamUnder;
+          uniform float uDay;
+          uniform float uAmp;
           varying vec2 vSeaXZ;
-          varying float vWave;`,
+          varying float vWave;
+          varying float vOpen;`,
         )
         .replace(
           '#include <color_fragment>',
@@ -123,6 +142,17 @@ export function Sea() {
           float sw = sin(q.x * 3.1 + sin(q.y * 2.3 + uTime * 0.12) * 2.2) * sin(q.y * 2.7 + sin(q.x * 1.9 - uTime * 0.1) * 2.4);
           float swirl = 1.0 - smoothstep(0.012, 0.03, abs(sw - 0.78));
           foam = max(foam, swirl * smoothstep(3.5, 6.0, depth) * 0.85);
+          // Crestas con espuma mar adentro y con viento fuerte (borde dentado, a lo Wind Waker).
+          float jag = sin(vSeaXZ.x * 1.7 + vSeaXZ.y * 0.9) * 0.05 + sin(vSeaXZ.y * 2.3 - uTime) * 0.04;
+          float crestK = clamp(vOpen + smoothstep(0.3, 0.5, uAmp), 0.0, 1.0);
+          foam = max(foam, step(0.86 + jag, vWave) * crestK * smoothstep(2.5, 5.0, depth));
+          // Destellos del sol: puntitos que titilan en el agua honda de día.
+          vec2 cell = floor(vSeaXZ * 0.9);
+          float rnd = fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
+          float tw = fract(rnd * 7.13 + uTime * (0.35 + rnd * 0.4));
+          vec2 inCell = fract(vSeaXZ * 0.9) - 0.5;
+          float spark = step(0.93, rnd) * step(0.82, tw) * (1.0 - smoothstep(0.05, 0.16, length(inCell)));
+          foam = max(foam, spark * uDay * smoothstep(2.0, 4.0, depth) * step(0.0, vWave));
           diffuseColor.rgb = mix(water, uFoam, foam);
           // Bajíos más transparentes (se ve la arena); bajo el agua, casi sin velo.
           float a = mix(0.55, 0.92, smoothstep(0.3, 3.0, depth));
@@ -139,6 +169,7 @@ export function Sea() {
     updateSea(Math.min(delta, 0.1))
     uniforms.uTime.value = seaState.time
     uniforms.uAmp.value = seaState.amp
+    uniforms.uDay.value = environment.palette.daylight
     // Con el robot sumergido el mar se aclara para seguir viéndolo.
     const under = player.underwater || camera.position.y < ISLAND.seaLevel ? 1 : 0
     uniforms.uUnder.value += (under - uniforms.uUnder.value) * 0.1

@@ -12,7 +12,6 @@ import { useGameStore } from '@/store/gameStore'
 import { isShipRepaired } from '@/store/slices/explorationSlice'
 import type { RepairId } from '@/config/repairs'
 import { finGeometry, fuselageGeometry, wingGeometry } from './shipGeometry'
-import { BoatHull } from './BoatHull'
 
 const groundY = getHeight(CRASH_SITE.x, CRASH_SITE.z)
 
@@ -79,7 +78,7 @@ function NavLight({ position }: { position: [number, number, number] }) {
 }
 
 /** Piezas nuevas que aparecen en la nave a medida que se reparan sus sistemas. */
-function ShipRepairs({ repairs, afloat }: { repairs: Partial<Record<RepairId, true>>; afloat: boolean }) {
+function ShipRepairs({ repairs }: { repairs: Partial<Record<RepairId, true>> }) {
   const metal = sharedToon('#c9ced4')
   const pipe = sharedToon('#4fb3d9', { emissive: '#1f7fa8', emissiveIntensity: 0.3 })
   return (
@@ -110,19 +109,12 @@ function ShipRepairs({ repairs, afloat }: { repairs: Partial<Record<RepairId, tr
           </mesh>
         </group>
       )}
-      {repairs.navigation &&
-        (afloat ? (
-          // En el barco: luz en el tope del mástil y otra en la proa.
-          <>
-            <NavLight position={[0, 14.7, -3.6]} />
-            <NavLight position={[0, 3.6, 12.3]} />
-          </>
-        ) : (
-          <>
-            <NavLight position={[11.2, 1.1, -5.2]} />
-            <NavLight position={[0, 4.7, 6.4]} />
-          </>
-        ))}
+      {repairs.navigation && (
+        <>
+          <NavLight position={[11.2, 1.1, -5.2]} />
+          <NavLight position={[0, 4.7, 6.4]} />
+        </>
+      )}
       {repairs.cooling &&
         [-1, 1].map((side) => (
           <group key={side} position={[side * 2.35, 2.2, -5]}>
@@ -146,10 +138,9 @@ function ShipRepairs({ repairs, afloat }: { repairs: Partial<Record<RepairId, tr
  * toberas dobles y cabina. Huella compatible con los colisionadores y los
  * escombros de config/world.ts.
  */
-export function ShipPlaceholder({ variant = 'crashed' }: { variant?: 'crashed' | 'afloat' | 'scar' }) {
+export function ShipPlaceholder({ variant = 'crashed' }: { variant?: 'crashed' | 'scar' }) {
   const repairs = useGameStore((s) => s.repairs)
-  const afloat = variant === 'afloat'
-  const tilt: [number, number, number] = afloat ? [0, 0, 0] : [0.1, 0, -0.16]
+  const tilt: [number, number, number] = [0.1, 0, -0.16]
   const geo = useMemo(
     () => ({ fuselage: fuselageGeometry(), wing: wingGeometry(), broken: wingGeometry(true, -1), fin: finGeometry() }),
     [],
@@ -172,23 +163,16 @@ export function ShipPlaceholder({ variant = 'crashed' }: { variant?: 'crashed' |
         <mesh material={glass} position={[0, 3.75, 4.6]} scale={[1.1, 0.75, 2.6]} castShadow>
           <icosahedronGeometry args={[1, 1]} />
         </mesh>
-        {/* Como barco ya no lleva alas ni derivas: el casco, el mástil y la vela las sustituyen */}
-        {afloat ? (
-          <BoatHull />
-        ) : (
-          <>
-            {/* Ala derecha intacta */}
-            <mesh geometry={geo.wing} material={MATERIALS.shipHull} position={[1.9, 1.7, 0]} rotation-z={-0.08} castShadow receiveShadow />
-            <mesh material={MATERIALS.shipAccent} position={[10.4, 1.05, -5.2]} rotation={[0, -0.6, -0.08]}>
-              <boxGeometry args={[0.5, 0.46, 2.2]} />
-            </mesh>
-            {/* Muñón del ala izquierda (dientes de sierra) */}
-            <mesh geometry={geo.broken} material={MATERIALS.shipHull} position={[-1.9, 1.7, 0]} castShadow />
-            {/* Derivas de cola, algo abiertas */}
-            <mesh geometry={geo.fin} material={MATERIALS.shipHull} position={[1.1, 3.6, -6]} rotation-z={-0.35} castShadow />
-            <mesh geometry={geo.fin} material={MATERIALS.shipDark} position={[-1.1, 3.6, -6]} rotation-z={0.6} castShadow />
-          </>
-        )}
+        {/* Ala derecha intacta */}
+        <mesh geometry={geo.wing} material={MATERIALS.shipHull} position={[1.9, 1.7, 0]} rotation-z={-0.08} castShadow receiveShadow />
+        <mesh material={MATERIALS.shipAccent} position={[10.4, 1.05, -5.2]} rotation={[0, -0.6, -0.08]}>
+          <boxGeometry args={[0.5, 0.46, 2.2]} />
+        </mesh>
+        {/* Muñón del ala izquierda (dientes de sierra) */}
+        <mesh geometry={geo.broken} material={MATERIALS.shipHull} position={[-1.9, 1.7, 0]} castShadow />
+        {/* Derivas de cola, algo abiertas */}
+        <mesh geometry={geo.fin} material={MATERIALS.shipHull} position={[1.1, 3.6, -6]} rotation-z={-0.35} castShadow />
+        <mesh geometry={geo.fin} material={MATERIALS.shipDark} position={[-1.1, 3.6, -6]} rotation-z={0.6} castShadow />
         {/* Toberas: la derecha arde y echa el humo */}
         {[-0.9, 0.9].map((x) => (
           <mesh key={x} material={MATERIALS.shipDark} position={[x, 2.3, -10]} rotation-x={Math.PI / 2} castShadow>
@@ -197,13 +181,13 @@ export function ShipPlaceholder({ variant = 'crashed' }: { variant?: 'crashed' |
         ))}
         <group position={[0.9, 2.3, -10.9]}>{repairs.engine ? <EngineGlow /> : <EngineFire />}</group>
         <group position={[-0.9, 2.3, -10.9]}>{repairs.engine && <EngineGlow />}</group>
-        <ShipRepairs repairs={repairs} afloat={afloat} />
+        <ShipRepairs repairs={repairs} />
         {/* Toma de aire bajo la cabina */}
         <mesh material={MATERIALS.shipDark} position={[0, 1.15, 3]} castShadow>
           <boxGeometry args={[2.4, 0.7, 4]} />
         </mesh>
       </group>
-      {!afloat && <CrashScar wing={geo.wing} scorch={scorch} />}
+      <CrashScar wing={geo.wing} scorch={scorch} />
     </Outlined>
   )
 }

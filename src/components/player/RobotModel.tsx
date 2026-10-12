@@ -9,6 +9,7 @@ import { PALETTE } from '@/config/palette'
 import { MATERIALS, robotBatteryMaterial, sharedToon } from '@/materials/toonMaterials'
 import { getGame, useGameStore } from '@/store/gameStore'
 import { player } from '@/systems/player'
+import { boat } from '@/systems/boat'
 import { Backpack } from './Backpack'
 import { HeldTool } from './HeldTool'
 import { HeadUpgrades, LimbUpgrades, limbBetween, type Limb } from './RobotUpgrades'
@@ -136,7 +137,7 @@ function RiggedRobot({ path }: { path: string }) {
   const current = useRef<{ clip: Clip; action?: AnimationAction }>({ clip: 'Idle' })
   const lastAction = useRef(0)
   /** Peso de las poses procedurales (0..1, con transición suave). */
-  const poseW = useRef({ climb: 0, brace: 0, swim: 0, phase: 0, side: 1 })
+  const poseW = useRef({ climb: 0, brace: 0, swim: 0, helm: 0, phase: 0, side: 1 })
   /** Momento (s) en que dejó de pisar suelo; null si está en el suelo. */
   const airSince = useRef<number | null>(null)
   const [rig, setRig] = useState<{
@@ -301,7 +302,8 @@ function RiggedRobot({ path }: { path: string }) {
     pw.climb += ((player.climbing ? 1 : 0) - pw.climb) * k
     pw.brace += ((player.bracing && !player.climbing ? 1 : 0) - pw.brace) * k
     pw.swim += ((player.swimming ? 1 : 0) - pw.swim) * k
-    if (pw.climb < 0.01 && pw.brace < 0.01 && pw.swim < 0.01) return
+    pw.helm += ((boat.boating ? 1 : 0) - pw.helm) * k
+    if (pw.climb < 0.01 && pw.brace < 0.01 && pw.swim < 0.01 && pw.helm < 0.01) return
     const root = outer.current
     const b = setup.bones
     if (!root) return
@@ -365,6 +367,23 @@ function RiggedRobot({ path }: { path: string }) {
       }
       // La cabeza mira al frente (hacia arriba en el cuerpo tumbado).
       aimBone(b.Neck, b.Head, [0, 0.6, 0.8 - m * 0.3], w * 0.7 * m)
+    }
+    if (pw.helm > 0.01) {
+      const w = pw.helm
+      // Al timón: las dos manos en la rueda (delante, a la altura del pecho)
+      // y giran con ella; la cabeza mira hacia donde vira el barco.
+      const turn = -boat.rudder * 2.2
+      const shoulderY = 1.25
+      for (const [sfx, side] of [['L', L], ['R', R]] as const) {
+        const a = (side > 0 ? 0 : Math.PI) + turn * 0.6
+        const hx = Math.cos(a) * 0.36
+        const hy = 1.2 + Math.sin(a) * 0.36
+        const dx = hx - side * 0.33
+        const dy = hy - shoulderY
+        aimBone(b[`UpperArm${sfx}`], b[`LowerArm${sfx}`], [dx * 0.5 + side * 0.3, dy - 0.35, 0.45], w)
+        aimBone(b[`LowerArm${sfx}`], b[`Palm2${sfx}`], [dx * 0.6 - side * 0.15, dy + 0.25, 0.75], w)
+      }
+      aimBone(b.Neck, b.Head, [-boat.rudder * 0.35, 1, 0.12], w * 0.6)
     }
     if (pw.brace > 0.01) {
       const w = pw.brace

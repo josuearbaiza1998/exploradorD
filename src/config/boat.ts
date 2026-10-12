@@ -17,28 +17,28 @@ export const PIER_HEADING = Math.atan2(PIER.to.x - PIER.from.x, PIER.to.z - PIER
 
 /** Amarre: el barco con la popa pegada al final del muelle. */
 export const BOAT_MOOR = {
-  x: PIER.to.x + Math.sin(PIER_HEADING) * 10.5,
-  z: PIER.to.z + Math.cos(PIER_HEADING) * 10.5,
+  x: PIER.to.x + Math.sin(PIER_HEADING) * 5.6,
+  z: PIER.to.z + Math.cos(PIER_HEADING) * 5.6,
   heading: PIER_HEADING,
 }
 
 export const BOAT = {
   /** Velocidad máxima (m/s). */
-  maxSpeed: 9,
-  accel: 2.4,
+  maxSpeed: 10,
+  accel: 2.6,
   drag: 0.9,
-  /** Giro (rad/s) a toda máquina. */
-  turn: 0.9,
+  /** Giro máximo (rad/s). */
+  turn: 1.35,
   /** Distancia del centro a proa y a popa (m). */
-  halfLength: 11.5,
+  halfLength: 4.7,
   /** Profundidad mínima para que el casco no toque fondo. */
-  minDepth: 1.7,
+  minDepth: 1.0,
   /** Más allá de este radio (desde el centro de la isla) el oleaje no deja pasar todavía. */
   openSeaRadius: 430,
-  /** Altura de la cubierta donde va el robot y dónde (coordenadas locales). */
-  deck: { x: 0, y: 4.75, z: 0.8 },
+  /** Dónde va el robot, al timón (coordenadas locales: altura de la cubierta). */
+  deck: { x: 0, y: 1.1, z: -0.45 },
   /** El casco se hunde respecto a la superficie del agua. */
-  draft: 1.0,
+  draft: 0.55,
 }
 
 /** Altura de la tarima del muelle en (x, z), o null si no está encima. */

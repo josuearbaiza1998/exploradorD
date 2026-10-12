@@ -77,7 +77,7 @@ export function ThirdPersonCamera() {
     // Si una duna, roca o tronco se interpone, acercamos la cámara (muestreo del brazo).
     // En la cueva la cámara va más cerca (el túnel no deja sitio para más).
     // A bordo se aleja para ver el barco entero.
-    const reach = cave.active ? Math.min(cameraRig.distance, CAVE_CAMERA_DISTANCE) : boat.boating ? Math.max(cameraRig.distance, 18) : cameraRig.distance
+    const reach = cave.active ? Math.min(cameraRig.distance, CAVE_CAMERA_DISTANCE) : boat.boating ? Math.max(cameraRig.distance, 10) : cameraRig.distance
     gatherObstacles(target.x, target.z, reach)
     let dist = reach
     const SAMPLES = 12
