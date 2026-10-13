@@ -1,5 +1,5 @@
 import { BufferGeometry, CylinderGeometry, Euler, Float32BufferAttribute, Matrix4, Quaternion, Vector3, type Material } from 'three'
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
 type V3 = [number, number, number]
 
@@ -62,8 +62,10 @@ export class Kit {
   build(): { material: Material; geometry: BufferGeometry }[] {
     const out: { material: Material; geometry: BufferGeometry }[] = []
     this.parts.forEach((list, material) => {
-      const geometry = mergeGeometries(list, false)
+      const merged = mergeGeometries(list, false)
       list.forEach((g) => g.dispose())
+      // Índices compartidos donde posición, normal y UV coinciden (menos peso en el .glb).
+      const geometry = merged ? mergeVertices(merged, 1e-4) : null
       if (geometry) {
         geometry.computeBoundingSphere()
         out.push({ material, geometry })
