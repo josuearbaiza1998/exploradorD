@@ -81,7 +81,7 @@ export function prof(z: number) {
   if (z > 0.8) {
     const t = Math.min(1, (z - 0.8) / (FUSE.nose - 0.8))
     const f = Math.sqrt(Math.max(0, 1 - t * t))
-    return { w: 0.3 + (beam - 0.3) * Math.pow(f, 0.85), h: 0.28 + (half - 0.28) * f, yc: center + 0.35 * Math.pow(t, 1.5) }
+    return { w: 0.44 + (beam - 0.44) * Math.pow(f, 0.85), h: 0.4 + (half - 0.4) * f, yc: center + 0.35 * Math.pow(t, 1.5) }
   }
   if (z < -2.2) {
     const t = Math.min(1, (-2.2 - z) / (-2.2 - FUSE.stern))
@@ -255,25 +255,41 @@ function tex(c: HTMLCanvasElement, repeat = false) {
   return t
 }
 
-/** Remolino tribal: espiral gruesa con cola en punta de llama. */
-function tribal(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, dir: number, sy = 1) {
+/** Remolino tribal: espiral gruesa con cola en punta de llama (sx estira en u para compensar la UV). */
+function tribal(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, dir: number, sy = 1, sx = 1) {
   g.lineCap = 'round'
-  g.lineWidth = Math.max(4, r * 0.32)
+  g.lineJoin = 'round'
+  g.lineWidth = Math.max(4, r * 0.36)
   g.beginPath()
-  for (let a = 0; a <= Math.PI * 2.4; a += 0.1) {
-    const rr = r * (a / (Math.PI * 2.4))
-    const x = cx + Math.cos(a * dir) * rr
+  for (let a = 0; a <= Math.PI * 2.4; a += 0.08) {
+    const rr = r * (0.08 + 0.92 * (a / (Math.PI * 2.4)))
+    const x = cx + Math.cos(a * dir) * rr * sx
     const y = cy + Math.sin(a * dir) * rr * sy
     if (a === 0) g.moveTo(x, y)
     else g.lineTo(x, y)
   }
   g.stroke()
-  const ex = cx + Math.cos(Math.PI * 2.4 * dir) * r
+  const ex = cx + Math.cos(Math.PI * 2.4 * dir) * r * sx
   const ey = cy + Math.sin(Math.PI * 2.4 * dir) * r * sy
   g.beginPath()
-  g.moveTo(ex - r * 0.2, ey - r * 0.12 * sy)
-  g.quadraticCurveTo(ex - dir * r * 0.9, ey + r * 0.55 * sy, ex - dir * r * 1.9, ey + r * 0.25 * sy)
-  g.quadraticCurveTo(ex - dir * r * 0.8, ey + r * 0.2 * sy, ex + r * 0.2, ey + r * 0.15 * sy)
+  g.moveTo(ex - r * 0.2 * sx, ey - r * 0.14 * sy)
+  g.quadraticCurveTo(ex - dir * r * 0.9 * sx, ey + r * 0.6 * sy, ex - dir * r * 2.1 * sx, ey + r * 0.3 * sy)
+  g.quadraticCurveTo(ex - dir * r * 0.8 * sx, ey + r * 0.22 * sy, ex + r * 0.2 * sx, ey + r * 0.18 * sy)
+  g.closePath()
+  g.fill()
+}
+
+/** Chorretón de óxido que baja desde (x, y) en el sentido dy (±1). */
+function rustStreak(g: CanvasRenderingContext2D, x: number, y: number, w: number, len: number, dy: number) {
+  const grd = g.createLinearGradient(x, y, x, y + dy * len)
+  grd.addColorStop(0, 'rgba(158,86,42,0.55)')
+  grd.addColorStop(1, 'rgba(158,86,42,0)')
+  g.fillStyle = grd
+  g.beginPath()
+  g.moveTo(x - w / 2, y)
+  g.lineTo(x + w / 2, y)
+  g.lineTo(x + w * 0.15, y + dy * len)
+  g.lineTo(x - w * 0.15, y + dy * len)
   g.closePath()
   g.fill()
 }
@@ -315,75 +331,105 @@ function hullTexture() {
     const v = i % 2 ? 0.3 + rnd(i) * 0.14 : 0.56 + rnd(i) * 0.14
     rust(g, rnd(i + 50) * W, v * H, 14 + rnd(i + 9) * 22, 5 + rnd(i + 3) * 6)
   }
-  // Tribales en la franja visible sobre el agua de cada costado (v 0..0.18
-  // es babor de la borda a la flotación; 0.82..1, estribor), del centro a la proa.
+  // Chorretones de óxido desde las costuras hacia la quilla (v crece hacia la quilla a babor).
+  for (let i = 0; i < 44; i++) {
+    const port = i % 2 === 0
+    const v0 = 0.15 + rnd(i + 70) * 0.08
+    rustStreak(g, (0.04 + rnd(i + 20) * 0.9) * W, (port ? v0 : 1 - v0) * H, 6 + rnd(i + 5) * 10, 20 + rnd(i + 11) * 40, port ? 1 : -1)
+  }
+  // Tribales grandes en la franja sobre el agua de cada costado (v 0..0.2 es
+  // babor de la borda a la flotación; 0.8..1, estribor), del ala a la proa.
   g.fillStyle = '#ff7a3d'
   g.strokeStyle = '#ff7a3d'
-  for (const [vc, sy] of [[0.095, 1], [0.905, -1]] as const) {
+  for (const [vc, sy] of [[0.1, 1], [0.9, -1]] as const) {
     const cy = vc * H
     const row: [number, number, number, number][] = [
-      [0.5, 0, 34, 1],
-      [0.6, -10, 40, -1],
-      [0.7, 6, 40, 1],
-      [0.79, -8, 36, -1],
-      [0.87, 4, 30, 1],
-      [0.94, -4, 22, -1],
+      [0.5, 2, 40, 1],
+      [0.595, -4, 50, -1],
+      [0.695, 3, 52, 1],
+      [0.79, -3, 46, -1],
+      [0.87, 2, 36, 1],
     ]
     for (const [u, dy, r, dir] of row) tribal(g, u * W, cy + sy * dy, r, dir, sy)
-    // Ola que las une por debajo y otra por encima.
-    g.lineWidth = 9
+    // Remolinos menores entre los grandes, más abajo.
+    for (const [u, r, dir] of [[0.545, 22, -1], [0.645, 26, 1], [0.745, 26, -1], [0.83, 22, 1]] as const) tribal(g, u * W, cy + sy * 56, r, dir, sy)
+    // Ola gruesa que los une por arriba, bajo la borda.
+    g.lineWidth = 11
     g.beginPath()
-    g.moveTo(W * 0.44, cy + sy * 30)
-    for (let k = 0; k < 6; k++) {
-      const x0 = W * (0.44 + k * 0.09)
-      g.bezierCurveTo(x0 + W * 0.03, cy + sy * 48, x0 + W * 0.06, cy + sy * 20, x0 + W * 0.09, cy + sy * 34)
+    g.moveTo(W * 0.46, cy - sy * 42)
+    for (let k = 0; k < 5; k++) {
+      const x0 = W * (0.46 + k * 0.095)
+      g.bezierCurveTo(x0 + W * 0.03, cy - sy * 30, x0 + W * 0.065, cy - sy * 50, x0 + W * 0.095, cy - sy * 40)
     }
     g.stroke()
-    g.lineWidth = 6
+  }
+  // Ojo del morro: ranura oscura con borde naranja a cada lado.
+  for (const [vc, sy] of [[0.11, 1], [0.89, -1]] as const) {
+    g.fillStyle = '#ff7a3d'
     g.beginPath()
-    g.moveTo(W * 0.55, cy - sy * 40)
-    g.bezierCurveTo(W * 0.65, cy - sy * 30, W * 0.75, cy - sy * 46, W * 0.98, cy - sy * 36)
-    g.stroke()
+    g.ellipse(W * 0.948, vc * H, 30, 15, sy * 0.12, 0, Math.PI * 2)
+    g.fill()
+    g.fillStyle = '#2b3038'
+    g.beginPath()
+    g.ellipse(W * 0.95, vc * H, 22, 8, sy * 0.12, 0, Math.PI * 2)
+    g.fill()
   }
   // En la panza del morro (se ve porque sube hacia la punta).
+  g.fillStyle = '#ff7a3d'
+  g.strokeStyle = '#ff7a3d'
   for (const [vc, sy] of [[0.27, 1], [0.73, -1]] as const) {
-    tribal(g, W * 0.9, vc * H, 26, 1, sy)
-    tribal(g, W * 0.97, vc * H + sy * 10, 16, -1, sy)
+    tribal(g, W * 0.89, vc * H, 30, 1, sy)
+    tribal(g, W * 0.965, vc * H + sy * 10, 18, -1, sy)
   }
   return tex(c)
 }
 
-/** Capó: blanco hueso detrás y gris con tribales en el morro. */
+/** Capó: blanco hueso en U alrededor del parabrisas; el resto gris con tribales. */
 function cowlTexture() {
   const W = 1024
-  const H = 256
+  const H = 512
+  const SX = 1.2 // u se estira más que v en el capó: así los remolinos salen redondos
   const { c, g } = canvas(W, H)
-  g.fillStyle = '#e7e3da'
-  g.fillRect(0, 0, W, H)
-  const split = 0.4 * W
   g.fillStyle = '#c3cad3'
-  g.fillRect(split, 0, W - split, H)
+  g.fillRect(0, 0, W, H)
+  // Zona blanca: del hueco hasta un poco delante del parabrisas, en punta redondeada.
+  const cream = new Path2D()
+  cream.moveTo(0, H * 0.19)
+  cream.lineTo(W * 0.28, H * 0.19)
+  cream.bezierCurveTo(W * 0.42, H * 0.2, W * 0.5, H * 0.36, W * 0.5, H * 0.5)
+  cream.bezierCurveTo(W * 0.5, H * 0.64, W * 0.42, H * 0.8, W * 0.28, H * 0.81)
+  cream.lineTo(0, H * 0.81)
+  cream.closePath()
+  g.fillStyle = '#e7e3da'
+  g.fill(cream)
+  g.strokeStyle = 'rgba(55,64,76,0.45)'
+  g.lineWidth = 4
+  g.stroke(cream)
+  // Costuras y remaches en la parte gris.
   g.fillStyle = 'rgba(55,64,76,0.4)'
-  g.fillRect(split, 0, 3, H)
-  for (let y = 6; y < H; y += 12) g.fillRect(split + 7, y, 3, 3)
-  for (const u of [0.62, 0.82]) {
+  for (const u of [0.66, 0.84]) {
     g.fillRect(u * W, 0, 2, H)
-    for (let y = 6; y < H; y += 14) g.fillRect(u * W + 5, y, 3, 3)
+    for (let y = 6; y < H; y += 16) g.fillRect(u * W + 5, y, 3, 3)
   }
   g.fillStyle = '#ff7a3d'
   g.strokeStyle = '#ff7a3d'
-  // Tribales alrededor del morro: grandes a los lados (v ≈ 0.12 / 0.88) y arriba.
-  for (const [vc, sy] of [[0.13, 1], [0.87, -1]] as const) {
+  // Costados (junto a la borda): una hilera de remolinos grandes.
+  for (const [vc, sy] of [[0.085, 1], [0.915, -1]] as const) {
     const cy = vc * H
-    tribal(g, W * 0.5, cy, 26, 1, sy)
-    tribal(g, W * 0.62, cy + sy * 8, 24, -1, sy)
-    tribal(g, W * 0.74, cy - sy * 4, 22, 1, sy)
-    tribal(g, W * 0.85, cy + sy * 6, 18, -1, sy)
-    tribal(g, W * 0.94, cy, 12, 1, sy)
+    tribal(g, W * 0.07, cy, 30, 1, sy, SX)
+    tribal(g, W * 0.19, cy + sy * 6, 38, -1, sy, SX)
+    tribal(g, W * 0.33, cy, 44, 1, sy, SX)
+    tribal(g, W * 0.48, cy + sy * 8, 48, -1, sy, SX)
+    tribal(g, W * 0.63, cy, 46, 1, sy, SX)
+    tribal(g, W * 0.77, cy + sy * 6, 40, -1, sy, SX)
+    tribal(g, W * 0.9, cy, 28, 1, sy, SX)
   }
-  tribal(g, W * 0.56, H * 0.5, 24, 1)
-  tribal(g, W * 0.72, H * 0.42, 20, -1)
-  tribal(g, W * 0.86, H * 0.55, 15, 1)
+  // Delante del blanco, por arriba del morro.
+  tribal(g, W * 0.6, H * 0.33, 46, 1, 1, SX)
+  tribal(g, W * 0.6, H * 0.67, 46, -1, -1, SX)
+  tribal(g, W * 0.76, H * 0.5, 56, -1, 1, SX)
+  tribal(g, W * 0.9, H * 0.36, 34, 1, 1, SX)
+  tribal(g, W * 0.9, H * 0.64, 34, -1, -1, SX)
   return tex(c)
 }
 
@@ -518,21 +564,21 @@ export function buildBoat(): Group {
   // Tapa del morro bajo la rejilla.
   const pn = prof(FUSE.nose)
   k.add(M.dark, new CircleGeometry(1, 12), [0, pn.yc, FUSE.nose - 0.01], [0, 0, 0], [pn.w, pn.h, 1])
-  k.add(M.dark, new TorusGeometry(1, 0.06, 6, 16), [0, pn.yc, FUSE.nose], [0, 0, 0], [pn.w, pn.h, 1])
+  k.add(M.steel, new TorusGeometry(1, 0.09, 6, 18), [0, pn.yc, FUSE.nose], [0, 0, 0], [pn.w + 0.02, pn.h + 0.02, 1])
   // Morro de rejilla: cono de anillos y varillas en espiral cruzadas.
   const cageR = (t: number) => (1 - t) * 0.32 + 0.015
-  const cageP = (t: number, a: number) => new Vector3(Math.cos(a) * cageR(t) * (pn.w / 0.3) * 0.9, pn.yc + Math.sin(a) * cageR(t) * (pn.h / 0.28) * 0.9, FUSE.nose + (FUSE.tip - FUSE.nose) * t)
-  for (const t of [0.0, 0.25, 0.5, 0.75]) {
+  const cageP = (t: number, a: number) => new Vector3(Math.cos(a) * cageR(t) * (pn.w / 0.3) * 0.92, pn.yc + Math.sin(a) * cageR(t) * (pn.h / 0.28) * 0.92, FUSE.nose + (FUSE.tip - FUSE.nose) * t)
+  for (const t of [0.0, 0.2, 0.4, 0.6, 0.8]) {
     const pts = Array.from({ length: 17 }, (_, i) => cageP(t, (i / 16) * Math.PI * 2))
-    k.add(M.dark, tube(pts, 0.02, 32, true, 4))
+    k.add(M.dark, tube(pts, 0.028, 32, true, 4))
   }
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 10; i++) {
     for (const dir of [1, -1]) {
-      const pts = Array.from({ length: 9 }, (_, j) => cageP(j / 8, (i / 8) * Math.PI * 2 + dir * (j / 8) * 1.6))
-      k.add(M.dark, tube(pts, 0.016, 16, false, 4))
+      const pts = Array.from({ length: 9 }, (_, j) => cageP(j / 8, (i / 10) * Math.PI * 2 + dir * (j / 8) * 1.7))
+      k.add(M.dark, tube(pts, 0.022, 16, false, 4))
     }
   }
-  k.add(M.dark, new ConeGeometry(0.04, 0.14, 6), [0, pn.yc, FUSE.tip + 0.05], X90)
+  k.add(M.steel, new ConeGeometry(0.06, 0.2, 6), [0, pn.yc, FUSE.tip + 0.08], X90)
   // Brocal de madera alrededor del hueco de la cabina.
   const rimPts: Vector3[] = []
   const gx = (z: number) => {
@@ -593,9 +639,12 @@ export function buildBoat(): Group {
     const rootX = side * (p.w - 0.12)
     const y = BOAT.draft + 0.45
     const span = 1.05
-    k.add(M.light, stubWingGeometry(side * span, 1.5, 0.95, 0.35, 0.15), [rootX, y, z])
-    k.add(M.orange, box(0.24, 0.17, 1.48), [rootX + side * 0.3, y, z - 0.0])
-    k.add(M.orange, box(0.32, 0.17, 0.36), [rootX + side * (span - 0.18), y, z + 0.75 - 0.35 - 0.95 + 0.2])
+    // Caídas un poco hacia fuera, como en las vistas de frente.
+    const rz = -side * 0.16
+    const at = (dx: number, dz: number): V3 => [rootX + dx * Math.cos(rz), y + dx * Math.sin(rz), z + dz]
+    k.add(M.light, stubWingGeometry(side * span, 1.5, 0.95, 0.35, 0.15), at(0, 0), [0, 0, rz])
+    k.add(M.orange, box(0.24, 0.17, 1.48), at(side * 0.3, 0), [0, 0, rz])
+    k.add(M.orange, box(0.32, 0.17, 0.36), at(side * (span - 0.18), -0.35), [0, 0, rz])
     k.add(M.steel, box(0.1, 0.3, 1.2), [side * (p.w - 0.03), y + 0.04, z])
   }
   meshesOf(k, base)
@@ -801,7 +850,9 @@ export function buildBoat(): Group {
   eng.add(rudder)
   const kr = new Kit()
   const fin = new Shape()
-  const P: [number, number][] = [[0, -0.25], [0, 2.6], [-0.98, 2.45], [-0.98, 1.2], [-0.6, 1.02], [-0.6, 0.18], [-0.78, -0.02], [-0.72, -0.25]]
+  // Alta por arriba de la turbina y por debajo de la quilla; muesca delantera
+  // a la altura de la hélice y un pie que vuelve hacia proa.
+  const P: [number, number][] = [[0, 1.2], [0, 2.75], [-1.05, 2.95], [-0.98, -0.72], [-0.12, -0.78], [-0.08, -0.12], [-0.42, 0.05], [-0.42, 1.05]]
   P.forEach(([zz, yy], i) => (i ? fin.lineTo(-zz, yy) : fin.moveTo(-zz, yy)))
   fin.lineTo(-P[0][0], P[0][1])
   const finGeo = new ExtrudeGeometry(fin, { depth: 0.1, bevelEnabled: false })
@@ -809,9 +860,9 @@ export function buildBoat(): Group {
   finGeo.rotateY(Math.PI / 2)
   finGeo.translate(-0.05, 0, 0)
   kr.add(M.rust, finGeo)
-  kr.add(M.steel, cyl(0.07, 0.07, 2.95, 8), [0, 1.17, 0])
+  kr.add(M.steel, cyl(0.07, 0.07, 3.0, 8), [0, 1.3, 0])
   for (const y of [D.y, T.y]) kr.add(M.steel, box(0.2, 0.2, 0.26), [0, y, 0.02])
-  for (const [zz, yy] of [[-0.12, 2.45], [-0.85, 2.32], [-0.85, 1.32], [-0.48, 0.9], [-0.48, 0.3], [-0.12, 0.0], [-0.12, 1.3]]) {
+  for (const [zz, yy] of [[-0.12, 2.6], [-0.88, 2.72], [-0.86, 1.6], [-0.86, 0.5], [-0.86, -0.55], [-0.22, -0.6], [-0.55, 0.9], [-0.55, 0.2], [-0.12, 1.4]]) {
     for (const sxx of [-1, 1]) kr.add(M.dark, cyl(0.03, 0.03, 0.03, 6), [sxx * 0.06, yy, zz], Z90)
   }
   meshesOf(kr, rudder)

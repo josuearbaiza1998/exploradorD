@@ -10,7 +10,7 @@ import { BOAT } from '@/config/boat'
 export const DECK = BOAT.deck.y
 
 /** Fuselaje: popa, base del morro (donde empieza la rejilla) y punta de la rejilla. */
-export const FUSE = { stern: -4.3, dome: 0.4, nose: 5.55, tip: 6.45, beam: 1.85, half: 1.2, center: 0.85 }
+export const FUSE = { stern: -4.3, dome: 0.4, nose: 5.55, tip: 7.15, beam: 1.85, half: 1.2, center: 0.85 }
 
 /** Hueco de la cabina: borde de popa, y semicírculo delantero bajo el capó. */
 export const OPENING = { aft: -3.7, front: 0.3, frontR: 0.95 }
