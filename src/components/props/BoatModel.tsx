@@ -6,15 +6,15 @@ import { Outlined } from '@/components/common/Outlined'
 import { createToonMaterial } from '@/materials/toonMaterials'
 import { boat } from '@/systems/boat'
 import type { RepairId } from '@/config/repairs'
-import { GEAR_A, GEAR_B, STACK_TOP } from './boatLayout'
+import { STACK_TOP } from './boatLayout'
 
 export { LAMP_LOCAL } from './boatLayout'
 
 type Parts = Partial<Record<RepairId, true>>
 
-/** Modelo generado por src/tools/boatBuilder.ts (scripts/export-boat.cjs). */
+/** Modelo hecho en Tripo y adaptado con scripts/import-tripo-boat.cjs (mallas meshopt). */
 const BOAT_GLB = '/models/boat.glb'
-useGLTF.preload(BOAT_GLB)
+useGLTF.preload(BOAT_GLB, false, true)
 
 const PART_GROUPS: [string, RepairId][] = [
   ['part_navigation', 'navigation'],
@@ -43,8 +43,8 @@ function toToon(src: MeshStandardMaterial): Material {
 }
 
 /**
- * El barco: la nave convertida en barquito (modelo .glb). Se anima el timón,
- * la aleta, la hélice, los engranajes, los banderines y el brillo de la tobera.
+ * El barco: la nave convertida en barquito (modelo .glb). Se anima la aleta,
+ * la hélice y los banderines (y el timón y la tobera si el modelo los trae).
  * En el astillero (`parts`) solo se ve lo ya reparado.
  */
 export function BoatModel(props: { afloat?: boolean; parts?: Parts }) {
@@ -57,7 +57,7 @@ export function BoatModel(props: { afloat?: boolean; parts?: Parts }) {
 
 function BoatGlb({ afloat = false, parts }: { afloat?: boolean; parts?: Parts }) {
   const has = (afloat ? { hull: true, comms: true, navigation: true, cooling: true, engine: true } : parts ?? {}) as Parts
-  const { scene } = useGLTF(BOAT_GLB)
+  const { scene } = useGLTF(BOAT_GLB, false, true)
   const model = useMemo(() => {
     const root = scene.clone(true)
     root.traverse((o) => {
@@ -73,8 +73,6 @@ function BoatGlb({ afloat = false, parts }: { afloat?: boolean; parts?: Parts })
       wheel: find('wheel'),
       rudder: find('rudder'),
       prop: find('prop'),
-      gearA: find('gearA'),
-      gearB: find('gearB'),
       flags: [find('flag0'), find('flag1')],
       glow: find('glow'),
       groups: PART_GROUPS.map(([n, id]) => [find(n), id] as const),
@@ -91,11 +89,9 @@ function BoatGlb({ afloat = false, parts }: { afloat?: boolean; parts?: Parts })
     const t = state.clock.elapsedTime
     if (model.wheel) model.wheel.rotation.z = -boat.rudder * 2.2
     if (model.rudder) model.rudder.rotation.y = -boat.rudder * 0.55
-    // Turbina al ralentí; con marcha, más rápido. Los engranajes engranan.
+    // Hélice al ralentí; con marcha, más rápido.
     spin.current += dt * (1 + boat.speed * 0.5)
     const s = spin.current
-    if (model.gearA) model.gearA.rotation.x = s
-    if (model.gearB) model.gearB.rotation.x = -s * (GEAR_A.r / GEAR_B.r)
     if (model.prop) model.prop.rotation.z = s * 2.4
     model.flags.forEach((f, i) => {
       if (f) f.rotation.y = Math.sin(t * (5 + i * 1.3) + i) * 0.28 + Math.min(0.5, boat.speed * 0.03) * (i ? -1 : 1) * 0.3

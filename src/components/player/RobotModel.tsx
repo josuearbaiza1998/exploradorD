@@ -10,6 +10,8 @@ import { MATERIALS, robotBatteryMaterial, sharedToon } from '@/materials/toonMat
 import { getGame, useGameStore } from '@/store/gameStore'
 import { player } from '@/systems/player'
 import { boat } from '@/systems/boat'
+import { BOAT } from '@/config/boat'
+import { WHEEL } from '@/components/props/boatLayout'
 import { Backpack } from './Backpack'
 import { HeldTool } from './HeldTool'
 import { HeadUpgrades, LimbUpgrades, limbBetween, type Limb } from './RobotUpgrades'
@@ -376,8 +378,8 @@ function RiggedRobot({ path }: { path: string }) {
       const shoulderY = 1.25
       for (const [sfx, side] of [['L', L], ['R', R]] as const) {
         const a = (side > 0 ? 0 : Math.PI) + turn * 0.6
-        const hx = Math.cos(a) * 0.52
-        const hy = 1.2 + Math.sin(a) * 0.52
+        const hx = Math.cos(a) * WHEEL.r
+        const hy = WHEEL.y - BOAT.deck.y + Math.sin(a) * WHEEL.r
         const dx = hx - side * 0.33
         const dy = hy - shoulderY
         aimBone(b[`UpperArm${sfx}`], b[`LowerArm${sfx}`], [dx * 0.5 + side * 0.3, dy - 0.35, 0.45], w)

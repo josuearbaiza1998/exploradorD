@@ -36,7 +36,7 @@ export const BOAT = {
   /** Más allá de este radio (desde el centro de la isla) el oleaje no deja pasar todavía. */
   openSeaRadius: 430,
   /** Dónde va el robot, al timón (coordenadas locales: altura de la cubierta). */
-  deck: { x: 0, y: 1.1, z: -0.45 },
+  deck: { x: 0, y: 1.35, z: -0.45 },
   /** El casco se hunde respecto a la superficie del agua. */
   draft: 0.55,
 }
