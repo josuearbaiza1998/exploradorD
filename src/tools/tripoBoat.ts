@@ -57,7 +57,8 @@ const PIVOTS: Partial<Record<Bucket, Vector3>> = {
 /** Farol (donde cuelga el dron) y boca de la chimenea, en coordenadas del modelo. */
 export const TRIPO_POINTS = { lamp: new Vector3(0.12, 0.383, 0), stack: new Vector3(0.293, 0.332, 0) }
 
-export function buildTripoBoat(src: Object3D): Group {
+/** `colorMap`: textura de color que sustituye a la del .glb (misma UV, más resolución). */
+export function buildTripoBoat(src: Object3D, colorMap?: Texture): Group {
   src.updateMatrixWorld(true)
   const tris = new Map<Bucket, { p: number[]; n: number[]; uv: number[] }>()
   let map: Texture | null = null
@@ -91,7 +92,7 @@ export function buildTripoBoat(src: Object3D): Group {
     }
   })
 
-  const mat = new MeshStandardMaterial({ name: 'tripo', map, roughness: 0.8 })
+  const mat = new MeshStandardMaterial({ name: 'tripo', map: colorMap ?? map, roughness: 0.8 })
   const mesh = (b: Bucket) => {
     const d = tris.get(b)
     if (!d) return null
