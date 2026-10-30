@@ -34,6 +34,8 @@ import { Vegetation } from '@/components/props/Vegetation'
 import { Weather } from '@/components/weather/Weather'
 import { Sea } from '@/components/terrain/Sea'
 import { Terrain } from '@/components/terrain/Terrain'
+import { FootDust } from '@/components/player/FootDust'
+import { Tumbleweeds } from '@/components/environment/Tumbleweeds'
 import { Footprints } from '@/components/player/Footprints'
 import { Drone } from '@/components/player/Drone'
 import { Robot } from '@/components/player/Robot'
@@ -84,6 +86,8 @@ export function World() {
       <Robot />
       <Drone />
       <Footprints />
+      <FootDust />
+      <Tumbleweeds />
       <ThirdPersonCamera />
     </>
   )
